@@ -889,9 +889,9 @@ span.passed {
     }
 
     .screening-results-container-results {
-    flex-direction: column;
-    flex-wrap: wrap;
-}
+        flex-direction: column;
+        flex-wrap: wrap;
+    }
 }
 
 
