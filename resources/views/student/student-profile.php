@@ -89,7 +89,7 @@
 
 <body>
     <?php
-    include('partials/navibar.php');
+    include __DIR__ . '/../partials/nav.php';
     ?>
 
     <div class="home-tutor-screen">
@@ -116,7 +116,7 @@
                 </div>
             </div>
         </div>
-        <?php include('partials/right-side-notifications.php'); ?>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
     </div>
 </body>
 

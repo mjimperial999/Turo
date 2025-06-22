@@ -1,0 +1,2811 @@
+{/}
+[login]
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Turo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="css/styles.css">
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0 auto;
+    }
+
+    .login-page-screen {
+      width: 100%;
+      height: 100%;
+      padding: 0 auto;
+
+      display: flex;
+    }
+
+    .login-side-container {
+      background-color: #C9000A;
+      width: 40%;
+      height: 100%;
+      padding: 0 auto;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+
+    .login-side-con-box {
+      width: 95%;
+      max-width: 30em;
+      min-height: 70%;
+      height: 80%;
+      padding: 0 2em 0 2em;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .login-side-logo-con {
+      padding: 0.5em 0 auto;
+    }
+
+    .login-side-form {
+      margin-top: 1.4em;
+      padding: 0.8em 1.8em 0.4em 1.8em;
+      width: 100%;
+      height: 100%;
+      background-color: #FFFFFF;
+      border-radius: 0.2em;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      box-shadow: rgba(0, 0, 0, 0.15) 1.95rem 1.95rem 2.6rem;
+    }
+
+    #login-title-font {
+      padding: 0.8em 0 0.4em 0;
+      font-family: Albert-Sans, sans-serif;
+      font-weight: bold;
+      color: #FFB61D;
+      text-align: center;
+    }
+
+    .login-side-decoration {
+      width: 60%;
+      height: 100%;
+      padding: 0 auto;
+
+      background-image: url('images/login-page.jpeg');
+      background-repeat: no-repeat;
+      background-position-x: right;
+      background-position-y: top;
+      background-size: cover;
+
+      box-shadow: 116px 10px 177px -64px rgba(0, 0, 0, 0.71) inset;
+      -moz-box-shadow: 116px 10px 177px -64px rgba(0, 0, 0, 0.71) inset;
+    }
+
+    .login-form-box {
+      width: 100%;
+      height: 100%;
+
+      font-family: Albert-Sans, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    input {
+      width: 100%;
+      height: 2.5em;
+      margin-bottom: 1.2em;
+
+      padding: 0em 1em 0em 1em;
+      background-color: rgb(243, 243, 243);
+      border: solid rgb(181, 181, 181) 1px;
+      border-radius: 0.5em;
+      box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+
+      transition: all 0.3s ease 0s;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      color: rgb(79, 79, 79);
+      font-size: 1em;
+    }
+
+    input:hover {
+      background-color: rgb(236, 236, 236);
+      transition: all 0.3s ease 0s;
+    }
+
+    .input-placeholder {
+      margin: 0 0 0.25em 0;
+      font-family: Albert-Sans, sans-serif;
+      font-size: 0.75em;
+      font-weight: bold;
+    }
+
+    #login-submit {
+      margin: 1em auto;
+      width: 6em;
+      height: 2.5em;
+      padding: 0em 0.5em 0em 0.5em;
+      background-color: #FFB61D;
+      border: solid rgb(220, 161, 32) 1px;
+      border-radius: 0.5em;
+      box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+      color: #FFFFFF;
+
+      transition: all 0.3s ease 0s;
+    }
+
+    #login-submit:hover {
+      background-color: rgb(232, 167, 29);
+      border: solid rgb(203, 148, 30) 1px;
+      border-radius: 0.5em;
+
+      transition: all 0.3s ease 0s;
+    }
+
+    #forgot-password {
+      width: auto;
+      height: auto;
+      color: #FFB61D;
+      font-size: 0.9em;
+    }
+
+    #forgot-password:hover {
+      color: rgb(233, 168, 27);
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<?php
+    $loginUrl = app()->environment('production') 
+        ? secure_url('/auth') 
+        : url('/auth');
+?>
+<body>
+  <div class="login-page-screen">
+    <div class="login-side-container">
+      <div class="login-side-con-box">
+        <div class="login-side-logo-con">
+          <img src="icons/title-logo.svg" width="200em" height="auto">
+        </div>
+        <div class="login-side-form">
+          <h4 id="login-title-font">Welcome Back!<br>LOGIN to Turo</h4>
+            <?php if (session()->has('error')): ?>
+              <div class="alert alert-danger alert-message" role="alert">
+                <?= session('error') ?>
+              </div>
+            <?php elseif (session()->has('success')): ?>
+                  <div class="alert alert-success alert-message" role="alert">
+                <?= session('success') ?>
+              </div>
+            <?php endif; ?>
+          <form class="login-form-box" action="<?= $loginUrl ?>" method="POST">
+            <?= csrf_field() ?>
+            <p class="input-placeholder">EMAIL</p>
+            <input type="text" id="email" name="email" required />
+
+            <p class="input-placeholder">PASSWORD</p>
+            <input type="password" id="password" name="password" required />
+
+            <a id="forgot-password" href="#">Forgot Password?</a>
+            <button id="login-submit" type="submit">Sign In</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="login-side-decoration">
+
+    </div>
+  </div>
+</body>
+
+</html>
+
+{student/}
+[dashboard]
+(Displays all courses)
+<?php /*
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home | Turo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    */ ?>
+    <style>
+        h4 {
+            font-family: Alata, sans-serif;
+        }
+
+        .course-display-grid-box {
+            width: 100%;
+            height: auto;
+            min-height: 10rem;
+
+            display: grid;
+            grid-auto-flow: row;
+            grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+            gap: 2rem 3vw;
+        }
+
+        .course-menu {
+            margin: 0;
+            border-radius: 0.4rem;
+            width: 100%;
+            font-size: 30px;
+            text-align: center;
+            box-shadow: 0rem 0rem 12rem -3rem rgba(0, 0, 0, 0.8) inset, 2rem -6rem 20rem -2rem rgba(0, 0, 0, 1) inset;
+            filter: drop-shadow(0 0.2rem 0.25rem rgba(0, 0, 0, 0.2));
+            cursor: pointer;
+            background-size: cover;
+            background-position: right top;
+
+            display: flex;
+            flex-direction: column;
+            
+            transition: all 0.3s ease 0s;
+        }
+
+        .course-menu:hover {
+            filter: drop-shadow(0 0.2rem 0.4rem rgba(0, 0, 0, 0.5));
+            transform: translate(0, -0.15rem);
+            transition: all 0.3s ease 0s;
+        }
+
+        .course-filler {
+            height: 9rem;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        .course-details {
+            height: 5rem;
+            padding: 1rem 1rem;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .course-header {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-end;
+        }
+
+        .course-teacher {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: flex-end;
+        }
+
+        .course-title,
+        .course-desc {
+            color: #FFFFFF;
+            margin: 0;
+            padding: 0;
+            font-family: Alexandria, sans-serif;
+            font-weight: 500;
+        }
+
+        .course-desc {
+            font-size: 0.8rem;
+            font-weight: 300;
+        }
+
+        a.module-link {
+            text-decoration: none;
+            width: 20rem;
+            height: 14rem;
+        }
+    </style>
+</head>
+
+<body>
+    <?php $title = 'My Courses';
+include __DIR__ . '/../partials/head.php';
+include __DIR__ . '/../partials/nav.php'; ?> 
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <h4>Dashboard - Courses</h4>
+            <hr>
+            <div class="course-display-grid-box">
+                <?php foreach ($courses as $course) {
+                    $timestamp = strtotime($course->start_date);
+                    $formattedDate = date("F j, Y", $timestamp);
+                    echo '<a class="module-link" href="/home-tutor/course/'. $course->course_id .'"><div class="course-menu" style="background-image: url(' . "'/uploads/course/math.jpg'" . ');">
+                    <div class="course-filler">
+                    </div>
+                    <div class="course-details">
+                        <div class="course-header">
+                            <h6 class="course-title">' . $course->course_name . '</h6>
+                            <h6 class="course-desc">' . $course->course_code . '</h6>
+                        </div>
+                        <div class="course-teacher">
+                            <h6 class="course-desc">Ends in:</h6>
+                            <h6 class="course-desc">' . $formattedDate . '</h6>
+                        </div>
+                    </div>
+                </div></a>';
+                }
+                ?>
+            </div>
+
+        </div>
+        <?php include __DIR__.'/../partials/right-side-notifications.php'; ?>
+    </div>
+
+<?php include __DIR__ . '/../partials/footer.php'; ?>
+</body>
+
+</html>
+
+[modules]
+(Display all modules, long quizzes, and screening exams from a course)
+<?php
+$title = $course->course_name;
+include __DIR__ . '/../partials/head.php'; ?>
+<style>
+    h4 {
+        font-family: Alata, sans-serif;
+    }
+
+    .home-tutor-courses-header {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+
+    .home-tutor-courses-header h5 {
+        margin: 0;
+        padding: 0;
+    }
+
+    .featured-module {
+        width: 20rem;
+        height: 8rem;
+        padding: 0;
+        margin-bottom: 2rem;
+        cursor: pointer;
+        border-radius: 0.4rem;
+        background-image: url('/uploads/course/math.jpg');
+        background-size: cover;
+        background-position: right top;
+        box-shadow: 0rem 0rem 12rem -3rem rgba(0, 0, 0, 0.8) inset, 2rem -6rem 20rem -2rem rgba(0, 0, 0, 1) inset;
+        filter: drop-shadow(0 0.2rem 0.25rem rgba(0, 0, 0, 0.2));
+        transition: all 0.3s ease 0s;
+    }
+
+    .featured-module:hover {
+        filter: drop-shadow(0 0.2rem 0.4rem rgba(0, 0, 0, 0.5));
+        transform: translate(0, -0.15rem);
+        transition: all 0.3s ease 0s;
+    }
+
+    .module-display-flex-box {
+        width: 100%;
+        padding: 0.5rem 0;
+        margin-bottom: 1rem;
+        height: auto;
+
+        white-space: nowrap;
+        display: flex;
+        flex-direction: row;
+
+        overflow-x: auto;
+        scroll-behavior: smooth;
+
+        gap: 0 1.5vw;
+    }
+
+    .module-menu {
+        margin: 0;
+        border-radius: 0.4rem;
+        width: 16rem;
+        height: 8rem;
+        font-size: 30px;
+        text-align: center;
+        box-shadow: 0rem 0rem 6rem -3rem rgba(0, 0, 0, 0.8) inset, 2rem -6rem 12rem -2rem rgba(0, 0, 0, 1) inset;
+        filter: drop-shadow(0 0.2rem 0.25rem rgba(0, 0, 0, 0.2));
+        cursor: pointer;
+        background-size: cover;
+        background-position: center;
+
+        display: flex;
+        flex-direction: column;
+
+        transition: all 0.3s ease 0s;
+    }
+
+    .module-menu:hover {
+        filter: drop-shadow(0 0.2rem 0.4rem rgba(0, 0, 0, 0.5));
+        transform: translate(0, -0.15rem);
+        transition: all 0.3s ease 0s;
+    }
+
+    .module-filler {
+        height: 3rem;
+
+        display: flex;
+        flex-direction: column;
+    }
+
+    .module-details {
+        width: 100%;
+        height: 100%;
+        padding: 1rem 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+
+    .module-menu-title,
+    .module-menu-progress {
+        color: #FFFFFF;
+        margin: 0;
+        padding: 0;
+        font-family: Alexandria, sans-serif;
+        font-weight: 500;
+        text-align: left;
+    }
+
+    .module-menu-title {
+        width: 100%;
+        height: auto;
+
+        font-size: 1rem;
+        font-weight: 500;
+        text-wrap: wrap;
+        line-height: 1;
+        box-orient: vertical;
+        line-clamp: 2;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+
+    .module-menu-progress {
+        font-size: 0.8rem;
+        font-weight: 300;
+
+        height: auto;
+        text-wrap: wrap;
+
+        line-height: 1;
+        box-orient: vertical;
+        line-clamp: 2;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .long-quiz-display-box {
+        padding-bottom: 2rem;
+    }
+
+    h5 {
+        font-family: Alata, sans-serif;
+    }
+</style>
+</head>
+
+<body>
+    <?php
+    $title = $course->course_name;
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/time-lock-check-modules.php';
+    ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <div class="home-tutor-courses-header">
+                <h5>Modules</h5>
+                <div class="return-prev-cont">
+                    <?= '<a class="activity-link" href="/home-tutor">
+                    <div class="return-prev">Back to Courses</div>
+                            </a>' ?>
+                </div>
+            </div>
+            <hr>
+            <div class="module-display-flex-box">
+                <?php if ($course->modules->isEmpty()): ?>
+                    <p>No modules available for this course.</p>
+                <?php else: foreach ($course->modules as $module) {
+                        if (!$module->moduleimage?->image) {
+                            $backgroundImage = "/uploads/course/math.jpg";
+                        }
+                        $blobData = $module->moduleimage?->image;
+                        if (!$blobData) {
+                            $backgroundImage = "/uploads/course/math.jpg";
+                        } else {
+                            $mimeType = getMimeTypeFromBlob($blobData);
+                            $base64Image = base64_encode($blobData);
+                            $backgroundImage = "data:$mimeType;base64,$base64Image";
+                        }
+
+                        echo '<a class="module-link" href="/home-tutor/module/' . $module->module_id . '"><div class="module-menu" style="background-image: url(' . $backgroundImage . ');">
+                    <div class="module-filler">
+                    </div>
+                    <div class="module-details">
+                        <div class="module-menu-title">' . $module->module_name . '</div>
+                        <div class="module-menu-progress">Progress: ' . $module->module_id . '</div>
+                    </div>
+                </div></a>
+
+                        ';
+                    };
+                endif; ?>
+
+            </div>
+            <div class="long-quiz-display-box">
+                <h5>Long Quizzes</h5>
+                <?php foreach ($course->longquizzes as $longquiz) {
+                    include __DIR__ . '/../partials/time-lock-check-modules.php';
+                    include __DIR__ . '/../partials/quiz-long-hero.php';
+                }; ?>
+            </div>
+            <h5>Screening Tests</h5>
+            <hr>
+            <div class="featured-module">
+
+            </div>
+
+        </div>
+        <?php
+        include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+    </div>
+    <?php include __DIR__ . '/../partials/footer.php'; ?>
+</body>
+
+</html>
+
+[activities]
+(Displays all activities - lectures (pdf), tutorials (youtube video embed), practice quizzes and short quizzes from a module)
+
+<?php 
+$title = $module->module_name;
+include __DIR__ . '/../partials/head.php';  ?>
+    <style>
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        .module-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start
+        }
+
+        tr.module-title {
+            height: 1em;
+        }
+
+        tr:nth-child(odd) {
+            background-color: rgba(211, 211, 211, 0.30);
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(232, 232, 232, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <?php 
+    include __DIR__ . '/../partials/nav.php'; ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="first-th">
+                            <h5><b><?php echo $module->module_name ?></b></h5>
+                            <div class="return-prev-cont">
+                                <?= '<a class="activity-link" href="/home-tutor/course/'. $module->course_id .'/"> 
+                                <div class="return-prev">BACK to Course: '. $module->course_name. ' Page</div>
+                                        </a>' ?>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr class="module-subtitle">
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <div class="module-section">
+                            <div class="module-heading">
+                                <div class="module-logo">
+                                    <img class="svg" src="/icons/lecture.svg" width="50em" height="auto" />
+                                    <img class="svg" src="/icons/vid.svg" width="50em" height="auto" />
+                                </div>
+                                <div class="heading-context">
+                                    <h5>LECTURES AND VIDEOS</h5>
+                                    <p>Read and learn with the resources and watch tutorials.</p>
+                                </div>
+                            </div>
+                            <div class="module-divider">
+                                <hr>
+                            </div>
+                            <div class="module-content">
+                                <?php foreach ($module->activities->where('activity_type', 'LECTURE') as $activity) {
+                                    include __DIR__ . '/../partials/time-lock-check.php'; 
+                                    include __DIR__ . '/../partials/lecture-hero.php'; 
+                                }; ?>
+                                <?php foreach ($module->activities->where('activity_type', 'TUTORIAL') as $activity) {
+                                    include __DIR__ . '/../partials/time-lock-check.php'; 
+                                    include __DIR__ . '/../partials/tutorial-hero.php'; 
+                                }; ?>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <div class="module-section">
+                            <div class="module-heading">
+                                <div class="module-logo">
+                                    <img class="svg" src="/icons/practice.svg" width="50em" height="auto" />
+                                </div>
+                                <div class="heading-context">
+                                    <h5>SKILL-HONING TUTORIALS</h5>
+                                    <p>Learn how to solve problems and hone your skills in these tutorials:</p>
+                                </div>
+                            </div>
+                            <div class="module-divider">
+                                <hr>
+                            </div>
+                            <div class="module-content">
+                                <?php foreach ($module->activities->where('activity_type', 'QUIZ') as $activity): {
+                                        if ($activity->quiz->quiz_type_id == 2): {
+                                                include __DIR__ . '/../partials/time-lock-check.php'; 
+                                                include __DIR__ . '/../partials/quiz-practice-hero.php'; 
+                                            }
+                                        endif;
+                                    };
+                                endforeach; ?>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <div class="module-section">
+                            <div class="module-heading">
+                                <div class="module-logo">
+                                    <img class="svg" src="/icons/short-quiz.svg" width="50em" height="auto" />
+                                </div>
+                                <div class="heading-context">
+                                    <h5>SHORT QUIZZES</h5>
+                                    <p>Test your skills. You can do infinite attempts to keep honing your skills. You can infinitely retake these quizzes to increase your scores.</p>
+                                </div>
+                            </div>
+                            <div class="module-divider">
+                                <hr>
+                            </div>
+                            <div class="module-content">
+                                <?php foreach ($module->activities->where('activity_type', 'QUIZ') as $activity): {
+                                        if ($activity->quiz->quiz_type_id == 1): {
+                                                include __DIR__ . '/../partials/time-lock-check.php'; 
+                                                include __DIR__ . '/../partials/quiz-short-hero.php'; 
+                                            };
+                                        endif;
+                                    };
+                                endforeach; ?>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+    </div>
+</body>
+</html>
+
+[activity-lecture]
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $activity->activity_name ?> | Turo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0 auto;
+        }
+
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+    </style>
+</head>
+
+<body>
+    <?php include __DIR__ . '/../partials/nav.php'; ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="first-th">
+                            <div class="module-heading">
+                                <div class="module-logo">
+                                    <img class="svg" src="/icons/lecture.svg" width="50em" height="auto" style="filter: drop-shadow(0 0.2rem 0.25rem rgba(0, 0, 0, 0.2));" />
+                                </div>
+                                <div class="heading-context">
+                                    <h5><b>LECTURE: <?= $activity->activity_name ?></b></h5>
+                                    <p><?= $activity->activity_description ?></p>
+                                </div>
+                            </div>
+                            <div class="return-prev-cont">
+                                <?= '<a class="activity-link" href="/home-tutor/module/' . $activity->module_id . '/">
+                                <div class="return-prev">BACK to Module Page</div>
+                                        </a>' ?>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr class="module-subtitle">
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <?= '<object
+                            data="/uploads/lecture/' . $activity->lecture->file_name . '"
+                            type="application/pdf"
+                            width="100%"
+                            height="500em"></object><br>' ?>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+    </div>
+</body>
+</html>
+
+[activity-tutorial]
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $activity->activity_name ?> | Turo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0 auto;
+        }
+
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        .module-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start
+        }
+
+        tr.module-title {
+            height: 1em;
+        }
+
+        tr:nth-child(odd) {
+            background-color: rgba(211, 211, 211, 0.30);
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(232, 232, 232, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <?php include __DIR__ . '/../partials/nav.php'; ?> 
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="first-th">
+                            <div class="module-heading">
+                                <div class="module-logo">
+                                    <img class="svg" src="/icons/vid.svg" width="50em" height="auto" style="filter: drop-shadow(0 0.2rem 0.25rem rgba(0, 0, 0, 0.2));" />
+                                </div>
+                                <div class="heading-context">
+                                    <h5><b>Video Tutorial: <?= $activity->activity_name ?></b></h5>
+                                </div>
+                            </div>
+                            <div class="return-prev-cont">
+                                <?= '<a class="activity-link" href="/home-tutor/module/' . $activity->module_id . '/">
+                                <div class="return-prev">BACK to Module Page</div>
+                                        </a>' ?>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr class="module-subtitle">
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <?php
+                        function toEmbedUrl($url)
+                        {
+                            // Convert standard YouTube URL to embed format
+                            if (preg_match('/watch\?v=([a-zA-Z0-9_-]+)/', $url, $matches)) {
+                                return 'https://www.youtube.com/embed/' . $matches[1];
+                            }
+                            return $url; // fallback
+                        }
+                        $embedUrl = toEmbedUrl($activity->tutorial->video_url);
+
+                        echo '<a class="video-link" target="_blank" rel="noopener noreferrer" href="' . $activity->tutorial->video_url . '">' . $activity->tutorial->video_url . '</a>
+                            <iframe class="video-placeholder" width="100%" height="500em"
+                            src="' . $embedUrl . '"></iframe>' ?>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+    </div>
+</body>
+</html>
+
+[activity-quiz]
+(Displays the contents of the quiz (before taking the quiz), and your attempts history.)
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $activity->activity_name ?> | Turo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <style>
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        @keyframes anim {
+            100% {
+                stroke-dashoffset: var(--num);
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/quiz-type-check.php';
+    include __DIR__ . '/../partials/time-lock-check.php';
+    include __DIR__ . '/../partials/time-limit-conversion.php';
+    include __DIR__ . '/../partials/score-calc.php';
+    ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="first-th">
+                            <div class="module-heading">
+                                <div class="module-logo">
+                                    <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
+                                </div>
+                                <div class="heading-context">
+                                    <h5><b><?= $activity->activity_name ?></b></h5>
+                                    <p><?= $quiz_type ?></p>
+                                </div>
+                            </div>
+                            <div class="return-prev-cont">
+                                <?= '<a class="activity-link" href="/home-tutor/module/' . $activity->module_id . '/">
+                                <div class="return-prev">BACK to Module Page</div>
+                                        </a> ' ?>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <?php if (session()->has('error')): ?>
+                            <div class="alert alert-danger alert-message" role="alert">
+                                <?= session('error') ?>
+                            </div>
+                        <?php elseif (session()->has('success')): ?>
+                            <div class="alert alert-success alert-message" role="alert">
+                                <?= session('success') ?>
+                            </div>
+                        <?php endif; ?>
+                        <div class="module-section quiz-background <?= $class ?>">
+                            <div class="module-section quiz-header">
+                                <div class="quiz-description">
+                                    <div class="quiz-categories-top">
+                                        <div class="quiz-categories">
+                                            <div class="quiz-categories-desc">
+                                                <p class="description"><b>QUESTIONS: </b><?= $activity->quiz->number_of_questions ?></p>
+                                                <p class="description"><b>TOTAL ATTEMPTS: </b><?= $activity->quiz->number_of_attempts ?></p>
+                                                <p class="description"><b>TIME LIMIT: </b><?= $fTimeLimit ?> min/s</p>
+                                            </div>
+                                        </div>
+                                        <div class="quiz-categories">
+                                            <div class="quiz-categories-desc">
+                                                <p class="description"><b>OPENS: </b><?= $formattedUnlockDate ?></p>
+                                                <p class="description"><b>DUE: </b><?= $formattedDeadline ?></p>
+                                            </div>
+                                        </div>
+                                        <br>
+                                    </div>
+                                    <hr>
+                                    <p class="description">Instructions: <?= $activity->activity_description ?></p>
+                                </div>
+                                <div class="quiz-graphics">
+                                    <div class="percentage-container">
+                                        <div class="percent" style="--clr:<?= $color ?>; --num:<?= $circle_display ?>">
+                                            <svg>
+                                                <circle cx="70" cy="70" r="70"></circle>
+                                                <circle cx="70" cy="70" r="70"></circle>
+                                            </svg>
+                                        </div>
+                                        <div class="percent-number">
+                                            <h1><?= $percentage_display ?><span>%</span></h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="module-section quiz-button-section">
+                                <?= '<a class="activity-link" href="/home-tutor/quiz/' . $activity->activity_id . '/s"> ' ?>
+                                <div class="quiz-button activity-button <?= $buttonClass ?>">TAKE QUIZ</div>
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <div class="module-section">
+                            <p class="description" style="color: #492C2C;"><b>ANALYSIS</b></p>
+                            <p class="description" style="color: #492C2C;"><b>ATTEMPTS TAKEN: </b><?= $attempts ?></p>
+                            <table class="attempts-table">
+                                <thead>
+                                    <tr class="attempts-table-header" style="background-color: rgba(176, 176, 176, 0.4);">
+                                        <th>ATTEMPT</th>
+                                        <th>SCORE</th>
+                                        <th>PERCENTAGE</th>
+                                        <th>DATE TAKEN</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php include __DIR__ . '/../partials/module-quiz-assessments.php'; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php'; ?>
+    </div>
+</body>
+</html>
+
+[quiz-interface]
+(This is the interface while taking the quiz.)
+<?php
+// Force browser not to cache
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question <?= $index + 1 ?> | Turo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <style>
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        .quiz-interface {
+            font-family: Albert-Sans, sans-serif;
+
+            display: flex;
+            flex-direction: column;
+
+            padding: 1.5rem 2rem;
+
+            width: 100%;
+        }
+
+        .quiz-interface-header {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+
+            font-weight: 700;
+        }
+
+        .short-quiz {
+            color: #2E4127;
+        }
+
+        .quiz-interface-header-logo {
+            display: flex;
+            flex-direction: row;
+
+            padding: 0rem 1rem;
+        }
+
+        .quiz-interface-header-right-side {
+            display: flex;
+            flex-direction: row;
+
+            line-height: 1.2;
+        }
+
+        .quiz-interface-header-question-total {
+            display: flex;
+            flex-direction: column;
+
+            text-align: right;
+        }
+
+        .quiz-interface-header-logo img {
+            transform: rotate(6deg) scale(2) translate(0.5rem, -0.8rem);
+            filter: drop-shadow(0 0.1rem 0.1rem rgba(0, 0, 0, 0.2));
+        }
+
+        .quiz-interface p,
+        .quiz-interface b {
+            margin: 0;
+            padding: 0;
+        }
+
+        #quiz-timer {
+            color: #495a43;
+        }
+
+        .quiz-interface-question {
+            font-weight: 600;
+        }
+
+        .quiz-interface-forms {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .quiz-interface-answers {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+            padding: 1rem 0;
+        }
+
+        .radio-button {
+            background:
+                linear-gradient(135deg, rgb(247, 247, 247) 0%, rgb(237, 237, 237) 100%) padding-box,
+                linear-gradient(90deg, rgb(211, 211, 211) 0%, rgb(199, 199, 199) 100%) border-box;
+            border: 0.08rem solid transparent;
+            border-radius: 0.5rem;
+
+            position: relative;
+            transition: all 0.1s ease;
+        }
+
+        .radio-button input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            opacity: 0;
+
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+
+            padding: 1rem;
+            cursor: pointer;
+        }
+
+        .radio-button label {
+            display: block;
+            width: 100%;
+            height: 100%;
+            padding: 1rem;
+        }
+
+        .radio-button.selected {
+            border: 0;
+            box-shadow: rgba(0, 0, 0, 0.24) 0rem 0.18rem 0.5rem;
+            color: white;
+        }
+
+        .radio-short-quiz.radio-button.selected {
+            background: linear-gradient(135deg, rgb(153, 240, 99) 10%, rgb(64, 183, 1) 100%);
+        }
+
+        .radio-practice-quiz.radio-button.selected {
+            background: linear-gradient(135deg, rgb(240, 181, 99) 10%, rgb(183, 89, 1) 100%);
+        }
+
+        .radio-long-quiz.radio-button.selected {
+            background: linear-gradient(135deg, rgb(99, 169, 240) 10%, rgb(1, 92, 183) 100%);
+        }
+
+        .quiz-interface-submit {
+            margin-top: 1.5rem;
+            width: 6rem;
+            height: 2.8rem;
+            border: 0;
+            border-radius: 0.4rem;
+            filter: drop-shadow(0 0.1rem 0.1rem rgba(0, 0, 0, 0.2));
+            color: #FFFFFF;
+
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease 0s;
+        }
+
+        .quiz-interface-submit:hover {
+            text-decoration: underline;
+            cursor: pointer;
+            transition: all 0.3s ease 0s;
+        }
+    </style>
+
+</head>
+
+<body>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/quiz-type-check.php';
+    include __DIR__ . '/../partials/time-lock-check.php';
+    include __DIR__ . '/../partials/time-limit-conversion.php';
+    ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="module-heading">
+                            <div class="module-logo">
+                                <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
+                            </div>
+                            <div class="heading-context">
+                                <h5><b><?= $activity->activity_name ?></b></h5>
+                                <p><?= $quiz_type ?></p>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding" style="padding: 3rem 2rem;">
+                        <div class="module-section quiz-interface quiz-background <?= $class ?>">
+                            <div class="quiz-interface-header">
+                                <div class="quiz-interface-header-question-number">
+                                    <p>QUESTION <?= $index + 1 ?></p>
+                                </div>
+                                <div class="quiz-interface-header-right-side">
+                                    <div class="quiz-interface-header-question-total">
+                                        <p>Q<?=  $index + 1 ?> OF <?=  $total ?></p>
+                                        <p>Time Left: <span id="quiz-timer">--:--</span></p>
+                                    </div>
+                                    <div class="quiz-interface-header-logo">
+                                        <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="quiz-interface-question">
+                                <p><?= $question->question_text ?></p>
+                                <?php
+                                if (empty($question->questionimage?->image)) {
+                                    ;
+                                }
+                                else {
+                                    $blobData = $question->questionimage?->image;
+                                    $mimeType = getMimeTypeFromBlob($blobData);
+                                    $base64Image = base64_encode($blobData);
+                                    $imageURL = "data:$mimeType;base64,$base64Image";
+                                    echo '<img src="'. $imageURL .'" width="250em" height="auto" />';
+                                }
+                                ?>
+                            </div>
+                            <form class="quiz-interface-forms" method="POST" action="/home-tutor/quiz/<?= $activity->activity_id ?>/s/q/<?= $index ?>">
+                                <?=  csrf_field() ?>
+                                <div class="quiz-interface-answers">
+                                    <?php foreach ($question->options as $option): ?>
+                                        <div class="radio-button radio-<?= $class ?>">
+                                            <input type="radio" id="opt<?= $option->option_id ?>" name="answer" value="<?= $option->option_id ?>" required>
+                                            <label for="opt<?= $option->option_id ?>"><?= $option->option_text ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <button type="submit" class="quiz-interface-submit <?= $buttonClass ?>">
+                                    <?= ($index + 1 < $total) ? 'NEXT' : 'SUBMIT' ?>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+    </div>
+</body>
+<script>
+    console.log('Hello');
+    
+    let secondsLeft = <?= $remainingSeconds ?>;
+    const timerElement = document.getElementById('quiz-timer');
+    const form = document.querySelector('form');
+
+    function updateTimer() {
+        const minutes = Math.floor(secondsLeft / 60);
+        const seconds = secondsLeft % 60;
+        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        if (secondsLeft > 0) {
+            secondsLeft--;
+            setTimeout(updateTimer, 1000);
+        } else {
+            autoSubmitQuiz();
+        }
+    }
+
+    function autoSubmitQuiz() {
+        const selected = document.querySelector('input[name="answer"]:checked');
+        const form = document.querySelector('form');
+
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "auto_submit";
+        input.value = "1";
+        form.appendChild(input);
+
+        if (!selected) {
+            const blank = document.createElement("input");
+            blank.type = "hidden";
+            blank.name = "answer";
+            blank.value = "";
+            form.appendChild(blank);
+        }
+
+        form.submit();
+    }
+
+    updateTimer();
+
+    const radioButtons = document.querySelectorAll('input[type="radio"][name="answer"]');
+
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', () => {
+            document.querySelectorAll('.radio-button').forEach(div => {
+                div.classList.remove('selected');
+            });
+            if (radio.checked) {
+                radio.closest('.radio-button').classList.add('selected');
+            }
+        });
+    });
+</script>
+
+
+</html>
+
+[activity-quiz-summary]
+(Displays the results after the quiz - using the latest assessmentresult)
+<?php
+$title = $activity->activity_name;
+include __DIR__ . '/../partials/head.php'; ?>
+
+    <style>
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        .quiz-header {
+            padding: 1rem 0;
+            align-items: center;
+        }
+
+        .quiz-summary-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .quiz-points-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .quiz-summary-score-details {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .quiz-summary-logo-container {
+            padding-right: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quiz-summary-logo-container img {
+            transform: rotate(6deg);
+            filter: drop-shadow(0 0rem 0.1rem rgba(0, 0, 0, 0.2));
+        }
+
+        .quiz-summary-score {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .quiz-summary-score .description {
+            line-height: 1.2;
+            font-size: 1.4rem;
+        }
+
+        .description.summary-score {
+            font-size: 2.7rem;
+        }
+
+        .description.italic {
+            font-family: Albert-Sans-IT, sans-serif;
+        }
+
+        .quiz-summary-attempts {
+            width: 100%;
+        }
+
+
+        @keyframes anim {
+            100% {
+                stroke-dashoffset: var(--num);
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/quiz-type-check.php';
+    include __DIR__ . '/../partials/time-lock-check.php';
+    include __DIR__ . '/../partials/time-limit-conversion.php';
+    include __DIR__ . '/../partials/score-calc.php';
+    ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="first-th">
+                            <div class="module-heading">
+                                <div class="module-logo">
+                                    <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
+                                </div>
+                                <div class="heading-context">
+                                    <h5><b><?= $activity->activity_name ?></b></h5>
+                                    <p><?= $quiz_type ?></p>
+                                </div>
+                            </div>
+                            <div class="return-prev-container">
+                                <?= '<a class="activity-link" href="/home-tutor/quiz/' . $activity->activity_id . '/"> ' ?>
+                                <div class="return-prev"><- BACK to <?= $activity->activity_name ?> page</div>
+                                </a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <?php if (session()->has('error')): ?>
+                            <div class="alert alert-danger alert-message" role="alert">
+                                <?= session('error') ?>
+                            </div>
+                        <?php elseif (session()->has('success')): ?>
+                            <div class="alert alert-success alert-message" role="alert">
+                                <?= session('success') ?>
+                            </div>
+                        <?php endif; ?>
+                        <div class="module-section quiz-background-container <?= $class ?>">
+                            <div class="module-section quiz-header">
+                                <div class="quiz-summary-container">
+                                    <div class="quiz-summary-score-details">
+                                        <div class="quiz-summary-logo-container">
+                                            <img class="svg" src="/icons/<?= $class ?>.svg" width="90em" height="auto" />
+                                        </div>
+                                        <div class="quiz-summary-score">
+                                            <p class="description"><b>SCORE: </b></p>
+                                            <p class="description summary-score"><b><?= $assessment->earned_points . ' / ' . $activity->quiz->number_of_questions ?></b></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="quiz-points-container">
+                                    <div class="quiz-points-details">
+                                        <p class="description">POINTS GARNERED: <b><?= ($assessment->earned_points * 10) ?></b></p>
+                                        <p class="description italic">You got <?= ($assessment->earned_points * 10) ?> points for getting <?= $assessment->earned_points ?> correct answers.</p>
+                                        <hr>
+                                        <p class="description"><b>SCORE CONDITIONS: </b></p>
+                                        <p class="description"><b>SCORE X 10 = POINTS </b></p>
+                                        <p class="description"><b><?= ($assessment->earned_points) ?></b> X 10 = <b><?= ($assessment->earned_points * 10) ?></b></p>
+                                    </div>
+                                </div>
+                                <div class="quiz-graphics">
+                                    <div class="percentage-container">
+                                        <div class="percent" style="--clr:<?= $color ?>; --num:<?= $circle_display ?>">
+                                            <svg>
+                                                <circle cx="70" cy="70" r="70"></circle>
+                                                <circle cx="70" cy="70" r="70"></circle>
+                                            </svg>
+                                        </div>
+                                        <div class="percent-number">
+                                            <h1><?= $percentage_display ?><span>%</span></h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr style="width: 100%;">
+                            <div class="module-section quiz-summary-attempts">
+                                <p class="description"><b>ATTEMPT HISTORY</b></p>
+                                <table class="attempts-table">
+                                    <?php foreach ($assessDisplay as $index => $a): ?>
+                                        <tr>
+                                            <td><b><?= 'Attempt ' . ($index + 1) ?></b></td>
+                                            <td><?= $a->earned_points . ' / ' . $activity->quiz->number_of_questions ?></td>
+                                            <td><?= $a->score_percentage ?>%</td>
+                                            <td><?= date('F j, Y h:i A', strtotime($a->date_taken)) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </table>
+                            </div>
+                            <hr style="width: 100%;">
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php'; ?>
+    </div>
+</body>
+</html>
+
+[long-quiz]
+(Display long-quiz details (same logic from activity-quiz))
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $longquiz->long_quiz_name ?> | Turo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <style>
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        @keyframes anim {
+            100% {
+                stroke-dashoffset: var(--num);
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/time-lock-check-modules.php';
+    include __DIR__ . '/../partials/score-calc.php';
+
+    $seconds = $longquiz->time_limit;
+    $minutes = floor($seconds / 60);
+    $fTimeLimit = sprintf("%2d", $minutes);
+
+    $circle_display = (450 - (450 * 100) / 100);
+    ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="first-th">
+                            <div class="module-heading">
+                                <div class="module-logo">
+                                    <img class="svg" src="/icons/long-quiz.svg" width="50em" height="auto" />
+                                </div>
+                                <div class="heading-context">
+                                    <h5><b><?= $longquiz->long_quiz_name ?></b></h5>
+                                    <p>Long Quiz</p>
+                                </div>
+                            </div>
+                            <div class="return-prev-container">
+                                <?= '<a class="activity-link" href="/home-tutor/course/' . $course->course_id . '/"> ' ?>
+                                <div class="return-prev"><- BACK to Course: <?= $course->course_name ?> Page</div>
+                                </a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <?php if (session()->has('error')): ?>
+                            <div class="alert alert-danger alert-message" role="alert">
+                                <?= session('error') ?>
+                            </div>
+                        <?php elseif (session()->has('success')): ?>
+                            <div class="alert alert-success alert-message" role="alert">
+                                <?= session('success') ?>
+                            </div>
+                        <?php endif; ?>
+                        <div class="module-section quiz-background-container long-quiz">
+                            <div class="module-section quiz-header">
+                                <div class="quiz-description">
+                                    <div class="quiz-categories-top">
+                                        <div class="quiz-categories">
+                                            <div class="quiz-categories-desc">
+                                                <p class="description"><b>QUESTIONS: </b><?= $longquiz->number_of_questions ?></p>
+                                                <p class="description"><b>TOTAL ATTEMPTS: </b><?= $longquiz->number_of_attempts ?></p>
+                                                <p class="description"><b>TIME LIMIT: </b><?= $fTimeLimit ?> min/s</p>
+                                            </div>
+                                        </div>
+                                        <div class="quiz-categories">
+                                            <div class="quiz-categories-desc">
+                                                <p class="description"><b>OPENS: </b><?= $formattedUnlockDate ?></p>
+                                                <p class="description"><b>DUE: </b><?= $formattedDeadline ?></p>
+                                            </div>
+                                        </div>
+                                        <br>
+                                    </div>
+                                    <hr>
+                                    <p class="description">Instructions: <?= $longquiz->long_quiz_instructions ?></p>
+                                </div>
+                                <div class="quiz-graphics">
+                                    <div class="percentage-container">
+                                        <div class="percent" style="--clr:<?= '#01EE2C' ?>; --num:<?= $circle_display ?>">
+                                            <svg>
+                                                <circle cx="70" cy="70" r="70"></circle>
+                                                <circle cx="70" cy="70" r="70"></circle>
+                                            </svg>
+                                        </div>
+                                        <div class="percent-number">
+                                            <h1><?= '100' ?><span>%</span></h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="module-section quiz-button-section">
+                                <?='<a class="activity-link" href="/home-tutor/long-quiz/' . $course->course_id . '/' . $longquiz->long_quiz_id . '/s"> ' ?>
+                                <div class="quiz-button activity-button quiz-long-activity">TAKE QUIZ</div>
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <div class="module-section">
+                            <p class="description" style="color: #492C2C;"><b>ANALYSIS</b></p>
+                            <p class="description" style="color: #492C2C;"><b>ATTEMPTS TAKEN: </b><?= $attempts ?></p>
+                            <table class="attempts-table">
+                                <thead>
+                                    <tr class="attempts-table-header" style="background-color: rgba(176, 176, 176, 0.4);">
+                                        <th>ATTEMPT</th>
+                                        <th>SCORE</th>
+                                        <th>PERCENTAGE</th>
+                                        <th>DATE TAKEN</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php include __DIR__ . '/../partials/long-quiz-assessments.php'; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php'; ?>
+    </div>
+</body>
+</html>
+
+[long-quiz-interface]
+<?php
+// Force browser not to cache
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question <?= $index + 1 ?> | Turo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <style>
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        .quiz-interface {
+            font-family: Albert-Sans, sans-serif;
+
+            display: flex;
+            flex-direction: column;
+
+            padding: 1.5rem 2rem;
+
+            width: 100%;
+        }
+
+        .quiz-interface-header {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+
+            font-weight: 700;
+        }
+
+        .short-quiz {
+            color: #2E4127;
+        }
+
+        .quiz-interface-header-logo {
+            display: flex;
+            flex-direction: row;
+
+            padding: 0rem 1rem;
+        }
+
+        .quiz-interface-header-right-side {
+            display: flex;
+            flex-direction: row;
+
+            line-height: 1.2;
+        }
+
+        .quiz-interface-header-question-total {
+            display: flex;
+            flex-direction: column;
+
+            text-align: right;
+        }
+
+        .quiz-interface-header-logo img {
+            transform: rotate(6deg) scale(2) translate(0.5rem, -0.8rem);
+            filter: drop-shadow(0 0.1rem 0.1rem rgba(0, 0, 0, 0.2));
+        }
+
+        .quiz-interface p,
+        .quiz-interface b {
+            margin: 0;
+            padding: 0;
+        }
+
+        #quiz-timer {
+            color: #495a43;
+        }
+
+        .quiz-interface-question {
+            font-weight: 600;
+        }
+
+        .quiz-interface-forms {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .quiz-interface-answers {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+            padding: 1rem 0;
+        }
+
+        .radio-button {
+            background:
+                linear-gradient(135deg, rgb(247, 247, 247) 0%, rgb(237, 237, 237) 100%) padding-box,
+                linear-gradient(90deg, rgb(211, 211, 211) 0%, rgb(199, 199, 199) 100%) border-box;
+            border: 0.08rem solid transparent;
+            border-radius: 0.5rem;
+
+            position: relative;
+            transition: all 0.1s ease;
+        }
+
+        .radio-button input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            opacity: 0;
+
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+
+            padding: 1rem;
+            cursor: pointer;
+        }
+
+        .radio-button label {
+            display: block;
+            width: 100%;
+            height: 100%;
+            padding: 1rem;
+        }
+
+        .radio-button.selected {
+            border: 0;
+            box-shadow: rgba(0, 0, 0, 0.24) 0rem 0.18rem 0.5rem;
+            color: white;
+        }
+
+        .radio-long-quiz.radio-button.selected {
+            background: linear-gradient(135deg, rgb(99, 169, 240) 10%, rgb(1, 92, 183) 100%);
+        }
+
+        .quiz-interface-submit {
+            margin-top: 1.5rem;
+            width: 6rem;
+            height: 2.8rem;
+            border: 0;
+            border-radius: 0.4rem;
+            filter: drop-shadow(0 0.1rem 0.1rem rgba(0, 0, 0, 0.2));
+            color: #FFFFFF;
+
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease 0s;
+        }
+
+        .quiz-interface-submit:hover {
+            text-decoration: underline;
+            cursor: pointer;
+            transition: all 0.3s ease 0s;
+        }
+
+        .question-image {
+            min-height: 15rem;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+    </style>
+
+</head>
+
+<body>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/time-lock-check-modules.php';
+
+    $seconds = $longquiz->time_limit;
+    $minutes = floor($seconds / 60);
+    $fTimeLimit = sprintf("%2d", $minutes);
+    ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="module-heading">
+                            <div class="module-logo">
+                                <img class="svg" src="/icons/long-quiz.svg" width="50em" height="auto" />
+                            </div>
+                            <div class="heading-context">
+                                <h5><b><?= $longquiz->long_quiz_name ?></b></h5>
+                                <p>Long Quiz</p>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding" style="padding: 3rem 2rem;">
+                        <div class="module-section quiz-interface quiz-background-container long-quiz">
+                            <div class="quiz-interface-header">
+                                <div class="quiz-interface-header-question-number">
+                                    <p>QUESTION <?= $index + 1 ?></p>
+                                </div>
+                                <div class="quiz-interface-header-right-side">
+                                    <div class="quiz-interface-header-question-total">
+                                        <p>Q<?= $index + 1 ?> OF <?= $total ?></p>
+                                        <p>Time Left: <span id="quiz-timer">--:--</span></p>
+                                    </div>
+                                    <div class="quiz-interface-header-logo">
+                                        <img class="svg" src="/icons/long-quiz.svg" width="50em" height="auto" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="quiz-interface-question">
+                                <p><?= $question->question_text ?></p>
+                                <?php
+                                if (empty($question->longquizimage?->image)) {
+                                    ;
+                                }
+                                else {
+                                    $blobData = $question->longquizimage?->image;
+                                    $mimeType = getMimeTypeFromBlob($blobData);
+                                    $base64Image = base64_encode($blobData);
+                                    $imageURL = "data:$mimeType;base64,$base64Image";
+                                    echo '<img src="'. $imageURL .'" width="250em" height="auto" />';
+                                }
+                                ?>
+                            </div>
+                            <form class="quiz-interface-forms" method="POST" action="/home-tutor/long-quiz/<?= $course ?>/<?= $longquiz->long_quiz_id ?>/s/q/<?= $index ?>">
+                                <?= csrf_field() ?>
+                                <div class="quiz-interface-answers">
+                                    <?php foreach ($question->longquizoptions as $option): ?>
+                                        <div class="radio-button radio-long-quiz">
+                                            <input type="radio" id="opt<?= $option->long_quiz_option_id ?>" name="answer" value="<?= $option->long_quiz_option_id ?>" required>
+                                            <label for="opt<?= $option->long_quiz_option_id ?>"><?= $option->option_text ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <button type="submit" class="quiz-interface-submit quiz-long-activity">
+                                    <?= ($index + 1 < $total) ? 'NEXT' : 'SUBMIT' ?>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+    </div>
+</body>
+<script>
+    console.log('Hello');
+
+    let secondsLeft = <?= $remainingSeconds ?>;
+    const timerElement = document.getElementById('quiz-timer');
+    const form = document.querySelector('form');
+
+    function updateTimer() {
+        const minutes = Math.floor(secondsLeft / 60);
+        const seconds = secondsLeft % 60;
+        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        if (secondsLeft > 0) {
+            secondsLeft--;
+            setTimeout(updateTimer, 1000);
+        } else {
+            autoSubmitQuiz();
+        }
+    }
+
+    function autoSubmitQuiz() {
+        const selected = document.querySelector('input[name="answer"]:checked');
+        const form = document.querySelector('form');
+
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "auto_submit";
+        input.value = "1";
+        form.appendChild(input);
+
+        if (!selected) {
+            const blank = document.createElement("input");
+            blank.type = "hidden";
+            blank.name = "answer";
+            blank.value = "";
+            form.appendChild(blank);
+        }
+
+        form.submit();
+    }
+
+    updateTimer();
+
+    const radioButtons = document.querySelectorAll('input[type="radio"][name="answer"]');
+
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', () => {
+            document.querySelectorAll('.radio-button').forEach(div => {
+                div.classList.remove('selected');
+            });
+            if (radio.checked) {
+                radio.closest('.radio-button').classList.add('selected');
+            }
+        });
+    });
+</script>
+
+
+</html>
+
+[long-quiz-summary]
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $longquiz->long_quiz_name ?> | Turo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <style>
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        .quiz-header {
+            padding: 1rem 0;
+            align-items: center;
+        }
+
+        .quiz-summary-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .quiz-points-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .quiz-summary-score-details {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .quiz-summary-logo-container {
+            padding-right: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quiz-summary-logo-container img {
+            transform: rotate(6deg);
+            filter: drop-shadow(0 0rem 0.1rem rgba(0, 0, 0, 0.2));
+        }
+
+        .quiz-summary-score {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .quiz-summary-score .description {
+            line-height: 1.2;
+            font-size: 1.4rem;
+        }
+
+        .description.summary-score {
+            font-size: 2.7rem;
+        }
+
+        .description.italic {
+            font-family: Albert-Sans-IT, sans-serif;
+        }
+
+        .quiz-summary-attempts {
+            width: 100%;
+        }
+
+
+        @keyframes anim {
+            100% {
+                stroke-dashoffset: var(--num);
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/time-lock-check-modules.php';
+    include __DIR__ . '/../partials/score-calc.php';
+
+    $seconds = $longquiz->time_limit;
+    $minutes = floor($seconds / 60);
+    $fTimeLimit = sprintf("%2d", $minutes);
+    ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="first-th">
+                            <div class="module-heading">
+                                <div class="module-logo">
+                                    <img class="svg" src="/icons/long-quiz.svg" width="50em" height="auto" />
+                                </div>
+                                <div class="heading-context">
+                                    <h5><b><?= $longquiz->long_quiz_name ?></b></h5>
+                                    <p>Long Quiz</p>
+                                </div>
+                            </div>
+                            <div class="return-prev-container">
+                                <?= '<a class="activity-link" href="/home-tutor/long-quiz/' . $course->course_id . '/' . $longquiz->long_quiz_id . '/"> ' ?>
+                                <div class="return-prev"><- BACK to <?= $longquiz->long_quiz_name ?> page</div>
+                                </a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <?php if (session()->has('error')): ?>
+                            <div class="alert alert-danger alert-message" role="alert">
+                                <?= session('error') ?>
+                            </div>
+                        <?php elseif (session()->has('success')): ?>
+                            <div class="alert alert-success alert-message" role="alert">
+                                <?= session('success') ?>
+                            </div>
+                        <?php endif; ?>
+                        <div class="module-section quiz-background-container long-quiz">
+                            <div class="module-section quiz-header">
+                                <div class="quiz-summary-container">
+                                    <div class="quiz-summary-score-details">
+                                        <div class="quiz-summary-logo-container">
+                                            <img class="svg" src="/icons/long-quiz.svg" width="90em" height="auto" />
+                                        </div>
+                                        <div class="quiz-summary-score">
+                                            <p class="description"><b>SCORE: </b></p>
+                                            <p class="description summary-score"><b><?= $assessment->earned_points . ' / ' . $longquiz->number_of_questions ?></b></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="quiz-points-container">
+                                    <div class="quiz-points-details">
+                                        <p class="description">POINTS GARNERED: <b><?= ($assessment->earned_points * 10) ?></b></p>
+                                        <p class="description italic">You got <?= ($assessment->earned_points * 10) ?> points for getting <?= $assessment->earned_points ?> correct answers.</p>
+                                        <hr>
+                                        <p class="description"><b>SCORE CONDITIONS: </b></p>
+                                        <p class="description"><b>SCORE X 10 = POINTS </b></p>
+                                        <p class="description"><b><?= ($assessment->earned_points) ?></b> X 10 = <b><?= ($assessment->earned_points * 10) ?></b></p>
+                                    </div>
+                                </div>
+                                <div class="quiz-graphics">
+                                    <div class="percentage-container">
+                                        <div class="percent" style="--clr:<?= $color ?>; --num:<?= $circle_display ?>">
+                                            <svg>
+                                                <circle cx="70" cy="70" r="70"></circle>
+                                                <circle cx="70" cy="70" r="70"></circle>
+                                            </svg>
+                                        </div>
+                                        <div class="percent-number">
+                                            <h1><?= $percentage_display ?><span>%</span></h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr style="width: 100%;">
+                            <div class="module-section quiz-summary-attempts">
+                                <p class="description"><b>ATTEMPT HISTORY</b></p>
+                                <table class="attempts-table">
+                                    <?php foreach ($assessDisplay as $index => $a): ?>
+                                        <tr>
+                                            <td><b><?= 'Attempt ' . ($index + 1) ?></b></td>
+                                            <td><?= $a->earned_points . ' / ' . $longquiz->number_of_questions ?></td>
+                                            <td><?= $a->score_percentage ?>%</td>
+                                            <td><?= date('F j, Y h:i A', strtotime($a->date_taken)) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </table>
+                            </div>
+                            <hr style="width: 100%;">
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+    </div>
+</body>
+</html>
+
+[student-performance]
+(Displays a summary of all grades from the student)
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance | Turo </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <style>
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+            margin: 0;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        h5 {
+            font-family: Alata, sans-serif;
+        }
+
+        .performance-container {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 2rem;
+
+            font-family: Albert-Sans, sans-serif;
+        }
+
+        .performance-details {
+            width: 75%;
+            display: flex;
+            flex-direction: column;
+
+            font-size: 1rem;
+            color: #492C2C;
+        }
+
+        .performance-graphics {
+            width: 25%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .performance-course-element {
+            margin: 0;
+            border-radius: 0.4em;
+            gap: 1rem;
+        }
+
+        .performance-course-element b {
+            color: rgb(45, 45, 45);
+        }
+
+        .performance-table {
+            border-radius: 1rem;
+        }
+
+        .performance-table th,
+        .performance-table td {
+            border: 0.04em solid #492C2C;
+            margin: 0;
+            padding: 0.1rem 0.5rem;
+        }
+
+        .performance-table .results {
+            width: 2.5rem;
+            text-align: right;
+        }
+
+        .performance-table .results-sub {
+            text-align: right;
+            font-size: 0.8rem;
+            color:rgb(116, 94, 94);
+        }
+
+        .performance-table .results-main {
+            text-align: right;
+            font-size: 1.2rem;
+            background-color: rgba(214, 118, 16, 0.14);
+            color:rgb(44, 40, 40);
+        }
+
+        .performance-course {
+            font-size: 1.2rem;
+            background-color: rgba(120, 79, 74, 0.4);
+            color: #492C2C;
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .performance-overall {
+            font-size: 1rem;
+            color: #492C2C;
+            margin: 0;
+        }
+
+        .performance-module {
+            font-size: 0.9rem;
+            color: #492C2C;
+            color:rgb(108, 96, 96);
+            margin: 0;
+        }
+
+        .performance-module.span {
+            padding-left: 1.5rem;
+        }
+
+        .performance-overall-both {
+            font-size: 1.1rem;
+            color: #492C2C;
+            margin: 0;
+        }
+
+        .performance-points {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            color: #492C2C;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .performance-points img {
+            margin-bottom: 1rem;
+        }
+
+        p.points-total-header {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        p.points-total-points {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+
+    </style>
+</head>
+
+<body>
+    <?php
+
+    use Illuminate\Support\Facades\DB;
+    use App\Models\StudentProgress;
+
+    include __DIR__ . '/../partials/nav.php';
+
+    $studentID = session()->get('user_id');
+    $progress = StudentProgress::where('student_id', $studentID)->first();
+
+    // 1. Get course list enrolled by the student
+    $courses = DB::table('course')
+        ->join('enrollment', 'course.course_id', '=', 'enrollment.course_id')
+        ->where('enrollment.student_id', $studentID)
+        ->select('course.course_id', 'course.course_name')
+        ->get();
+
+    // 2. Get module-level averages (short quizzes)
+    $moduleAverages = DB::table('assessmentresult')
+        ->where('assessmentresult.student_id', $studentID)
+        ->where('assessmentresult.is_kept', 1)
+        ->join('module', 'assessmentresult.module_id', '=', 'module.module_id')
+        ->join('course', 'module.course_id', '=', 'course.course_id')
+        ->select(
+            'assessmentresult.module_id',
+            'module.module_name',
+            'module.course_id',
+            DB::raw('AVG(score_percentage) as average_score')
+        )
+        ->groupBy('assessmentresult.module_id', 'module.module_name', 'module.course_id')
+        ->get();
+
+    // 3. Get short quiz average per course
+    $shortAverages = DB::table('assessmentresult')
+        ->where('assessmentresult.student_id', $studentID)
+        ->where('assessmentresult.is_kept', 1)
+        ->join('module', 'assessmentresult.module_id', '=', 'module.module_id')
+        ->groupBy('module.course_id')
+        ->select('module.course_id', DB::raw('AVG(score_percentage) as short_avg'))
+        ->get()
+        ->keyBy('course_id');
+
+    // 4. Get long quiz average per course
+    $longAverages = DB::table('long_assessmentresult')
+        ->where('student_id', $studentID)
+        ->where('is_kept', 1)
+        ->join('longquiz', 'long_assessmentresult.long_quiz_id', '=', 'longquiz.long_quiz_id')
+        ->groupBy('longquiz.course_id')
+        ->select('longquiz.course_id', DB::raw('AVG(score_percentage) as long_avg'))
+        ->get()
+        ->keyBy('course_id');
+
+
+    $longQuizzes = DB::table('long_assessmentresult')
+        ->join('longquiz', 'long_assessmentresult.long_quiz_id', '=', 'longquiz.long_quiz_id')
+        ->where('long_assessmentresult.student_id', $studentID)
+        ->where('long_assessmentresult.is_kept', 1)
+        ->select(
+            'longquiz.course_id',
+            'longquiz.long_quiz_name',
+            DB::raw('AVG(long_assessmentresult.score_percentage) as average_score')
+        )
+        ->groupBy('longquiz.course_id', 'longquiz.long_quiz_name')
+        ->get();
+
+    $percentage = $progress ? round($progress->average_score ?? 0, 2) : null;
+    ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <table>
+                <tr class="module-title">
+                    <th class="table-left-padding"></th>
+                    <th class="table-right-padding">
+                        <div class="module-heading">
+                            <div class="module-logo">
+                                <img class="svg" src="/icons/graph.svg" width="50em" height="auto" />
+                            </div>
+                            <div class="heading-context">
+                                <h5><b>PERFORMANCE ANALYTICS</b></h5>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr class="module-subtitle">
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <div class="module-section quiz-background profile-color">
+                            <div class="performance-container">
+                                <div class="performance-details">
+                                    <b>ALL COURSES</b>
+                                    <?php
+                                    foreach ($courses as $course) {
+                                        $shortAvg = $shortAverages[$course->course_id]->short_avg ?? null;
+                                        $longAvg = $longAverages[$course->course_id]->long_avg ?? null;
+                                        $combinedAvg = null;
+
+                                        if (!is_null($shortAvg) && !is_null($longAvg)) {
+                                            $combinedAvg = ($shortAvg + $longAvg) / 2;
+                                        } elseif (!is_null($shortAvg)) {
+                                            $combinedAvg = $shortAvg;
+                                        } elseif (!is_null($longAvg)) {
+                                            $combinedAvg = $longAvg;
+                                        }
+                                        echo '<div class="performance-course-element"><table class="performance-table">';
+                                        echo '<tr>
+                                                <th colspan="2" class="performance-course">' . $course->course_name . '</th>
+                                            </tr>
+                                            <tr>
+                                                <th class="performance-overall">Short Quiz Average</th>
+                                                <th class="results">' . (!is_null($shortAvg) ? round($shortAvg, 2) . "%" : "No data") . '</th>
+                                            </tr>';
+
+                                        foreach ($moduleAverages as $m) {
+                                            if ($m->course_id === $course->course_id) {
+                                                echo '<tr>
+                                                        <th class="performance-module span">> ' . $m->module_name . '</th>
+                                                        <th class="results-sub">' . round($m->average_score, 2) . '%</th>
+                                                    </tr>';
+                                            }
+                                        }
+
+                                        echo '<tr>               
+                                            <th class="performance-overall">Long Quiz Average:</th>
+                                            <th class="results">' . (!is_null($longAvg) ? round($longAvg) . "%" : "No data") . '</th>
+                                        </tr>';
+
+                                        foreach ($longQuizzes as $lq) {
+                                            if ($lq->course_id === $course->course_id) {
+                                                echo '<tr>
+                                                        <th class="performance-module span">> '.$lq->long_quiz_name.'</th>
+                                                        <th class="results-sub">'.round($lq->average_score, 2).'%</th>
+                                                    </tr>';
+                                            }
+                                        }
+                                        
+                                        echo '<tr>               
+                                            <th class="performance-overall-both">Course Average:</th>
+                                            <th class="results-main">' . (!is_null($percentage) ? round($percentage) . "%" : "No data") . '</th>
+                                        </tr>
+                                    </table></div>';
+                                    }
+
+                                    ?>
+                                </div>
+                                <div class="performance-graphics">
+                                    <div class="performance-points">
+                                        <img class="svg" src="/icons/points.svg" width="100em" height="auto" />
+                                        <p class="points-total-header">Total Points Gained</p>
+                                        <p class="points-total-points"><?= $progress->total_points ?? 0 ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="module-title">
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                        <div class="module-heading">
+                            <div class="module-logo">
+                                <img class="svg" src="/icons/achievements.svg" width="50em" height="auto" style="filter: drop-shadow(0 0.2rem 0.25rem rgba(0, 0, 0, 0.2));" />
+                            </div>
+                            <div class="heading-context">
+                                <h5><b>ACHIEVEMENTS</b></h5>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="module-subtitle">
+                    <td class="table-left-padding"></td>
+                    <td class="table-right-padding">
+                    </td>
+            </table>
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+    </div>
+</body>
+
+</html>
+
+[student-profile]
+(Bio for student)
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= session('user_name') ?> | Turo </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <style>
+        table,
+        th,
+        td {
+            border: 0.04em solid #C9C9C9;
+            border-collapse: collapse;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        .table-left-padding {
+            width: 2em;
+        }
+
+        .table-right-padding {
+            padding: 1em 1.5em;
+        }
+
+        h5 {
+            font-family: Alata, sans-serif;
+        }
+
+        .profile-master {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+
+            font-family: Alexandria, sans-serif;
+        }
+
+        .profile-image-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-image {
+            width: 10rem;
+            height: 10rem;
+            background-position: center;
+            background-size: cover;
+            border: 0.2rem solid rgb(255, 255, 255);
+            border-radius: 0.4rem;
+            box-shadow: rgba(0, 0, 0, 0.24) 0rem 0.1875rem 0.5rem;
+        }
+
+        .profile-details-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+
+            color: #492C2C;
+            font-size: 1rem;
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        .profile-details-name {
+            color: #492C2C;
+            font-size: 1.6rem;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .profile-details-email {
+            color: rgb(103, 79, 79);
+            font-size: 1.3rem;
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        .profile-details-rank {
+            line-height: 1.2;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
+    ?>
+
+    <div class="home-tutor-screen">
+        <div class="home-tutor-main">
+            <h5>User Profile</h5>
+            <hr>
+            <div class="module-section quiz-background-container profile-color">
+                <div class="profile-master">
+                    <div class="profile-image-container">
+                        <div
+                            class="profile-image"
+                            style="background-image: url('<?= $imageURL ?>');">
+                        </div>
+                        <div class="profile-image-edit">
+                            Change Profile Image
+                        </div>
+                    </div>
+                    <div class="profile-details-container">
+                        <p class="profile-details-name"><?= strtoupper($users->last_name) . ', ' . strtoupper($users->first_name) ?></p>
+                        <p class="profile-details-email"><?= $users->email ?></p>
+                        <hr style="width: 100%; margin-top: 0.5em; margin-bottom: 0.5em;">
+                        <p class="profile-details-email">Leaderboards Status</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+    </div>
+</body>
+
+</html>

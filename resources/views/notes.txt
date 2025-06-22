@@ -1,0 +1,81 @@
+[1]
+1.1 Fixed, deleted repeating class
+1.2 Considering this later. Ignore for now.
+1.3 Ignore this too.
+
+2.1 There is a table for long quizzes called longquiz
+2.2 ModuleImage owner is from Modules, not Courses
+2.3 Ignore
+
+3.1 Changing all includes to the first syntax
+3.2 I forgot to remove the comment (definitely rename this one). The name should still be referenced as is.
+3.3 Fixed
+
+4.1 It is just comments. models.txt and controllers.txt aren't one file then all classes are listed.
+4.2 Ignore this.
+
+5. Not all routes are final in the web.php. Will inform you updates later.
+
+[2]
+[1]
+1.1 Fixed, deleted repeating class
+1.2 Considering this later. Ignore for now.
+1.3 Ignore this too.
+
+2.1 There is a table for long quizzes called longquiz
+2.2 ModuleImage owner is from Modules, not Courses
+2.3 Ignore
+
+3.1 Changing all includes to the first syntax
+3.2 I forgot to remove the comment (definitely rename this one). The name should still be referenced as is.
+3.3 Fixed
+
+4.1 It is just comments. models.txt and controllers.txt aren't one file then all classes are listed.
+4.2 Ignore this.
+
+5. Not all routes are final in the web.php. Will inform you updates later.
+
+[2]
+Screening exams are diagnostic quizzes, which tells you what concepts and topics for each concepts you excel at or not.
+Each screening exams have a concept, then topics as a sub element related to the concept. A topic has multiple questions, then a question. For example, using mathematics, an example concept is arithmetic, then a topic related to the concept arithmetic is addition. There would be questions related to addition which is linked to arithmetic, then there is another topic related to arithmetic which is subtraction, and there would be questions related to subtraction.
+
+Logic of Screening Exam:
+Screening Exam
+    └▶ Concepts
+            └▶  Topics
+                    └▶  Questions
+                            └▶  Options
+
+There are tiers of attempts, one and two. For the first attempt, summary of screening exam would show you the results for each concept only. If the score for the concept is less than 60% (can be edited by the teacher/admin hence why there is a column handling this data), at the bottom of the scores for the concept there would be a button that links them to a page that displays educational resources (can be pdfs, youtube video embeds, or both) for the student user to study to improve in this area of concept. For example: You get 20/20 score in arithmetic questions, then 8/20 score in geometry. Below geometry is a button that sends them a page link that contains education resources for that concept.
+
+Display logic:
+First Attempt
+[Arithmetic] 100%
+
+[Geometry] 40%
+    └▶[Button: Geometry Course Materials]
+
+For the second attempt, display the topics and their grade. Then, display edu materials for topics which score is less than 50% (you can't change this which is why there is no column for this data). For example, addition: 10/10, subtraction 4/10.
+
+Display logic:
+Second Attempt
+[Arithmetic] 20/20 - 100%
+    ├▶[Addition] 10/10 - 100%
+    └▶[Subtraction] 4/10 - 40%
+        └▶[Button: Subtraction Educational Materials]
+
+[Geometry] 12/20 - 40%
+    ├▶[Trigonometry] 2/10 - 20%
+    │    └▶[Button: Trigonometry Educational Materials]
+    └▶[Pythagorean Theorem] 2/10 - 20%
+        └▶[Button: Pythagorean Theorem Educational Materials]
+
+As for the views and controllers, you can use the long-quiz format and just change the appropriate models. You can edit the model related to screening exam if needed.
+
+For the database tables, there is already one for screening exams. Use those, then create models for them.
+
+The long-quiz.php view is where the format for the display of diagnostics will be used. Tweaks will be done to achieve the display logic for the screening exam.
+
+For the css, change the long-quiz class to screening class, then the background gradient should be shades of gray. Long-quiz uses the blue gradient.
+
+Then I will ask later to create SQL lines to populate the data for an example screening exam.

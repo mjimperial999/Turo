@@ -152,6 +152,14 @@ header("Pragma: no-cache");
             color: white;
         }
 
+        .radio-short-quiz.radio-button.selected {
+            background: linear-gradient(135deg, rgb(153, 240, 99) 10%, rgb(64, 183, 1) 100%);
+        }
+
+        .radio-practice-quiz.radio-button.selected {
+            background: linear-gradient(135deg, rgb(240, 181, 99) 10%, rgb(183, 89, 1) 100%);
+        }
+
         .radio-long-quiz.radio-button.selected {
             background: linear-gradient(135deg, rgb(99, 169, 240) 10%, rgb(1, 92, 183) 100%);
         }
@@ -177,24 +185,16 @@ header("Pragma: no-cache");
             cursor: pointer;
             transition: all 0.3s ease 0s;
         }
-
-        .question-image {
-            min-height: 15rem;
-            background-size: contain;
-            background-repeat: no-repeat;
-        }
     </style>
 
 </head>
 
 <body>
     <?php
-    include('partials/navibar.php');
-    include('partials/time-lock-check-modules.php');
-
-    $seconds = $longquiz->time_limit;
-    $minutes = floor($seconds / 60);
-    $fTimeLimit = sprintf("%2d", $minutes);
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/quiz-type-check.php';
+    include __DIR__ . '/../partials/time-lock-check.php';
+    include __DIR__ . '/../partials/time-limit-conversion.php';
     ?>
 
     <div class="home-tutor-screen">
@@ -205,11 +205,11 @@ header("Pragma: no-cache");
                     <th class="table-right-padding">
                         <div class="module-heading">
                             <div class="module-logo">
-                                <img class="svg" src="/icons/long-quiz.svg" width="50em" height="auto" />
+                                <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
                             </div>
                             <div class="heading-context">
-                                <h5><b><?= $longquiz->long_quiz_name ?></b></h5>
-                                <p>Long Quiz</p>
+                                <h5><b><?= $activity->activity_name ?></b></h5>
+                                <p><?= $quiz_type ?></p>
                             </div>
                         </div>
                     </th>
@@ -217,29 +217,29 @@ header("Pragma: no-cache");
                 <tr>
                     <td class="table-left-padding"></td>
                     <td class="table-right-padding" style="padding: 3rem 2rem;">
-                        <div class="module-section quiz-interface quiz-background-container long-quiz">
+                        <div class="module-section quiz-interface quiz-background <?= $class ?>">
                             <div class="quiz-interface-header">
                                 <div class="quiz-interface-header-question-number">
                                     <p>QUESTION <?= $index + 1 ?></p>
                                 </div>
                                 <div class="quiz-interface-header-right-side">
                                     <div class="quiz-interface-header-question-total">
-                                        <p>Q<?= $index + 1 ?> OF <?= $total ?></p>
+                                        <p>Q<?=  $index + 1 ?> OF <?=  $total ?></p>
                                         <p>Time Left: <span id="quiz-timer">--:--</span></p>
                                     </div>
                                     <div class="quiz-interface-header-logo">
-                                        <img class="svg" src="/icons/long-quiz.svg" width="50em" height="auto" />
+                                        <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
                                     </div>
                                 </div>
                             </div>
                             <div class="quiz-interface-question">
                                 <p><?= $question->question_text ?></p>
                                 <?php
-                                if (empty($question->longquizimage?->image)) {
+                                if (empty($question->questionimage?->image)) {
                                     ;
                                 }
                                 else {
-                                    $blobData = $question->longquizimage?->image;
+                                    $blobData = $question->questionimage?->image;
                                     $mimeType = getMimeTypeFromBlob($blobData);
                                     $base64Image = base64_encode($blobData);
                                     $imageURL = "data:$mimeType;base64,$base64Image";
@@ -247,17 +247,22 @@ header("Pragma: no-cache");
                                 }
                                 ?>
                             </div>
-                            <form class="quiz-interface-forms" method="POST" action="/home-tutor/long-quiz/<?= $course ?>/<?= $longquiz->long_quiz_id ?>/s/q/<?= $index ?>">
-                                <?= csrf_field() ?>
+                            <form class="quiz-interface-forms" method="POST" action="/home-tutor/quiz/<?= $activity->activity_id ?>/s/q/<?= $index ?>">
+                                <?=  csrf_field() ?>
                                 <div class="quiz-interface-answers">
-                                    <?php foreach ($question->longquizoptions as $option): ?>
-                                        <div class="radio-button radio-long-quiz">
-                                            <input type="radio" id="opt<?= $option->long_quiz_option_id ?>" name="answer" value="<?= $option->long_quiz_option_id ?>" required>
-                                            <label for="opt<?= $option->long_quiz_option_id ?>"><?= $option->option_text ?></label>
+                                    <?php $question->setRelation(
+                                        'options',
+                                        $question->options->shuffle()
+                                    );
+                                    $opts = $question->options->shuffle();
+                                    foreach ($opts as $option): ?>
+                                        <div class="radio-button radio-<?= $class ?>">
+                                            <input type="radio" id="opt<?= $option->option_id ?>" name="answer" value="<?= $option->option_id ?>" required>
+                                            <label for="opt<?= $option->option_id ?>"><?= $option->option_text ?></label>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
-                                <button type="submit" class="quiz-interface-submit quiz-long-activity">
+                                <button type="submit" class="quiz-interface-submit <?= $buttonClass ?>">
                                     <?= ($index + 1 < $total) ? 'NEXT' : 'SUBMIT' ?>
                                 </button>
                             </form>
@@ -267,13 +272,12 @@ header("Pragma: no-cache");
             </table>
 
         </div>
-        <?php include('partials/right-side-notifications.php'); ?>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
     </div>
 </body>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     console.log('Hello');
-
+    
     let secondsLeft = <?= $remainingSeconds ?>;
     const timerElement = document.getElementById('quiz-timer');
     const form = document.querySelector('form');

@@ -112,7 +112,7 @@
             </div>
             <hr>
         </div>
-        <?php include('partials/right-side-notifications.php'); ?>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
     </div>
 </body>
 </html>

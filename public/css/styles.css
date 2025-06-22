@@ -32,10 +32,12 @@
 html,
 body {
     min-height: 100vh;
+    height: 100%;
     margin: 0 auto;
 }
 
 body {
+    width: auto;
     position: relative;
 }
 
@@ -52,6 +54,7 @@ a.nav {
 }
 
 .main-header {
+    width: 100%;
     background-color: #c9000A;
     display: flex;
     justify-content: space-between;
@@ -85,11 +88,14 @@ a.nav {
 
 .navibar-img-container:hover {
     transform: scale(1.05);
-    transition: all 0.3s ease 0s;  
+    transition: all 0.3s ease 0s;
 }
 
-.dropdown-toggle::after {
-    display: none !important;
+.nav-toggle {
+    background: none;
+    border: 0;
+    cursor: pointer;
+    padding: .25rem;
 }
 
 nav {
@@ -123,8 +129,9 @@ nav {
 
 .home-tutor-screen {
     width: 100%;
-    height: 100%;
-    padding: 1em 2% 5em 2%;
+    height: auto;
+    min-height: 100%;
+    padding: 1em 2% 0em 2%;
 
     display: flex;
 }
@@ -290,6 +297,18 @@ th h5 {
     background: linear-gradient(90deg, rgba(199, 229, 255, 1) 0%, rgba(38, 129, 209, 1) 100%);
 }
 
+.screening-button {
+    background: #ffffff;
+    background: linear-gradient(90deg, rgb(186, 186, 186) 0%, rgb(142, 142, 142) 100%);
+    border: none;
+}
+
+.screening-resources {
+    background: #ffc9c7;
+    background: linear-gradient(90deg, rgba(252, 93, 107, 1) 0%, rgb(252, 194, 93) 75%, rgb(253, 177, 0) 100%);
+    font-family: Alata, sans-serif;
+}
+
 .activity-logo {
     margin-left: 1em;
     transform: rotate(4deg);
@@ -324,6 +343,8 @@ a.video-link {
 }
 
 p.description,
+h4.description,
+h5.description,
 .attempts-table {
     font-family: Albert-Sans, sans-serif;
     margin: 0;
@@ -392,10 +413,20 @@ p.description,
     color: #273341;
 }
 
+.screening-exam {
+    background:
+        linear-gradient(135deg, rgb(237, 237, 237) 0%, rgb(171, 171, 171) 100%) padding-box,
+        linear-gradient(90deg, rgb(203, 203, 203) 0%, rgb(153, 153, 153) 100%) border-box;
+    border: 0.08rem solid transparent;
+    border-radius: 0.5rem;
+
+    padding: 1rem;
+}
+
 .profile-color {
     background:
-        linear-gradient(135deg,rgb(230, 182, 182) 0%, rgb(234, 212, 185) 50%, rgb(231, 217, 177) 100%) padding-box,
-        linear-gradient(135deg,rgb(219, 84, 84) 0%, rgb(223, 165, 94) 50%, rgb(219, 190, 112) 100%) border-box;
+        linear-gradient(135deg, rgb(230, 182, 182) 0%, rgb(234, 212, 185) 50%, rgb(231, 217, 177) 100%) padding-box,
+        linear-gradient(135deg, rgb(219, 84, 84) 0%, rgb(223, 165, 94) 50%, rgb(219, 190, 112) 100%) border-box;
     border: 0.08rem solid transparent;
     border-radius: 0.5rem;
 
@@ -515,6 +546,14 @@ p.description,
     animation: anim 2s ease forwards;
 }
 
+.points-container .description {
+    line-height: 1.2;
+}
+
+.points-container .points {
+    font-size: 2rem;
+}
+
 .quiz-button {
     width: 12rem;
     height: 2.8rem;
@@ -597,4 +636,397 @@ p.description,
 
 .alert-message {
     font-family: Albert-Sans, sans-serif;
+}
+
+.table-left-padding {
+    width: 2em;
+}
+
+.table-right-padding {
+    padding: 1em 1.5em;
+}
+
+.quiz-header.summary {
+    padding: 0 2rem;
+    align-items: center;
+}
+
+.quiz-summary-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.quiz-summary-score-details {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+.quiz-summary-logo-container {
+    padding-right: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quiz-summary-logo-container img {
+    transform: rotate(6deg);
+    filter: drop-shadow(0 0rem 0.1rem rgba(0, 0, 0, 0.2));
+}
+
+.quiz-summary-score {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.quiz-summary-score .description {
+    line-height: 1.2;
+    font-size: 1.4rem;
+}
+
+.description.summary-score {
+    font-size: 2.7rem;
+}
+
+.description.italic {
+    font-family: Albert-Sans-IT, sans-serif;
+}
+
+.quiz-summary-attempts {
+    width: 100%;
+}
+
+.screening-results-container {
+    margin: 0;
+    padding: 0;
+}
+
+.screening-results-container-results {
+    display: flex;
+    flex-direction: row;
+    padding: 1rem 1rem;
+    gap: 1rem;
+}
+
+.screening-results-container-concept {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.screening-results-container-topic {
+    display: flex;
+    flex-direction: column;
+    padding-left: 1rem;
+}
+
+.screening-results-container-topic-material {
+    display: flex;
+    flex-direction: column;
+    margin: 0.25rem 0 0.25rem 0;
+}
+
+.screening-resources {
+    margin: 0;
+    padding: 0;
+    font-weight: 500;
+    font-family: Alexandria, sans-serif;
+}
+
+span.failed {
+    color: rgb(168, 52, 52);
+}
+
+span.passed {
+    color: rgb(50, 162, 50);
+}
+
+.mobile-display-only {
+    display: none;
+}
+
+.summary-goto {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-goto .activity {
+    justify-content: center;
+}
+
+.summary-icon-none {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+
+@media only screen and (max-width: 600px) {
+    .mobile-display-only {
+        display: block;
+    }
+
+    .mobile-display-disappear {
+        display: none;
+    }
+
+    #primary-navigation {
+        position: absolute;
+        top: 100%;
+        /* just below the .main-header */
+        right: 0;
+        width: 70vw;
+        max-width: 18rem;
+        background: #c9000A;
+        flex-direction: column;
+        /* vertical list */
+        align-items: flex-start;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 .25rem .5rem rgba(0, 0, 0, .2);
+        transform: translateX(100%);
+        transition: transform .3s ease;
+    }
+
+    #primary-navigation[data-visible="true"] {
+        transform: translateX(0);
+    }
+
+    .nav__links {
+        /* stack anchors vertically */
+        flex-direction: column;
+        gap: 1rem 0;
+    }
+
+    .home-tutor-screen {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .home-tutor-screen div {
+        flex-wrap: wrap;
+    }
+
+    .home-tutor-main,
+    .notifs {
+        width: 100%;
+    }
+
+    .table-left-padding {
+        display: none;
+    }
+
+    .table-right-padding {
+        padding: 0.5em 0.5em;
+    }
+
+    .first-th {
+        flex-direction: column-reverse;
+        align-items: flex-start;
+        padding: 0 0.5em;
+        gap: 0.5em;
+    }
+
+    .module-heading {
+        width: 100%;
+    }
+
+    .return-prev {
+        font-size: 0.8em;
+    }
+
+    .quiz-header {
+        padding: 0.5rem 0.5rem;
+    }
+
+    .quiz-header.summary {
+        padding: 0;
+    }
+
+    .quiz-summary-score-details {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    .quiz-summary-score .description {
+        font-size: 1.1rem;
+    }
+
+    .quiz-summary-score .description.summary-score {
+        font-size: 2rem;
+    }
+
+    .quiz-summary-logo-container img {
+        width: 4rem;
+    }
+
+    .quiz-background .percentage-container .percent svg circle {
+        width: 5rem;
+        height: auto;
+        stroke-width: 8;
+        transform: scale(0.5) translate(0.7rem, 0.7rem);
+    }
+
+    .quiz-background .percentage-container .percent svg circle:nth-child(2) {
+        width: 5rem;
+        height: auto;
+        stroke-width: 8;
+        stroke: var(--clr);
+        transform: scale(0.5) translate(0.7rem, 0.7rem);
+    }
+
+    .quiz-background .percentage-container .percent {
+        width: 5rem;
+        height: 5rem;
+    }
+
+    .percent-number h1 {
+        font-size: 1.1rem;
+    }
+
+    .screening-results-container-results {
+    flex-direction: column;
+    flex-wrap: wrap;
+}
+}
+
+
+
+
+/*   ---------------  */
+/* === Utilities =================================================== */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.gap-1 {
+    gap: .25rem;
+}
+
+.gap-2 {
+    gap: .5rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-xs {
+    font-size: .75rem;
+}
+
+.text-sm {
+    font-size: .875rem;
+}
+
+.text-lg {
+    font-size: 1.25rem;
+}
+
+.card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .1);
+    padding: 1rem;
+}
+
+.card--hover:hover {
+    transform: translateY(-2px);
+    transition: .2s ease;
+}
+
+/* Progress bar – W3CSS style adapted */
+/* :contentReference[oaicite:3]{index=3} */
+.progress {
+    width: 100%;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 8px;
+    background: #4caf50;
+    width: 0%;
+    transition: width .3s ease-in-out;
+}
+
+/* Activity colour helpers */
+.bg-lecture {
+    background: #f6f9ff;
+}
+
+.bg-tutorial {
+    background: #fffaf2;
+}
+
+.bg-quiz {
+    background: #f9f5ff;
+}
+
+.bg-screening {
+    background: #f0fff4;
+}
+
+/* Buttons (utility) */
+.btn {
+    padding: .5rem 1rem;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #1d4ed8;
+}
+
+/* Leaderboard table (CodePen inspiration) */
+/* :contentReference[oaicite:4]{index=4} */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: .6rem .8rem;
+}
+
+.table th {
+    background: #f3f4f6;
+    text-align: left;
+}
+
+.table tr:nth-child(even) {
+    background: #fafafa;
 }

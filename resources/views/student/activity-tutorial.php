@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $activity->activity_name ?> | Turo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
-    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+<?php
+$title = $activity->activity_name;
+include __DIR__ . '/../partials/head.php';  ?>
     <style>
         html,
         body {
@@ -26,18 +20,11 @@
             width: 100%;
         }
 
-        .table-left-padding {
-            width: 2em;
-        }
-
-        .table-right-padding {
-            padding: 1em 1.5em;
-        }
     </style>
 </head>
 
 <body>
-    <?php include('partials/navibar.php'); ?>
+    <?php include __DIR__ . '/../partials/nav.php'; ?> 
 
     <div class="home-tutor-screen">
         <div class="home-tutor-main">
@@ -48,11 +35,10 @@
                         <div class="first-th">
                             <div class="module-heading">
                                 <div class="module-logo">
-                                    <img class="svg" src="/icons/lecture.svg" width="50em" height="auto" style="filter: drop-shadow(0 0.2rem 0.25rem rgba(0, 0, 0, 0.2));" />
+                                    <img class="svg" src="/icons/vid.svg" width="50em" height="auto" style="filter: drop-shadow(0 0.2rem 0.25rem rgba(0, 0, 0, 0.2));" />
                                 </div>
                                 <div class="heading-context">
-                                    <h5><b>LECTURE: <?= $activity->activity_name ?></b></h5>
-                                    <p><?= $activity->activity_description ?></p>
+                                    <h5><b>Video Tutorial: <?= $activity->activity_name ?></b></h5>
                                 </div>
                             </div>
                             <div class="return-prev-cont">
@@ -67,17 +53,26 @@
                 <tr class="module-subtitle">
                     <td class="table-left-padding"></td>
                     <td class="table-right-padding">
-                        <?= '<object
-                            data="/uploads/lecture/' . $activity->lecture->file_name . '"
-                            type="application/pdf"
-                            width="100%"
-                            height="500em"></object><br>' ?>
+                        <?php
+                        function toEmbedUrl($url)
+                        {
+                            // Convert standard YouTube URL to embed format
+                            if (preg_match('/watch\?v=([a-zA-Z0-9_-]+)/', $url, $matches)) {
+                                return 'https://www.youtube.com/embed/' . $matches[1];
+                            }
+                            return $url; // fallback
+                        }
+                        $embedUrl = toEmbedUrl($activity->tutorial->video_url);
+
+                        echo '<a class="video-link" target="_blank" rel="noopener noreferrer" href="' . $activity->tutorial->video_url . '">' . $activity->tutorial->video_url . '</a>
+                            <iframe class="video-placeholder" width="100%" height="500em"
+                            src="' . $embedUrl . '"></iframe>' ?>
                     </td>
                 </tr>
             </table>
 
         </div>
-        <?php include('partials/right-side-notifications.php'); ?>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
     </div>
-</body>
-</html>
+
+<?php include __DIR__ . '/../partials/footer.php';  ?>

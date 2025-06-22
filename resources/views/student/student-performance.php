@@ -162,7 +162,7 @@
     use Illuminate\Support\Facades\DB;
     use App\Models\StudentProgress;
 
-    include('partials/navibar.php');
+    include __DIR__ . '/../partials/nav.php';
 
     $studentID = session()->get('user_id');
     $progress = StudentProgress::where('student_id', $studentID)->first();
@@ -332,7 +332,7 @@
                     </td>
             </table>
         </div>
-        <?php include('partials/right-side-notifications.php'); ?>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
     </div>
 </body>
 

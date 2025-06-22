@@ -1,0 +1,372 @@
+{views/partials}
+[head]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><?= $title .' - Turo' ?? 'Turo Platform'; ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/styles.css">
+
+[navibar]
+(This displays the navigation bar. This also handles checking the blob type since all pages will be having a navigation bar)
+<?php
+function getMimeTypeFromBlob($blob)
+{
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    return $finfo->buffer($blob);
+}
+?>
+
+<div class="main-header">
+    <a href="/home-tutor"><img src="/icons/title-logo.svg" width="120em" height="auto"></a>
+    <?php
+    if (empty($users->image?->image)) {;
+        $imageURL = "/icons/no-img.jpg";
+    } else {
+        $blobData = $users->image?->image;
+        $mimeType = getMimeTypeFromBlob($blobData);
+        $base64Image = base64_encode($blobData);
+        $imageURL = "data:$mimeType;base64,$base64Image";
+    }
+    ?>
+    <div class="navibar-user">
+        <div class="navibar-img" style="background-image: url('<?= $imageURL ?>'); width: 2.5em; height: 2.5em; background-size: cover; background-position: center; border-radius: 50%; cursor: pointer;">
+        </div>
+        <?php if (session()->has('user_id')): ?>
+            <span style="color: white; font-family: Alexandria, sans-serif;">
+                Welcome, <?= session('user_name') ?>
+            </span>
+        <?php endif; ?>
+    </div>
+    <nav>
+        <div class="nav__links">
+            <a class="nav" href="/home-tutor">COURSES</a>
+            <a class="nav" href="/performance">PERFORMANCE</a>
+            <a class="nav" href="#">LEADERBOARDS</a>
+            <a class="nav" href="#">CALENDAR</a>
+            <a class="nav" href="#">INBOX</a>
+            <a class="nav" href="/logout">LOGOUT</a>
+        </div>
+    </nav>
+</div>
+
+[footer]
+<footer class="text-center" style="padding:1rem 0;margin-top:2rem;background:#f3f4f6">
+    <small>&copy; <?= date('Y'); ?> Turo. All rights reserved.</small>
+</footer>
+</body>
+</html>
+
+[time-lock-check]
+(Checks to see if the activity is eligible to be accessed by the student based on unlock date and deadline)
+<?php
+use Carbon\Carbon;
+$now = Carbon::now('Asia/Manila');
+
+$unlock = Carbon::parse($activity->unlock_date);
+$deadline = $activity->deadline_date ? Carbon::parse($activity->deadline_date) : null;
+$unlockTimestamp = strtotime($unlock);
+$deadlineTimestamp = strtotime($deadline);
+
+$formattedUnlockDate = date("F j, Y h:i A", $unlockTimestamp);
+$formattedDeadline = date("F j, Y h:i A", $deadlineTimestamp);
+$isAvailable = $unlock->lte($now) && ($deadline && $deadline->gte($now));
+$description;
+    if ($unlock->lte($now)):{
+        $description = "Locked at ". $formattedDeadline;
+    };
+    else: {
+        $description = "Unlocks at ". $formattedUnlockDate;
+    }; endif;
+?>
+
+[time-lock-check-modules] (definitely rename this one)
+(Checks to see if the long-quiz is eligible to be accessed by the student based on unlock date and deadline)
+<?php
+use Carbon\Carbon;
+$now = Carbon::now('Asia/Manila');
+
+$unlock = Carbon::parse($longquiz->unlock_date);
+$deadline = $longquiz->deadline_date ? Carbon::parse($longquiz->deadline_date) : null;
+$unlockTimestamp = strtotime($unlock);
+$deadlineTimestamp = strtotime($deadline);
+
+$formattedUnlockDate = date("F j, Y h:i A", $unlockTimestamp);
+$formattedDeadline = date("F j, Y h:i A", $deadlineTimestamp);
+$isAvailable = $unlock->lte($now) && ($deadline && $deadline->gte($now));
+$description;
+    if ($unlock->lte($now)):{
+        $description = "Locked at ". $formattedDeadline;
+    };
+    else: {
+        $description = "Unlocks at ". $formattedUnlockDate;
+    }; endif;
+?>
+
+{heroes displays the button link for all activity types}
+[lecture-hero]
+<?php
+if ($isAvailable): {
+    echo
+    '<div class="activity">
+        <a class="activity-link" href="/home-tutor/lecture/' . $activity->activity_id . '">
+            <div class="activity-button lecture-activity unlocked">
+                <div class="activity-logo">
+                    <img class="svg" src="/icons/lecture.svg" width="30em" height="auto" />
+                </div>
+                <div class="activity-name">' . $activity->activity_name . '</div>
+            </div>
+        </a>
+        <div class="activity-description">' . $activity->activity_description . '</div>
+    </div>';
+    };
+else: {
+    echo
+    '<div class="activity">
+        <div class="activity-button lecture-activity locked">
+            <div class="activity-logo">
+                <img class="svg" src="/icons/lecture.svg" width="30em" height="auto" />
+            </div>
+            <div class="activity-name">' . $activity->activity_name . '</div>
+        </div>
+        <div class="activity-description">' .$description. '</div>
+    </div>';
+}
+endif;
+?>
+
+[tutorial-hero]
+<?php
+if ($isAvailable): {
+    echo
+    '<div class="activity">
+        <a class="activity-link" href="/home-tutor/tutorial/' . $activity->activity_id . '">
+            <div class="activity-button tutorial-activity unlocked">
+                <div class="activity-logo">
+                    <img class="svg" src="/icons/vid.svg" width="30em" height="auto" />
+                </div>
+                <div class="activity-name">' . $activity->activity_name . '</div>
+            </div>
+        </a>
+        <div class="activity-description">' . $activity->activity_description . '</div>
+    </div>';
+    };
+else: {
+    echo
+    '<div class="activity">
+        <div class="activity-button tutorial-activity locked">
+            <div class="activity-logo">
+                <img class="svg" src="/icons/vid.svg" width="30em" height="auto" />
+            </div>
+            <div class="activity-name">' . $activity->activity_name . '</div>
+        </div>
+        <div class="activity-description">' . $description. '</div>
+    </div>';
+}
+endif;
+?>
+
+[quiz-practice-hero]
+<?php
+if ($isAvailable): {
+    echo
+    '<div class="activity">
+        <a class="activity-link" href="/home-tutor/quiz/' . $activity->activity_id . '">
+            <div class="activity-button quiz-practice-activity unlocked">
+                <div class="activity-logo">
+                    <img class="svg" src="/icons/practice.svg" width="30em" height="auto" />
+                </div>
+                <div class="activity-name">' . $activity->activity_name . '</div>
+            </div>
+        </a>
+        <div class="activity-description">' . $activity->activity_description . '</div>
+    </div>';
+    };
+else: {
+    echo
+    '<div class="activity">
+        <div class="activity-button quiz-practice-activity locked">
+            <div class="activity-logo">
+                <img class="svg" src="/icons/practice.svg" width="30em" height="auto" />
+            </div>
+            <div class="activity-name">' . $activity->activity_name . '</div>
+        </div>
+        <div class="activity-description">' . $description. '</div>
+    </div>';
+}
+endif;
+?>
+
+[quiz-short-hero]
+<?php
+if ($isAvailable): {
+    echo
+    '<div class="activity">
+        <a class="activity-link" href="/home-tutor/quiz/' . $activity->activity_id . '">
+            <div class="activity-button quiz-short-activity unlocked">
+                <div class="activity-logo">
+                    <img class="svg" src="/icons/short-quiz.svg" width="30em" height="auto" />
+                </div>
+                <div class="activity-name">' . $activity->activity_name . '</div>
+            </div>
+        </a>
+        <div class="activity-description">' . $activity->activity_description . '</div>
+    </div>';
+    };
+else: {
+    echo
+    '<div class="activity">
+        <div class="activity-button quiz-short-activity locked">
+            <div class="activity-logo">
+                <img class="svg" src="/icons/short-quiz.svg" width="30em" height="auto" />
+            </div>
+            <div class="activity-name">' . $activity->activity_name . '</div>
+        </div>
+        <div class="activity-description">' . $description. '</div>
+    </div>';
+}
+endif;
+?>
+
+[quiz-long-hero]
+<?php
+if ($isAvailable): {
+    echo
+    '<div class="activity">
+        <a class="activity-link" href="/home-tutor/long-quiz/'. $course->course_id . '/' . $longquiz->long_quiz_id . '">
+            <div class="activity-button quiz-long-activity unlocked">
+                <div class="activity-logo">
+                    <img class="svg" src="/icons/long-quiz.svg" width="40em" height="auto" />
+                </div>
+                <div class="activity-name">' . $longquiz->long_quiz_name . '</div>
+            </div>
+        </a>
+        <div class="activity-description"></div>
+    </div>';
+    };
+else: {
+    echo
+    '<div class="activity">
+        <div class="activity-button quiz-long-activity locked">
+            <div class="activity-logo">
+                <img class="svg" src="/icons/long-quiz.svg" width="40em" height="auto" />
+            </div>
+            <div class="activity-name">' . $longquiz->long_quiz_name . '</div>
+        </div>
+        <div class="activity-description">' . $description. '</div>
+    </div>';
+}
+endif;
+?>
+
+[right-side-notifications]
+(This usually will display the calendar and events. So far I have no data for this portion.)
+<div class="notifs">
+    <h6>Schedule and Tasks</h6>
+
+</div>
+
+[time-limit-conversion]
+(This is to format time_limit to display as minutes as time_limit uses seconds as int. Although I should most likely just deprecate this)
+<?php
+$seconds = $activity->quiz->time_limit;
+
+$minutes = floor($seconds / 60);
+
+$fTimeLimit = sprintf("%2d", $minutes);
+?>
+
+[long-quiz-assessments]
+(This display all the attempts data for long quizzes)
+<?php if ($assessDisplay->isEmpty()): ?>
+    <tr>
+        <td colspan="4" style="text-align: center; padding: 1rem">
+            <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
+            No attempts yet.
+        </td>
+    </tr>
+<?php else: ?>
+    <?php foreach ($assessDisplay as $index => $a): ?>
+        <tr>
+            <td><?= 'Attempt ' . ($index + 1) ?></td>
+            <td><?= $a->earned_points . ' / ' . $longquiz->number_of_questions ?></td>
+            <td><?= $a->score_percentage ?>%</td>
+            <td><?= date('F j, Y h:i A', strtotime($a->date_taken)) ?></td>
+        </tr>
+    <?php endforeach; ?>
+<?php endif; ?>
+
+[module-quiz-assessments]
+(This display all the attempts data for practice quizzes and short quizzes)
+<?php if ($assessDisplay->isEmpty()): ?>
+    <tr>
+        <td colspan="4" style="text-align: center; padding: 1rem">
+            <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
+            No attempts yet.
+        </td>
+    </tr>
+<?php else: ?>
+    <?php foreach ($assessDisplay as $index => $a): ?>
+        <tr>
+            <td><?= 'Attempt ' . ($index + 1) ?></td>
+            <td><?= $a->earned_points . ' / ' . $activity->quiz->number_of_questions ?></td>
+            <td><?= $a->score_percentage ?>%</td>
+            <td><?= date('F j, Y h:i A', strtotime($a->date_taken)) ?></td>
+        </tr>
+    <?php endforeach; ?>
+<?php endif; ?>
+
+[score-calc]
+(The main purpose of this is for the circle svg graphic. The color and how filled the cicle is like a progress-bar depends on the score of the student to a certain quiz or screening exam)
+<?php
+$percentage = $assessment ? $assessment->score_percentage : null;
+$circle_display = $percentage !== null ? (450 - (450 * $percentage) / 100) : 450;
+
+// Color based on percentage
+if ($percentage === null) {
+    $color = '#999999';
+    $percentage_display = '--';
+} elseif ($percentage >= 80) {
+    $color = '#01EE2C';
+    $percentage_display = round($percentage);
+} elseif ($percentage >= 75) {
+    $color = '#caee01';
+    $percentage_display = round($percentage);
+} elseif ($percentage >= 50) {
+    $color = '#ee8301';
+    $percentage_display = round($percentage);
+} else {
+    $color = '#ee0101';
+    $percentage_display = round($percentage);
+}
+
+?>
+
+[quiz-type-check]
+(Checks to see what kind of activity so that the class name changes depending on what it is. Long quiz is there because I was making this before the decision to unbound long quizzes to the module and instead bound it to courses - as long quizzes would represent different modules based on my understanding.)
+<?php      
+    $quiz_type = "Quiz";
+    $class = "short-quiz";
+    $buttonClass = "quiz-short-activity";
+
+    if ($activity->quiz->quiz_type_id == 1):{
+        $quiz_type = "Short Quiz";
+        $class = "short-quiz";
+        $buttonClass = "quiz-short-activity";
+    };
+        
+    elseif ($activity->quiz->quiz_type_id == 2):{
+        $quiz_type = "Practice Test";
+        $class = "practice";
+        $buttonClass = "quiz-practice-activity";
+    };
+
+    elseif ($activity->quiz->quiz_type_id == 3):{
+        $quiz_type = "Long Quiz";
+        $class = "long-quiz";
+        $buttonClass = "quiz-long-activity";
+    };
+
+    endif;
+

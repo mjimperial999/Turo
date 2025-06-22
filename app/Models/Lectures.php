@@ -20,6 +20,7 @@ class Lectures extends Model
 
     protected $fillable = [
         'content_type_id',
+        'activity_id',
         'text_body',
         'file_name',
     ];

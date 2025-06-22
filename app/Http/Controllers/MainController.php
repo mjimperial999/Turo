@@ -7,10 +7,12 @@ use App\Models\Users;
 use App\Models\Students;
 use App\Models\Courses;
 use App\Models\Modules;
+use App\Models\Screening;
 use App\Models\Activities;
 use App\Models\LongQuizzes;
 use App\Models\AssessmentResult;
 use App\Models\LongQuizAssessmentResult;
+
 
 class MainController extends Controller
 {
@@ -46,7 +48,7 @@ class MainController extends Controller
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
-        return view('student-profile', compact('users'));
+        return view('student.student-profile', compact('users'));
     }
 
     public function performancePage()
@@ -55,7 +57,7 @@ class MainController extends Controller
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
-        return view('student-performance', compact('users'));
+        return view('student.student-performance', compact('users'));
     }
 
     public function courseList()
@@ -66,7 +68,7 @@ class MainController extends Controller
         $users = Users::with('image')->findOrFail($userID);
         $courses = Courses::all();
 
-        return view('home-tutor', compact('courses', 'users'));
+        return view('student.dashboard', compact('courses', 'users'));
     }
 
 
@@ -78,8 +80,9 @@ class MainController extends Controller
         $users = Users::with('image')->findOrFail($userID);
         $course = Courses::with('modules.moduleimage')->findOrFail($courseID);
         $longquiz = Courses::with('longquizzes')->findOrFail($courseID);
+        $screenings = Screening::where('course_id', $courseID)->get();
 
-        return view('module-menu', compact('course', 'longquiz', 'users'));
+        return view('student.modules', compact('course', 'longquiz', 'users', 'screenings'));
     }
 
     public function activityList($moduleID)
@@ -89,7 +92,7 @@ class MainController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
         $module = Modules::with('activities.quiz')->findOrFail($moduleID);
-        return view('explore-module', compact('module', 'users'));
+        return view('student.activities', compact('module', 'users'));
     }
 
     public function lecturePage($activityID)
@@ -99,7 +102,7 @@ class MainController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
         $activity = Activities::with('lecture')->findOrFail($activityID);
-        return view('activity-lecture', compact('activity', 'users'));
+        return view('student.activity-lecture', compact('activity', 'users'));
     }
 
     public function tutorialPage($activityID)
@@ -109,7 +112,7 @@ class MainController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
         $activity = Activities::with('tutorial')->findOrFail($activityID);
-        return view('activity-tutorial', compact('activity', 'users'));
+        return view('student.activity-tutorial', compact('activity', 'users'));
     }
 
     public function quizPage($activityID)
@@ -134,7 +137,7 @@ class MainController extends Controller
             ->orderBy('date_taken', 'asc')
             ->get();
 
-        return view('activity-quiz', compact('activity', 'assessment', 'attempts', 'assessDisplay', 'users'));
+        return view('student.activity-quiz', compact('activity', 'assessment', 'attempts', 'assessDisplay', 'users'));
     }
 
     public function summary($activityID)
@@ -159,7 +162,7 @@ class MainController extends Controller
             ->orderBy('date_taken', 'asc')
             ->get();
 
-        return view('activity-quiz-summary', compact('activity', 'assessment', 'attempts', 'assessDisplay', 'users'));
+        return view('student.activity-quiz-summary', compact('activity', 'assessment', 'attempts', 'assessDisplay', 'users'));
     }
 
     public function longquizPage($courseID, $longQuizID)
@@ -186,7 +189,7 @@ class MainController extends Controller
             ->get();
 
 
-        return view('long-quiz', compact('course', 'longquiz', 'assessment', 'attempts', 'assessDisplay', 'users'));
+        return view('student.long-quiz', compact('course', 'longquiz', 'assessment', 'attempts', 'assessDisplay', 'users'));
     }
 
     public function longquizSummary($courseID, $longQuizID)
@@ -212,11 +215,11 @@ class MainController extends Controller
             ->orderBy('date_taken', 'asc')
             ->get();
 
-        return view('long-quiz-summary', compact('course', 'longquiz', 'assessment', 'attempts', 'assessDisplay', 'users'));
+        return view('student.long-quiz-summary', compact('course', 'longquiz', 'assessment', 'attempts', 'assessDisplay', 'users'));
     }
 
     public function studentPerformance($userID)
     {
-        return view('student-performance', compact('activity', 'assessment'));
+        return view('student.student-performance', compact('activity', 'assessment'));
     }
 }

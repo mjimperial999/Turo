@@ -6,6 +6,8 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\LongQuizController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ScreeningController;
+use App\Http\Controllers\ScreeningResourcesController;
 
 // GENERAL
 Route::get('/', [MainController::class, 'landingRedirect']);
@@ -57,6 +59,49 @@ Route::get('/home-tutor/long-quiz/{course}/{longquiz}/s/q/{index}', [LongQuizCon
 Route::post('/home-tutor/long-quiz/{course}/{longquiz}/s/q/{index}', [LongQuizController::class, 'submitAnswer']);
 Route::get('/home-tutor/long-quiz/{course}/{longquiz}/summary', [MainController::class, 'longquizSummary']);
 
+Route::prefix('/home-tutor/course/{course}/')->group(function () {
+
+    Route::get('{screening}', [ScreeningController::class, 'screeningPage']);
+
+    // start an attempt
+    Route::post('{screening}/start', [ScreeningController::class, 'start']);
+
+    // single-question player (same URI for GET to show & POST to submit)
+    Route::match(['get','post'],
+                 '{screening}/q/{index}',
+                 [ScreeningController::class, 'play']);
+
+    // end-of-attempt summary
+    Route::get('{screening}/summary', [ScreeningController::class, 'summary']);
+
+    // optional: resource links for weak concepts / topics
+    Route::get('{screening}/resources/{resource}',
+               [ScreeningResourcesController::class, 'show']);
+});
+
 // TEACHER
 
 Route::get('/teachers-panel', [MainController::class, 'teacherPanel']);
+
+
+// TEST
+Route::get('/test-session', function () {
+    session(['test' => 'it works']);
+    return session('test');
+});
+
+Route::get('/test-session-db', function () {
+    try {
+        session(['check' => 'db works']);
+        return session('check');
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => true,
+            'message' => $e->getMessage(),
+        ]);
+    }
+});
+
+Route::get('/session-driver', function () {
+    return config('session.driver');  // should say 'database'
+});

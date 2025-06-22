@@ -1,48 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
+<?php
+$title = $screening->screening_name;
+include __DIR__ . '/../partials/head.php'; ?>
+<style>
+    table,
+    th,
+    td {
+        border: 0.04em solid #C9C9C9;
+        border-collapse: collapse;
+    }
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $activity->activity_name ?> | Turo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
-    <link rel="stylesheet" type="text/css" href="/css/styles.css">
-    <style>
-        table,
-        th,
-        td {
-            border: 0.04em solid #C9C9C9;
-            border-collapse: collapse;
-        }
+    table {
+        width: 100%;
+    }
 
-        table {
-            width: 100%;
+    @keyframes anim {
+        100% {
+            stroke-dashoffset: var(--num);
         }
-
-        .table-left-padding {
-            width: 2em;
-        }
-
-        .table-right-padding {
-            padding: 1em 1.5em;
-        }
-
-        @keyframes anim {
-            100% {
-                stroke-dashoffset: var(--num);
-            }
-        }
-    </style>
+    }
+</style>
 
 </head>
 
 <body>
     <?php
-    include('partials/navibar.php');
-    include('partials/quiz-type-check.php');
-    include('partials/time-lock-check.php');
-    include('partials/time-limit-conversion.php');
-    include('partials/score-calc.php');
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/time-lock-check-screening.php';
+
+    $percentage = $latestResult ? $latestResult->score_percentage : null;
+    $circle_display = $percentage !== null ? (450 - (450 * $percentage) / 100) : 450;
+
+    // Color based on percentage
+    if ($percentage === null) {
+        $color = '#999999';
+        $percentage_display = '--';
+    } elseif ($percentage >= 80) {
+        $color = '#01EE2C';
+        $percentage_display = round($percentage);
+    } elseif ($percentage >= 75) {
+        $color = '#caee01';
+        $percentage_display = round($percentage);
+    } elseif ($percentage >= 50) {
+        $color = '#ee8301';
+        $percentage_display = round($percentage);
+    } else {
+        $color = '#ee0101';
+        $percentage_display = round($percentage);
+    }
+
+    $seconds = $screening->time_limit;
+    $minutes = floor($seconds / 60);
+    $fTimeLimit = sprintf("%2d", $minutes);
     ?>
 
     <div class="home-tutor-screen">
@@ -54,20 +62,19 @@
                         <div class="first-th">
                             <div class="module-heading">
                                 <div class="module-logo">
-                                    <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
+                                    <img class="svg" src="/icons/screener.svg" width="50em" height="auto" />
                                 </div>
                                 <div class="heading-context">
-                                    <h5><b><?= $activity->activity_name ?></b></h5>
-                                    <p><?= $quiz_type ?></p>
+                                    <h5><b><?= $screening->screening_name ?></b></h5>
+                                    <p>Screening Exam</p>
                                 </div>
                             </div>
-                            <div class="return-prev-cont">
-                                <?= '<a class="activity-link" href="/home-tutor/module/' . $activity->module_id . '/">
-                                <div class="return-prev">BACK to Module Page</div>
-                                        </a> ' ?>
+                            <div class="return-prev-container">
+                                <?= '<a class="activity-link" href="/home-tutor/course/' . $screening->course_id . '/"> ' ?>
+                                <div class="return-prev"><- Back to Course</div>
+                                        </a>
                                 </div>
                             </div>
-                        </div>
                     </th>
                 </tr>
                 <tr>
@@ -82,14 +89,13 @@
                                 <?= session('success') ?>
                             </div>
                         <?php endif; ?>
-                        <div class="module-section quiz-background <?= $class ?>">
+                        <div class="module-section quiz-background screening-exam">
                             <div class="module-section quiz-header">
                                 <div class="quiz-description">
                                     <div class="quiz-categories-top">
                                         <div class="quiz-categories">
                                             <div class="quiz-categories-desc">
-                                                <p class="description"><b>QUESTIONS: </b><?= $activity->quiz->number_of_questions ?></p>
-                                                <p class="description"><b>TOTAL ATTEMPTS: </b><?= $activity->quiz->number_of_attempts ?></p>
+                                                <p class="description"><b>QUESTIONS: </b><?= $screening->number_of_questions ?></p>
                                                 <p class="description"><b>TIME LIMIT: </b><?= $fTimeLimit ?> min/s</p>
                                             </div>
                                         </div>
@@ -102,7 +108,7 @@
                                         <br>
                                     </div>
                                     <hr>
-                                    <p class="description">Instructions: <?= $activity->activity_description ?></p>
+                                    <p class="description">Instructions: <?= $screening->screening_instructions ?></p>
                                 </div>
                                 <div class="quiz-graphics">
                                     <div class="percentage-container">
@@ -119,9 +125,11 @@
                                 </div>
                             </div>
                             <div class="module-section quiz-button-section">
-                                <?= '<a class="activity-link" href="/home-tutor/quiz/' . $activity->activity_id . '/s"> ' ?>
-                                <div class="quiz-button activity-button <?= $buttonClass ?>">TAKE QUIZ</div>
-                                </a>
+                                <form method="POST"
+                                    action="/home-tutor/course/<?= $courseId ?>/<?= $screening->screening_id ?>/start">
+                                    <?= csrf_field() ?>
+                                    <button class="quiz-button activity-button screening-button">Start&nbsp;Exam</button>
+                                </form>
                             </div>
                         </div>
                     </td>
@@ -129,29 +137,29 @@
                 <tr>
                     <td class="table-left-padding"></td>
                     <td class="table-right-padding">
-                        <div class="module-section">
-                            <p class="description" style="color: #492C2C;"><b>ANALYSIS</b></p>
-                            <p class="description" style="color: #492C2C;"><b>ATTEMPTS TAKEN: </b><?= $attempts ?></p>
-                            <table class="attempts-table">
-                                <thead>
-                                    <tr class="attempts-table-header" style="background-color: rgba(176, 176, 176, 0.4);">
-                                        <th>ATTEMPT</th>
-                                        <th>SCORE</th>
-                                        <th>PERCENTAGE</th>
-                                        <th>DATE TAKEN</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php include('partials/module-quiz-assessments.php'); ?>
-                                </tbody>
-                            </table>
+                        <div class="summary-goto">
+                            <?php if (!$latestResult): ?>
+                                <div class="summary-icon-none"><img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
+                                No attempts yet.</div>
+                            <?php else: ?>
+                                <h5 class="description">View Your Results Here:</h5>
+                                <div class="activity">
+                                    <a class="activity-link" href="/home-tutor/course/<?= $courseId ?>/<?= $screening->screening_id ?>/summary">
+                                        <div class="activity-button screening-resources unlocked">
+                                            <div class="activity-logo">
+                                                <img class="svg" src="/icons/bulb.svg" width="30em" height="auto" />
+                                            </div>
+                                            <div class="activity-name">SUMMARY</div>
+                                        </div>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </td>
                 </tr>
             </table>
 
         </div>
-        <?php include('partials/right-side-notifications.php'); ?>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php'; ?>
     </div>
-</body>
-</html>
+    <?php include __DIR__ . '/../partials/footer.php'; ?>

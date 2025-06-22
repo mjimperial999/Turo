@@ -21,7 +21,7 @@ class Questions extends Model
     protected $fillable = [
         'question_type_id',
         'score',
-        'activity',
+        'activity_id',
     ];
 
     public function options()

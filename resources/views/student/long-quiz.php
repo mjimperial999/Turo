@@ -38,15 +38,13 @@
 
 <body>
     <?php
-    include('partials/navibar.php');
-    include('partials/time-lock-check-modules.php');
-    include('partials/score-calc.php');
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/time-lock-check-modules.php';
+    include __DIR__ . '/../partials/score-calc.php';
 
     $seconds = $longquiz->time_limit;
     $minutes = floor($seconds / 60);
     $fTimeLimit = sprintf("%2d", $minutes);
-
-    $circle_display = (450 - (450 * 100) / 100);
     ?>
 
     <div class="home-tutor-screen">
@@ -68,9 +66,9 @@
                             <div class="return-prev-container">
                                 <?= '<a class="activity-link" href="/home-tutor/course/' . $course->course_id . '/"> ' ?>
                                 <div class="return-prev"><- BACK to Course: <?= $course->course_name ?> Page</div>
-                                </a>
+                                        </a>
+                                </div>
                             </div>
-                        </div>
                     </th>
                 </tr>
                 <tr>
@@ -85,7 +83,7 @@
                                 <?= session('success') ?>
                             </div>
                         <?php endif; ?>
-                        <div class="module-section quiz-background-container long-quiz">
+                        <div class="module-section quiz-background long-quiz">
                             <div class="module-section quiz-header">
                                 <div class="quiz-description">
                                     <div class="quiz-categories-top">
@@ -109,20 +107,25 @@
                                 </div>
                                 <div class="quiz-graphics">
                                     <div class="percentage-container">
-                                        <div class="percent" style="--clr:<?= '#01EE2C' ?>; --num:<?= $circle_display ?>">
+                                        <div class="percent" style="--clr:<?= $color ?>; --num:<?= $circle_display ?>">
                                             <svg>
                                                 <circle cx="70" cy="70" r="70"></circle>
                                                 <circle cx="70" cy="70" r="70"></circle>
                                             </svg>
                                         </div>
                                         <div class="percent-number">
-                                            <h1><?= '100' ?><span>%</span></h1>
+                                            <h1><?= $percentage_display ?><span>%</span></h1>
                                         </div>
+                                    </div>
+                                    <div class="points-container">
+                                        <br>
+                                        <p class="description" style="text-align: center;">Total Points Garnered</p>
+                                        <p class="description points" style="text-align: center;"><b><?= ($assessment->earned_points * 10) ?? 0 ?></b></p>
                                     </div>
                                 </div>
                             </div>
                             <div class="module-section quiz-button-section">
-                                <?='<a class="activity-link" href="/home-tutor/long-quiz/' . $course->course_id . '/' . $longquiz->long_quiz_id . '/s"> ' ?>
+                                <?= '<a class="activity-link" href="/home-tutor/long-quiz/' . $course->course_id . '/' . $longquiz->long_quiz_id . '/s"> ' ?>
                                 <div class="quiz-button activity-button quiz-long-activity">TAKE QUIZ</div>
                                 </a>
                             </div>
@@ -145,7 +148,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php include('partials/long-quiz-assessments.php'); ?>
+                                    <?php include __DIR__ . '/../partials/long-quiz-assessments.php'; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -154,7 +157,8 @@
             </table>
 
         </div>
-        <?php include('partials/right-side-notifications.php'); ?>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php'; ?>
     </div>
 </body>
+
 </html>

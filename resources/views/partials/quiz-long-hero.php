@@ -22,7 +22,7 @@ else: {
             </div>
             <div class="activity-name">' . $longquiz->long_quiz_name . '</div>
         </div>
-        <div class="activity-description">' . $description. '</div>
+        <div class="activity-description">' . $description. ' Unlock:'. $unlock .' Locked: '. $deadline .'</div>
     </div>';
 }
 endif;

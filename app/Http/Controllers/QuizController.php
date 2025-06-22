@@ -118,7 +118,7 @@ class QuizController extends Controller
         $question = Questions::with(['options', 'questionimage'])->findOrFail($questionID);
         $remainingSeconds = (int) max(0, Carbon::now('Asia/Manila')->diffInSeconds(Carbon::parse($deadline), false));
 
-        return response()->view('quiz-interface', [
+        return response()->view('student.quiz-interface', [
             'activity' => $activity,
             'question' => $question,
             'index' => $index,
@@ -190,7 +190,7 @@ class QuizController extends Controller
             $this->computeStudentAnalytics($studentID);
 
             return redirect("/home-tutor/quiz/{$activityID}/summary")
-                ->with('success', 'Finished quiz.');
+                ->with('success', 'Quiz has been submitted.');
         }
     }
 }

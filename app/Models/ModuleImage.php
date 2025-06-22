@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ModuleImage extends Model
 {
     public function module() {
-        return $this->belongsTo(Courses::class, 'module_id');
+        return $this->belongsTo(Modules::class, 'module_id');
     }
 
     protected $table = 'module_image'; // Name of The Table

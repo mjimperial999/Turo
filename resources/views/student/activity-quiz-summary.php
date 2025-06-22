@@ -1,12 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
+<?php
+$title = $activity->activity_name;
+include __DIR__ . '/../partials/head.php'; ?>
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $longquiz->long_quiz_name ?> | Turo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
-    <link rel="stylesheet" type="text/css" href="/css/styles.css">
     <style>
         table,
         th,
@@ -95,13 +90,11 @@
 
 <body>
     <?php
-    include('partials/navibar.php');
-    include('partials/time-lock-check-modules.php');
-    include('partials/score-calc.php');
-
-    $seconds = $longquiz->time_limit;
-    $minutes = floor($seconds / 60);
-    $fTimeLimit = sprintf("%2d", $minutes);
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/quiz-type-check.php';
+    include __DIR__ . '/../partials/time-lock-check.php';
+    include __DIR__ . '/../partials/time-limit-conversion.php';
+    include __DIR__ . '/../partials/score-calc.php';
     ?>
 
     <div class="home-tutor-screen">
@@ -113,16 +106,16 @@
                         <div class="first-th">
                             <div class="module-heading">
                                 <div class="module-logo">
-                                    <img class="svg" src="/icons/long-quiz.svg" width="50em" height="auto" />
+                                    <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
                                 </div>
                                 <div class="heading-context">
-                                    <h5><b><?= $longquiz->long_quiz_name ?></b></h5>
-                                    <p>Long Quiz</p>
+                                    <h5><b><?= $activity->activity_name ?></b></h5>
+                                    <p><?= $quiz_type ?></p>
                                 </div>
                             </div>
                             <div class="return-prev-container">
-                                <?= '<a class="activity-link" href="/home-tutor/long-quiz/' . $course->course_id . '/' . $longquiz->long_quiz_id . '/"> ' ?>
-                                <div class="return-prev"><- BACK to <?= $longquiz->long_quiz_name ?> page</div>
+                                <?= '<a class="activity-link" href="/home-tutor/quiz/' . $activity->activity_id . '/"> ' ?>
+                                <div class="return-prev"><- BACK to <?= $activity->activity_name ?> page</div>
                                 </a>
                             </div>
                         </div>
@@ -140,16 +133,16 @@
                                 <?= session('success') ?>
                             </div>
                         <?php endif; ?>
-                        <div class="module-section quiz-background-container long-quiz">
+                        <div class="module-section quiz-background <?= $class ?>">
                             <div class="module-section quiz-header">
                                 <div class="quiz-summary-container">
                                     <div class="quiz-summary-score-details">
                                         <div class="quiz-summary-logo-container">
-                                            <img class="svg" src="/icons/long-quiz.svg" width="90em" height="auto" />
+                                            <img class="svg" src="/icons/<?= $class ?>.svg" width="90em" height="auto" />
                                         </div>
                                         <div class="quiz-summary-score">
                                             <p class="description"><b>SCORE: </b></p>
-                                            <p class="description summary-score"><b><?= $assessment->earned_points . ' / ' . $longquiz->number_of_questions ?></b></p>
+                                            <p class="description summary-score"><b><?= $assessment->earned_points . ' / ' . $activity->quiz->number_of_questions ?></b></p>
                                         </div>
                                     </div>
                                 </div>
@@ -184,7 +177,7 @@
                                     <?php foreach ($assessDisplay as $index => $a): ?>
                                         <tr>
                                             <td><b><?= 'Attempt ' . ($index + 1) ?></b></td>
-                                            <td><?= $a->earned_points . ' / ' . $longquiz->number_of_questions ?></td>
+                                            <td><?= $a->earned_points . ' / ' . $activity->quiz->number_of_questions ?></td>
                                             <td><?= $a->score_percentage ?>%</td>
                                             <td><?= date('F j, Y h:i A', strtotime($a->date_taken)) ?></td>
                                         </tr>
@@ -198,7 +191,7 @@
             </table>
 
         </div>
-        <?php include('partials/right-side-notifications.php'); ?>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php'; ?>
     </div>
 </body>
 </html>

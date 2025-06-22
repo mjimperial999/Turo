@@ -1,12 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $module->module_name; ?> | Turo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
-    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+<?php 
+$title = $module->module_name;
+include __DIR__ . '/../partials/head.php';  ?>
     <style>
         table,
         th,
@@ -48,12 +43,8 @@
 </head>
 
 <body>
-    <?php
-
-    use Carbon\Carbon;
-
-    include('partials/navibar.php');
-    ?>
+    <?php 
+    include __DIR__ . '/../partials/nav.php'; ?>
 
     <div class="home-tutor-screen">
         <div class="home-tutor-main">
@@ -91,12 +82,12 @@
                             </div>
                             <div class="module-content">
                                 <?php foreach ($module->activities->where('activity_type', 'LECTURE') as $activity) {
-                                    include('partials/time-lock-check.php');
-                                    include('partials/lecture-hero.php');
+                                    include __DIR__ . '/../partials/time-lock-check.php'; 
+                                    include __DIR__ . '/../partials/lecture-hero.php'; 
                                 }; ?>
                                 <?php foreach ($module->activities->where('activity_type', 'TUTORIAL') as $activity) {
-                                    include('partials/time-lock-check.php');
-                                    include('partials/tutorial-hero.php');
+                                    include __DIR__ . '/../partials/time-lock-check.php'; 
+                                    include __DIR__ . '/../partials/tutorial-hero.php'; 
                                 }; ?>
                             </div>
                         </div>
@@ -121,8 +112,8 @@
                             <div class="module-content">
                                 <?php foreach ($module->activities->where('activity_type', 'QUIZ') as $activity): {
                                         if ($activity->quiz->quiz_type_id == 2): {
-                                                include('partials/time-lock-check.php');
-                                                include('partials/quiz-practice-hero.php');
+                                                include __DIR__ . '/../partials/time-lock-check.php'; 
+                                                include __DIR__ . '/../partials/quiz-practice-hero.php'; 
                                             }
                                         endif;
                                     };
@@ -150,8 +141,8 @@
                             <div class="module-content">
                                 <?php foreach ($module->activities->where('activity_type', 'QUIZ') as $activity): {
                                         if ($activity->quiz->quiz_type_id == 1): {
-                                                include('partials/time-lock-check.php');
-                                                include('partials/quiz-short-hero.php');
+                                                include __DIR__ . '/../partials/time-lock-check.php'; 
+                                                include __DIR__ . '/../partials/quiz-short-hero.php'; 
                                             };
                                         endif;
                                     };
@@ -163,7 +154,6 @@
             </table>
 
         </div>
-        <?php include('partials/right-side-notifications.php'); ?>
+        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
     </div>
-</body>
-</html>
+<?php include __DIR__ . '/../partials/footer.php';  ?>
