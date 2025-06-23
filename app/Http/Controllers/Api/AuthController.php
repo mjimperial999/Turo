@@ -28,8 +28,9 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        elseif ($user && Hash::check($request->password, $user->password_hash)){
-            return (new UsersResource($user));
+        else {
+            return (new UsersResource($user))
+            ->additional(['token' => $token]);
         }
 
         return response()->json(['message' => 'Code block did not run :/'], 401);
