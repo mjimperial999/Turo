@@ -12,7 +12,6 @@ Route::prefix('v1')->group(function () {
     // ── 🔐 Protected endpoints (require Bearer token) ─────────────
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('get-courses', [MobileModelController::class, 'getCourses']);
-        Route::get('get-course-image', [MobileModelController::class, 'getCourseImage']);
         Route::get('course', [MobileModelController::class, 'course']);
         Route::get('modules', [MobileModelController::class, 'modules']);
         Route::get('activities', [MobileModelController::class, 'activities']);

@@ -29,6 +29,8 @@ class AuthController extends Controller
         }
 
         else {
+            $token = $user->createToken('mobile')->plainTextToken;
+            
             return (new UsersResource($user))
             ->additional(['token' => $token]);
         }
