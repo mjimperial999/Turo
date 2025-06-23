@@ -66,7 +66,7 @@ class MainController extends Controller
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
-        $courses = Courses::all();
+        $courses = Courses::with('image')->get();
 
         return view('student.dashboard', compact('courses', 'users'));
     }

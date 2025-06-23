@@ -16,6 +16,7 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
+        Session::flush();
 
         $user = Users::where('email', $request->email)->first();
 

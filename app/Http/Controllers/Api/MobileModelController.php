@@ -20,11 +20,11 @@ class MobileModelController extends Controller
     }
 
     public function getCourses()
-{
-    return CoursesResource::collection(
-        Courses::with('image')->get()
-    );
-}
+    {
+        return CoursesResource::collection(
+            Courses::with('image')->get()
+        );
+    }
 
     public function course()
     {
