@@ -7,16 +7,31 @@ use App\Models\Module;
 use App\Http\Resources\ModuleResource;
 use App\Models\Users;
 use App\Http\Resources\UsersResource;
+use App\Models\Courses;
+use App\Http\Resources\CoursesResource;
+use App\Models\CourseImage;
+use App\Http\Resources\CoursesImageResource;
 
 class MobileModelController extends Controller
 {
-    public function users()
-    {
-        return UsersResource::collection(Users::all());
-    }
-
     public function modules()
     {
         return ModuleResource::collection(Module::all());
+    }
+
+    public function getCourses()
+    {
+        return CoursesResource::collection(Courses::all());
+    }
+
+    public function getCourseimage()
+    {
+
+        return CoursesImageResource::collection(CourseImage::all());
+    }
+
+    public function course()
+    {
+        return CoursesResource::collection(Users::all());
     }
 }

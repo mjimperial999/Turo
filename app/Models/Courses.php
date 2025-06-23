@@ -25,6 +25,11 @@ class Courses extends Model
         return $this->hasMany(Modules::class, 'course_id');
     }
 
+    public function image()
+    {
+        return $this->hasOne(CourseImage::class, 'course_id');
+    }
+
     public function longquizzes()
     {
         return $this->hasMany(LongQuizzes::class, 'course_id');
