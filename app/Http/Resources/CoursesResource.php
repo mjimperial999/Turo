@@ -16,7 +16,8 @@ class CoursesResource extends JsonResource
             'course_picture' => $this->course_picture,
             'course_name' => $this->course_name,
             'start_date' => $this->start_date,
-            'end_date' => $this->end_date
+            'end_date' => $this->end_date,
+            'image' =>  $this->image
         ];
     }
 }
