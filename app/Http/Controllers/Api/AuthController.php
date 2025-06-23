@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 
+use App\Models\Users;
 use App\Http\Resources\UsersResource;
 
 class AuthController extends Controller
@@ -30,7 +31,7 @@ class AuthController extends Controller
         // 4️⃣  Mint a Sanctum token labelled “mobile”
         $token = $user->createToken('mobile')->plainTextToken;
 
-        return (new UsersResource($user))
+        return UsersResource::collection(Users::all())
         ->additional(['token' => $token]);
     }
 }
