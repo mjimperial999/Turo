@@ -28,7 +28,16 @@ class AuthController extends Controller
         // 4️⃣  Mint a Sanctum token labelled “mobile”
         $token = $user->createToken('mobile')->plainTextToken;
 
-        // 5️⃣  Return token
-        return response()->json(['token' => $token], 200);
+        return response()->json([
+            'token'                     => $token,
+            'user_id'                   => $user->user_id,                    // note: your column is user_id
+            'first_name'                => $user->first_name,
+            'last_name'                 => $user->last_name,
+            'role_id'                   => $user->role_id,
+            'requires_password_change'  => $user->requires_password_change,
+            'agreed_to_terms'           => $user->agreed_to_terms,
+            'email'                     => $user->email,
+            'image'                     => $user->profile_pic,                // raw base64 or URL
+        ], 200);
     }
 }
