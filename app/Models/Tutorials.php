@@ -19,6 +19,7 @@ class Tutorials extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'activity_id',
         'content_type_id',
         'video_url'
     ];

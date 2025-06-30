@@ -20,6 +20,7 @@ class Activities extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'activity_id',
         'module_id',
         'activity_type',
         'activity_name',

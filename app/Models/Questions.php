@@ -19,6 +19,8 @@ class Questions extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'question_id',
+        'question_text',
         'question_type_id',
         'score',
         'activity_id',

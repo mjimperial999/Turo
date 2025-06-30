@@ -19,6 +19,7 @@ class LongQuizzes extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'long_quiz_id',
         'course_id',
         'long_quiz_name',
         'long_quiz_instructions',
@@ -33,6 +34,17 @@ class LongQuizzes extends Model
 
     public function longquizquestions()
     {
-        return $this->hasMany(LongQuizQuestions::class, 'long_quiz_id');
+        return $this->hasMany(LongQuizQuestions::class, 'long_quiz_id', 'long_quiz_id');
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(LongQuizAssessmentResult::class, 'long_quiz_id', 'long_quiz_id');
+    }
+
+    public function keptResult()
+    {
+        return $this->hasOne(LongQuizAssessmentResult::class,'long_quiz_id','long_quiz_id')         
+            ->where('is_kept', 1);
     }
 }

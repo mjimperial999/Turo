@@ -52,6 +52,141 @@ include __DIR__ . '/../partials/head.php'; ?>
     $minutes = floor($seconds / 60);
     $fTimeLimit = sprintf("%2d", $minutes);
     ?>
+    <div class="screen">
+        <div class="spacing main">
+            <div class="content-container box-page">
+                <div class="mini-navigation">
+                    <div class="text title">
+                        <h6><a href="/home-tutor">Courses</a></h6>
+                        <div class="line"></div>
+                    </div>
+                    <div class="divider">
+                        <h6> > </h6>
+                    </div>
+                    <div class="text title">
+                        <h6><a href="/home-tutor/course/<?= $course->course_id ?>"><?= $course->course_name ?></a></h6>
+                        <div class="line"></div>
+                    </div>
+                    <div class="divider">
+                        <h6> > </h6>
+                    </div>
+                    <div class="text title">
+                        <h6>(SCREENER) <?= $screening->screening_name ?></a></h6>
+                        <div class="line active"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-container box-gold">
+
+                <div class="content padding">
+                    <div class="header logo-sub">
+                        <div class="logo-and-title">
+                            <div class="logo">
+                                <img class="svg" src="/icons/screener.svg" width="50em" height="auto" />
+                            </div>
+                            <div class="text title">
+                                <h4><?= $screening->screening_name ?></h4>
+                                <h6>Screening Exam</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-container screening-exam">
+                <div class="content padding">
+                    <?php if (session()->has('error')): ?>
+                        <div class="alert alert-danger alert-message" role="alert">
+                            <?= session('error') ?>
+                        </div>
+                    <?php elseif (session()->has('success')): ?>
+                        <div class="alert alert-success alert-message" role="alert">
+                            <?= session('success') ?>
+                        </div>
+                    <?php endif; ?>
+                    <div class="module-section quiz-background padding">
+                        <div class="module-section quiz-header">
+                            <div class="quiz-description">
+                                <div class="quiz-categories-top">
+                                    <div class="quiz-categories">
+                                        <div class="quiz-categories-desc">
+                                            <p class="description"><b>QUESTIONS: </b><?= $screening->number_of_questions ?></p>
+                                            <p class="description"><b>TIME LIMIT: </b><?= $fTimeLimit ?> min/s</p>
+                                        </div>
+                                    </div>
+                                    <div class="quiz-categories">
+                                        <div class="quiz-categories-desc">
+                                            <p class="description"><b>OPENS: </b><?= $formattedUnlockDate ?></p>
+                                            <p class="description"><b>DUE: </b><?= $formattedDeadline ?></p>
+                                        </div>
+                                    </div>
+                                    <br>
+                                </div>
+                                <hr class="divider-hr">
+                                <p class="description">Instructions: <?= $screening->screening_instructions ?></p>
+                            </div>
+                            <div class="quiz-graphics">
+                                <div class="percentage-container">
+                                    <div class="percent" style="--clr:<?= $color ?>; --num:<?= $circle_display ?>">
+                                        <svg>
+                                            <circle cx="70" cy="70" r="70"></circle>
+                                            <circle cx="70" cy="70" r="70"></circle>
+                                        </svg>
+                                    </div>
+                                    <div class="percent-number">
+                                        <h1><?= $percentage_display ?><span>%</span></h1>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="module-section quiz-button-section">
+                            <form method="POST"
+                                action="/home-tutor/course/<?= $course->course_id ?>/<?= $screening->screening_id ?>/start">
+                                <?= csrf_field() ?>
+                                <button class="quiz-button activity-button screening-button">Start&nbsp;Exam</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-container screening-results">
+                <div class="content padding">
+                    <div class="summary-goto">
+                        <?php if (!$latestResult): ?>
+                            <div class="summary-icon-none"><img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
+                                No attempts yet.</div>
+                        <?php else: ?>
+                            <h5 class="description">View Your Results Here:</h5>
+                            <div class="activity">
+                                <a class="activity-link" href="/home-tutor/course/<?= $course->course_id ?>/<?= $screening->screening_id ?>/summary">
+                                    <div class="activity-button screening-resources unlocked">
+                                        <div class="activity-logo">
+                                            <img class="svg" src="/icons/bulb.svg" width="30em" height="auto" />
+                                        </div>
+                                        <div class="activity-name">SUMMARY</div>
+                                    </div>
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="spacing side">
+            <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+        </div>
+
+    </div>
+    <?php include __DIR__ . '/../partials/footer.php'; ?>
+</body>
+
+</html>
+
+<?php /*    
 
     <div class="home-tutor-screen">
         <div class="home-tutor-main">
@@ -163,3 +298,6 @@ include __DIR__ . '/../partials/head.php'; ?>
         <?php include __DIR__ . '/../partials/right-side-notifications.php'; ?>
     </div>
     <?php include __DIR__ . '/../partials/footer.php'; ?>
+
+
+    */ ?>

@@ -29,6 +29,111 @@ include __DIR__ . '/../partials/head.php';
 <body>
     <?php include __DIR__ . '/../partials/nav.php'; ?>
 
+    <div class="screen">
+        <div class="spacing main">
+            <div class="content-container box-page">
+                <div class="mini-navigation">
+                    <div class="text title">
+                        <h6><a href="/home-tutor">Courses</a></h6>
+                        <div class="line"></div>
+                    </div>
+                    <div class="divider">
+                        <h6> > </h6>
+                    </div>
+                    <div class="text title">
+                        <h6><a href="/home-tutor/course/<?= $course->course_id ?>"><?= $course->course_name ?></a></h6>
+                        <div class="line"></div>
+                    </div>
+                    <div class="divider">
+                        <h6> > </h6>
+                    </div>
+                    <div class="text title">
+                        <h6><a href="/home-tutor/course/<?= $course->course_id ?>/<?= $screening->screening_id ?>">(SCREENER) <?= $screening->screening_name ?></a></h6>
+                        <div class="line"></div>
+                    </div>
+                    <div class="divider">
+                        <h6> > </h6>
+                    </div>
+                    <div class="text title">
+                        <h6><a href="/home-tutor/course/<?= $course->course_id ?>/<?= $screening->screening_id ?>/summary">SUMMARY: <?= $screening->screening_name ?></a></h6>
+                        <div class="line"></div>
+                    </div>
+                    <div class="divider">
+                        <h6> > </h6>
+                    </div>
+                    <div class="text title">
+                        <h6>Resource: <?= $resources[0]->title ?? 'Learning Materials' ?></a></h6>
+                        <div class="line active"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-container box-page">
+                <div class="content heading padding box-gray">
+                    <div class="header logo">
+                        <div class="logo-and-title">
+                            <div class="logo">
+                                <img class="svg" src="/icons/bulb.svg" width="50em" height="auto" />
+                            </div>
+                            <div class="text title">
+                                <h4><?= htmlspecialchars($firstTitle) ?></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-container box-page">
+                <div class="content padding">
+                    <?php
+                    // helper converts a YouTube watch URL to embed src 
+                    function toEmbedUrl(string $url): string
+                    {
+                        if (preg_match('/watch\\?v=([a-zA-Z0-9_-]+)/', $url, $m)) {
+                            return 'https://www.youtube.com/embed/' . $m[1];
+                        }
+                        return $url;
+                    }
+                    ?>
+
+                    <?php foreach ($resources as $res): ?>
+
+
+                        <?php if (!empty($res->description)): ?>
+                            <p class="description italic">
+                                <?= nl2br(htmlspecialchars($res->description)) ?>
+                            </p>
+                            <hr>
+                        <?php endif; ?>
+
+                        <?php /* ----------- VIDEO --------------  */ ?>
+                        <?php if (!empty($res->video_url)): ?>
+                            <?php $embed = toEmbedUrl($res->video_url); ?>
+                            <p class="description">
+                                <a class="video-link" target="_blank" rel="noopener noreferrer"
+                                    href="<?= htmlspecialchars($res->video_url) ?>">
+                                    Watch on YouTube
+                                </a>
+                            </p>
+                            <iframe class="video-placeholder" width="100%" height="500em"
+                                src="<?= htmlspecialchars($embed) ?>" allowfullscreen></iframe>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="spacing side">
+            <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+        </div>
+
+    </div>
+    <?php include __DIR__ . '/../partials/footer.php'; ?>
+</body>
+
+</html>
+    <?php /*
     <div class="home-tutor-screen">
         <div class="home-tutor-main">
 
@@ -64,7 +169,7 @@ include __DIR__ . '/../partials/head.php';
                     </tr>
 
                     <?php
-                    /* helper converts a YouTube watch URL to embed src */
+                    /* helper converts a YouTube watch URL to embed src 
                     function toEmbedUrl(string $url): string
                     {
                         if (preg_match('/watch\\?v=([a-zA-Z0-9_-]+)/', $url, $m)) {
@@ -84,7 +189,7 @@ include __DIR__ . '/../partials/head.php';
                                     </p><hr>
                                 <?php endif; ?>
 
-                                <?php /* ----------- VIDEO -------------- */ ?>
+                                <?php /* ----------- VIDEO --------------  ?>
                                 <?php if (!empty($res->video_url)): ?>
                                     <?php $embed = toEmbedUrl($res->video_url); ?>
                                     <p class="description">
@@ -97,7 +202,7 @@ include __DIR__ . '/../partials/head.php';
                                         src="<?= htmlspecialchars($embed) ?>" allowfullscreen></iframe>
                                 <?php endif; ?>
 
-                                <?php /* ----------- PDF --------------- */ ?>
+                                <?php /* ----------- PDF ---------------  ?>
                                 <?php if (!empty($res->pdf_blob)): ?>
                                     <?php
                                     $mime = 'application/pdf';
@@ -108,7 +213,7 @@ include __DIR__ . '/../partials/head.php';
                                         src="<?= $dataUrl ?>"></iframe>
                                 <?php endif; ?>
 
-                                <?php /* ----------- DESCRIPTION -------- */ ?>
+                                <?php /* ----------- DESCRIPTION --------  ?>
 
 
                             </td>
@@ -123,3 +228,7 @@ include __DIR__ . '/../partials/head.php';
     </div>
 
     <?php include __DIR__ . '/../partials/footer.php'; ?>
+</body>
+</hmtl>
+
+*/ ?>

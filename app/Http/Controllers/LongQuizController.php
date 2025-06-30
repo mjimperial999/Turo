@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+
+use App\Services\StudentAnalytics;
+
 use App\Models\LongQuizzes;
 use App\Models\AssessmentResult;
 use App\Models\LongQuizAssessmentResult;
@@ -14,40 +17,43 @@ use Carbon\Carbon;
 
 class LongQuizController extends Controller
 {
-    public function computeStudentAnalytics($studentId)
+    /*
+    public function computeStudentAnalytics($studentId, $courseId)
     {
-    // Short quiz data (with module_id)
-    $short = AssessmentResult::where('student_id', $studentId)->where('is_kept', 1);
-    
-    // Long quiz data (no module_id)
-    $long = LongQuizAssessmentResult::where('student_id', $studentId)->where('is_kept', 1)
-        ->select('score_percentage', 'earned_points');
+        // Short quiz data (with module_id)
+        $short = AssessmentResult::where('student_id', $studentId)->where('is_kept', 1);
 
-    // Averages
-    $shortAvg = $short->avg('score_percentage');
-    $longAvg = $long->avg('score_percentage');
+        // Long quiz data (no module_id)
+        $long = LongQuizAssessmentResult::where('student_id', $studentId)->where('is_kept', 1)
+            ->select('score_percentage', 'earned_points');
 
-    $shortEarned = $short->sum('earned_points');
-    $longEarned = $long->sum('earned_points');
+        // Averages
+        $shortAvg = $short->avg('score_percentage');
+        $longAvg = $long->avg('score_percentage');
 
-    $shortCount = $short->count();
-    $longCount = $long->count();
+        $shortEarned = $short->sum('earned_points');
+        $longEarned = $long->sum('earned_points');
 
-    $combinedTotal = $short->sum('score_percentage') + $long->sum('score_percentage');
-    $combinedCount = $shortCount + $longCount;
-    $combinedAvg = $combinedCount > 0 ? $combinedTotal / $combinedCount : 0;
+        $shortCount = $short->count();
+        $longCount = $long->count();
 
-    $totalPoints = ($shortEarned + $longEarned) * 10;
+        $combinedTotal = $short->sum('score_percentage') + $long->sum('score_percentage');
+        $combinedCount = $shortCount + $longCount;
+        $combinedAvg = $combinedCount > 0 ? $combinedTotal / $combinedCount : 0;
 
-    StudentProgress::updateOrCreate(
-        ['student_id' => $studentId],
-        [
-            'average_score' => $combinedAvg,
-            'score_percentage' => $combinedAvg,
-            'total_points' => $totalPoints,
-        ]
-    );
-}
+        $totalPoints = ($shortEarned + $longEarned) * 10;
+
+        StudentProgress::updateOrCreate(
+            ['student_id' => $studentId],
+            [
+                'course_id'  => $courseId,
+                'average_score' => $combinedAvg,
+                'score_percentage' => $combinedAvg,
+                'total_points' => $totalPoints,
+            ]
+        );
+    } */
+
 
     public function startQuiz($courseID, $longQuizID)
     {
@@ -63,7 +69,7 @@ class LongQuizController extends Controller
         Session::put("lq_{$longQuizID}_deadline", $deadline);
         Session::put("lq_{$longQuizID}_in_progress", true);
 
-        return redirect("/home-tutor/long-quiz/{$courseID}/{$longQuizID}/s/q/0");
+        return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}/s/q/0");
     }
 
     public function showQuestion($courseID, $longQuizID, $index)
@@ -73,44 +79,41 @@ class LongQuizController extends Controller
         $questionIDs = Session::get("lq_{$longQuizID}_questions");
         $deadline = Session::get("lq_{$longQuizID}_deadline");
 
-
-        // Get number of attempts the student has taken
         $currentAttempts = LongQuizAssessmentResult::where('student_id', $studentID)
             ->where('long_quiz_id', $longQuizID)
             ->count();
 
-        // Get the max number of allowed attempts for the quiz
         $maxAttempts = $longquiz->number_of_attempts;
         if ($currentAttempts >= $maxAttempts) {
-            return redirect("/home-tutor/long-quiz/{$courseID}/{$longQuizID}")
+            return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}")
                 ->with('error', 'You have reached the maximum number of quiz attempts.');
         }
 
 
         if (!Session::get("lq_{$longQuizID}_in_progress")) {
-            return redirect("/home-tutor/long-quiz/{$courseID}/{$longQuizID}")
+            return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}")
                 ->with('error', 'Quiz has already ended or you accessed an invalid link.');
         }
 
-        // 🔒 Protection: No session = Not taking quiz
+        // No session / Not taking quiz
         if (!$questionIDs || !$deadline) {
-            return redirect("/home-tutor/long-quiz/{$courseID}/{$longQuizID}")
+            return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}")
                 ->with('error', 'You must start the quiz first.');
         }
 
-        // 🔒 Protection: Time already expired
+        // Timer expired
         if (Carbon::now('Asia/Manila')->gt(Carbon::parse($deadline))) {
             Session::forget("lq_{$longQuizID}_questions");
             Session::forget("lq_{$longQuizID}_answers");
             Session::forget("lq_{$longQuizID}_deadline");
 
-            return redirect("/home-tutor/long-quiz/{$courseID}/{$longQuizID}")
+            return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}")
                 ->with('error', 'Your quiz session has expired.');
         }
 
-        // 🔒 Protection: Invalid index (out of bounds)
+        // Invalid index (out of bounds)
         if (!isset($questionIDs[$index])) {
-            return redirect("/home-tutor/long-quiz/{$courseID}/{$longQuizID}")
+            return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}")
                 ->with('error', 'Invalid question number.');
         }
 
@@ -146,12 +149,12 @@ class LongQuizController extends Controller
         }
 
         if (!$questionIDs || !$deadline) {
-            return redirect("/home-tutor/long-quiz/{$courseID}/{$longQuizID}")
+            return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}")
                 ->with('error', 'Invalid quiz session.');
         }
 
         if ($nextIndex < count($questionIDs)) {
-            return redirect("/home-tutor/long-quiz/{$courseID}/{$longQuizID}/s/q/{$nextIndex}");
+            return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}/s/q/{$nextIndex}");
         } else {
             $correct = 0;
             foreach ($answers as $i => $selectedOptionID) {
@@ -187,9 +190,9 @@ class LongQuizController extends Controller
             Session::forget("lq_{$longQuizID}_deadline");
             Session::forget("lq_{$longQuizID}_in_progress");
 
-            $this->computeStudentAnalytics($studentID);
+            app(StudentAnalytics::class)->update($studentID, $courseID);
 
-            return redirect("/home-tutor/long-quiz/{$courseID}/{$longQuizID}/summary")
+            return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}/summary")
                 ->with('success', 'Quiz has been submitted.');
         }
     }

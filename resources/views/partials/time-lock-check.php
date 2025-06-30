@@ -9,7 +9,7 @@ $deadlineTimestamp = strtotime($deadline);
 
 $formattedUnlockDate = date("F j, Y h:i A", $unlockTimestamp);
 $formattedDeadline = date("F j, Y h:i A", $deadlineTimestamp);
-$isAvailable = $unlock->lte($now) && ($deadline && $deadline->gte($now));
+$isAvailable = $unlock->lte($now) && (($deadline && $deadline->gte($now) || ($deadline === null)));
 $description;
     if ($unlock->lte($now)):{
         $description = "Locked at ". $formattedDeadline;

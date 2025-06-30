@@ -8,7 +8,7 @@ class LongQuizQuestions extends Model
 {
     public function longquiz()
     {
-        return $this->belongsTo(Quizzes::class, 'long_quiz_id');
+        return $this->belongsTo(LongQuizzes::class,'long_quiz_id','long_quiz_id'); 
     }
 
     protected $table = 'longquiz_question'; // Name of The Table
@@ -19,6 +19,8 @@ class LongQuizQuestions extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'long_quiz_question_id',
+        'long_quiz_id',
         'question_text',
         'question_image',
         'question_type_id',
@@ -27,11 +29,11 @@ class LongQuizQuestions extends Model
 
     public function longquizoptions()
     {
-        return $this->hasMany(LongQuizOptions::class, 'long_quiz_question_id');
+        return $this->hasMany(LongQuizOptions::class,'long_quiz_question_id','long_quiz_question_id');
     }
 
     public function longquizimage()
     {
-        return $this->hasOne(LongQuizQuestionImages::class, 'long_quiz_question_id');
+        return $this->hasOne(LongQuizQuestionImages::class,'long_quiz_question_id','long_quiz_question_id');
     }
 }

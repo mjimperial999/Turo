@@ -10,8 +10,10 @@ class ScreeningResultAnswer extends Model
     public    $timestamps   = false;
 
     protected $fillable = [
-        'result_id', 'screening_question_id',
-        'screening_option_id', 'is_correct'
+        'result_id',
+        'screening_question_id',
+        'screening_option_id',
+        'is_correct',
     ];
 
     public function result()

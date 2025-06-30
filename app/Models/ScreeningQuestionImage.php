@@ -8,9 +8,12 @@ class ScreeningQuestionImage extends Model
     protected $table      = 'screeningquestion_image';
     protected $primaryKey = 'screening_question_image_id';
     public    $incrementing = true;
+    public $timestamps   = false; 
 
     protected $fillable = [
-        'screening_question_image_id', 'screening_question_id', 'image'
+        'screening_question_image_id',
+        'screening_question_id',
+        'image'
     ];
 
     public function question()

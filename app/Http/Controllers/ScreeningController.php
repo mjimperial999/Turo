@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
+use App\Services\StudentAnalytics;
+
 use App\Models\Users;
+use App\Models\Courses;
 use App\Models\Screening;
 use App\Models\ScreeningQuestion;
 use App\Models\ScreeningOption;
@@ -21,7 +24,7 @@ class ScreeningController extends Controller
     /*--------------------------------------------------------
     | LIST
     *-------------------------------------------------------*/
-    public function screeningPage(string $courseId, string $screeningId)
+    public function screeningPage(Courses $course, $screeningId)
     {
         $userId = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userId);
@@ -35,7 +38,7 @@ class ScreeningController extends Controller
 
         return view('student.screening', [
             'users' => $users,
-            'courseId'  => $courseId,
+            'course'  => $course,
             'screening' => $screening,
             'latestResult' => $latestResult,
         ]);
@@ -283,7 +286,7 @@ class ScreeningController extends Controller
     /*--------------------------------------------------------
     | SUMMARY
     *-------------------------------------------------------*/
-    public function summary($courseId, $screeningId)
+    public function summary(Courses $course, $screeningId)
     {
         $studentId = session()->get('user_id');
         $users = Users::with('image')->findOrFail($studentId);
@@ -363,7 +366,7 @@ class ScreeningController extends Controller
 
         return view('student.screening-summary', [
             'users'       => $users,
-            'courseId'    => $courseId,
+            'course'    => $course,
             'screening'   => $screening,
             'screeningId' => $screeningId,
             'screening_name'  => $screeningName,

@@ -15,6 +15,7 @@ class QuestionImages extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'q_image_id',
         'question_id',
         'image',
     ];

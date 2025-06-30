@@ -15,6 +15,7 @@ class ModuleImage extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'image_id',
         'module_id',
         'image',
     ];

@@ -11,7 +11,7 @@
         
     elseif ($activity->quiz->quiz_type_id == 2):{
         $quiz_type = "Practice Test";
-        $class = "practice";
+        $class = "practice-quiz";
         $buttonClass = "quiz-practice-activity";
     };
 

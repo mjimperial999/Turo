@@ -83,7 +83,7 @@ include __DIR__ . '/../partials/head.php'; ?>
     }
 
     #quiz-timer {
-        color:rgb(91, 91, 91);
+        color: rgb(91, 91, 91);
     }
 
     .quiz-interface-question {
@@ -182,6 +182,95 @@ include __DIR__ . '/../partials/head.php'; ?>
 <body>
     <?php
     include __DIR__ . '/../partials/nav.php';
+
+    /*
+    $seconds = $longquiz->time_limit;
+    $minutes = floor($seconds / 60);
+    $fTimeLimit = sprintf("%2d", $minutes); */
+    ?>
+
+    <div class="screen">
+        <div class="spacing main">
+            <div class="content-container box-gold">
+
+                <div class="content padding">
+                    <div class="header logo-sub">
+                        <div class="logo-and-title">
+                            <div class="logo">
+                                <img class="svg" src="/icons/screener.svg" width="50em" height="auto" />
+                            </div>
+                            <div class="text title">
+                                <h4><?= $screening_name ?><h4>
+                                <h6>Screening Exam</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br>
+
+            <div class="content-container box-page">
+                <div class="content">
+                    <div class="module-section quiz-interface quiz-background screening-exam">
+                        <div class="quiz-interface-header">
+                            <div class="quiz-interface-header-question-number">
+                                <p>QUESTION <?= $index + 1 ?></p>
+                            </div>
+                            <div class="quiz-interface-header-right-side">
+                                <div class="quiz-interface-header-question-total">
+                                    <p>Q<?= $index + 1 ?> OF <?= $total ?></p>
+                                    <p>Time Left: <span id="quiz-timer">--:--</span></p>
+                                </div>
+                                <div class="quiz-interface-header-logo">
+                                    <img class="svg" src="/icons/screener.svg" width="50em" height="auto" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="quiz-interface-question">
+                            <p><?= htmlspecialchars($question->question_text) ?></p>
+                            <?php
+                            if (empty($question->image?->image)) {;
+                            } else {
+                                $blobData = $question->image?->image;
+                                $mimeType = getMimeTypeFromBlob($blobData);
+                                $base64Image = base64_encode($blobData);
+                                $imageURL = "data:$mimeType;base64,$base64Image";
+                                echo '<img src="' . $imageURL . '" width="250em" height="auto" />';
+                            }
+                            ?>
+                        </div>
+                        <form class="quiz-interface-forms" method="POST" action="/home-tutor/course/<?= $courseId ?>/<?= $screeningID ?>/q/<?= $index ?>">
+                            <?= csrf_field() ?>
+                            <div class="quiz-interface-answers">
+                                <?php
+                                $opts = $question->options->shuffle();
+                                foreach ($opts as $option): ?>
+                                    <div class="radio-button radio-screener">
+                                        <input type="radio" id="opt<?= $option->screening_option_id ?>" name="answer" value="<?= $option->screening_option_id ?>" required>
+                                        <label for="opt<?= $option->screening_option_id ?>"><?= $option->option_text . ' - ' . $option->is_correct ?></label>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <button type="submit" class="quiz-interface-submit screening-button unlocked">
+                                <?= ($index + 1 < $total) ? 'NEXT' : 'SUBMIT' ?>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="spacing side">
+            <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+        </div>
+
+    </div>
+    <?php include __DIR__ . '/../partials/footer.php'; ?>
+</body>
+
+<?php /*
+<body>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
     ?>
 
     <div class="home-tutor-screen">
@@ -259,17 +348,9 @@ include __DIR__ . '/../partials/head.php'; ?>
     <footer class="text-center" style="padding:1rem 0;margin-top:2rem;background:#f3f4f6">
         <small>&copy; <?= date('Y'); ?> Turo. All rights reserved.</small>
     </footer>
-</body>
+</body> */ ?>
 <script>
-    const nav = document.getElementById('primary-navigation');
-    const toggle = document.querySelector('.nav-toggle');
 
-    toggle.addEventListener('click', () => {
-        const isOpen = nav.getAttribute('data-visible') === 'true';
-        nav.setAttribute('data-visible', String(!isOpen));
-        toggle.setAttribute('aria-expanded', String(!isOpen));
-    });
-    
     /* ---------- Timer ---------- */
     const deadline = <?= $deadlineTs ?> * 1000; // ms
     const cdSpan = document.getElementById('quiz-timer');

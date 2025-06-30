@@ -9,10 +9,14 @@ class ScreeningQuestion extends Model
     protected $primaryKey = 'screening_question_id';
     public    $incrementing = false;
     protected $keyType    = 'string';
+    public $timestamps   = false; 
 
     protected $fillable = [
-        'screening_question_id', 'screening_topic_id',
-        'question_text', 'question_type_id', 'score'
+        'screening_question_id',
+        'screening_topic_id',
+        'question_text',
+        'question_type_id',
+        'score',
     ];
 
     public function topic()

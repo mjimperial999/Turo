@@ -1,0 +1,171 @@
+[Main Container that Holds the Content Areas] replace main with side for right side
+<div class="spacing main">
+    <div class="content-container box-page">
+
+    </div>
+</div>
+
+[]
+<div class="content-container box-page">
+    <div class="content padding">
+
+    </div>
+</div>
+
+[Mini Navigation]
+<div class="content-container box-page">
+    <div class="mini-navigation">
+        <div class="text title">
+            <h6><a href="/home-tutor">Courses</a></h6>
+            <div class="line"></div>
+        </div>
+        <div class="divider">
+            <h6> > </h6>
+        </div>
+        <div class="text title">
+            <h6> Modules </h6>
+            <div class="line active"></div>
+        </div>
+    </div>
+</div>
+
+[Heading]
+<div class="content-container">
+    <div class="content padding heading box-gray">
+
+        <div class="header">
+            <div class="text title">
+                <h4> ----- </h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+[Content Space]
+<div class="content padding">
+
+</div>
+
+[IF You Want Seperate Boxes (Shadowed) (Entire Box Shadowed)]
+<div class="content-container box-page">
+    <div class="content">
+
+    </div>
+</div>
+
+<div class="content-container box-page">
+    <div class="content">
+
+    </div>
+</div>
+
+[Header With Logo and Subtitle]
+<div class="header logo-sub">
+    <div class="logo-and-title">
+        <div class="logo">
+            <img class="svg" src="/icons/ ---- .svg" width="50em" height="auto" />
+        </div>
+        <div class="text title">
+            <h4> ----- </h4>
+            <h6> ----- </h6>
+        </div>
+    </div>
+</div>
+<hr class="divider-hr">
+
+[Header Title Only]
+<div class="header">
+    <div class="text title">
+        <h4> ----- </h4>
+    </div>
+</div>
+<hr class="divider-hr">
+
+[Header Without Subtitle]
+<div class="header logo">
+    <div class="logo-and-title">
+        <div class="logo">
+            <img class="svg" src="/icons/----.svg" width="50em" height="auto" />
+        </div>
+        <div class="text title">
+            <h4> ----- </h4>
+        </div>
+    </div>
+</div>
+<hr class="header-hr">
+
+[Header Without Logo]
+<div class="header">
+    <div class="text title">
+        <h4> ----- </h4>
+    </div>
+    <div class="subtitle">
+        <h6> ----- </h6>
+    </div>
+</div>
+<hr class="header-hr">
+
+[Nothing Graphic]
+<div class="no-items">
+    <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
+    No --- available for this course.
+</div>
+
+
+[Empty Space]
+<div class="modules-flex-box">
+    <a href="/home-tutor/long-quiz/'. $course->course_id . '/' . $longquiz->long_quiz_id . '">
+        <div class="modules-box unlocked">
+            <div class="header logo">
+                <div class="logo-and-title">
+                    <div class="logo">
+                        <img class="svg" src="/icons/long-quiz.svg" width="50em" height="auto" />
+                    </div>
+                    <div class="text title">
+                        <h4>
+                            <?= $longquiz->long_quiz_name =></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </a>
+    <div></div>
+</div>
+
+<div class="longquiz-flex-box">
+    <a href="/home-tutor/long-quiz/'. $course->course_id . '/' . $longquiz->long_quiz_id . '">
+        <div class="longquiz-box">
+            <div class="longquiz-title">
+                <div class="logo">
+                    <img class="svg" src="/icons/long-quiz.svg" width="42em" height="auto" />
+                </div>
+                <div class="text title">
+                    <h6>' . $longquiz->long_quiz_name . '</h6>
+                </div>
+            </div>
+            <div class="longquiz-score">
+                <div class="text title">
+                    <h6>' . $percentage . '</h6>
+                </div>
+            </div>
+        </div>
+    </a>
+</div>
+
+<div class="longquiz-flex-box locked">
+        <div class="longquiz-box">
+            <div class="longquiz-title">
+                <div class="logo">
+                    <img class="svg" src="/icons/long-quiz.svg" width="42em" height="auto" />
+                </div>
+                <div class="text title">
+                    <h6>' . $longquiz->long_quiz_name . ' (LOCKED)</h6>
+                </div>
+            </div>
+            <div class="longquiz-score">
+                <div class="text title">
+                    <h6>' . $percentage . '</h6>
+                </div>
+            </div>
+        </div>
+</div>

@@ -6,11 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Courses extends Model
 {
-    protected $table = 'course'; // Name of The Table
-    protected $primaryKey = 'course_id'; // Name of The Primary Key
-    public $timestamps = false;
+    protected $table = 'course';
+    protected $primaryKey = 'course_id';
+    protected $keyType = 'string';
+    
+    public $incrementing = false;
+    public $timestamps   = false;
+    
 
     protected $fillable = [
+        'course_id', 
         'course_code',
         'course_name',
         'teacher_id',
@@ -27,11 +32,16 @@ class Courses extends Model
 
     public function image()
     {
-        return $this->hasOne(CourseImage::class, 'course_id');
+        return $this->hasOne(CourseImage::class, 'course_id','course_id');
     }
 
     public function longquizzes()
     {
         return $this->hasMany(LongQuizzes::class, 'course_id');
+    }
+
+    public function screenings()  
+    { 
+        return $this->hasMany(Screening::class,'course_id', 'course_id'); 
     }
 }

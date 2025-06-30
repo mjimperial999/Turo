@@ -14,6 +14,7 @@ class StudentProgress extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'student_id',
         'course_id',
         'total_points',
         'average_score',

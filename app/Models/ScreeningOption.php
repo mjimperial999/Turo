@@ -9,10 +9,13 @@ class ScreeningOption extends Model
     protected $primaryKey = 'screening_option_id';
     public    $incrementing = false;
     protected $keyType    = 'string';
+    public $timestamps   = false; 
 
     protected $fillable = [
-        'screening_option_id', 'screening_question_id',
-        'option_text', 'is_correct'
+        'screening_option_id',
+        'screening_question_id',
+        'option_text',
+        'is_correct',
     ];
 
     public function question()

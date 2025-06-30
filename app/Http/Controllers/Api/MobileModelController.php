@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Module;
+use App\Models\Modules;
 use App\Http\Resources\ModuleResource;
 use App\Models\Users;
 use App\Http\Resources\UsersResource;
@@ -16,7 +16,7 @@ class MobileModelController extends Controller
 {
     public function modules()
     {
-        return ModuleResource::collection(Module::all());
+        return ModuleResource::collection(Modules::all());
     }
 
     public function getCourses()

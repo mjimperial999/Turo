@@ -18,6 +18,7 @@ class Students extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'user_id',
         'isCatchUp',
         'total_points',
     ];

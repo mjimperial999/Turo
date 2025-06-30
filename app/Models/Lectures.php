@@ -11,8 +11,8 @@ class Lectures extends Model
         return $this->belongsTo(Activities::class, 'activity_id', 'activity_id');
     }
 
-    protected $table = 'lecture'; // Name of The Table
-    protected $primaryKey = 'activity_id'; // Name of The Primary Key
+    protected $table = 'lecture';
+    protected $primaryKey = 'activity_id';
     public $timestamps = false;
 
     public $incrementing = false;
@@ -21,7 +21,8 @@ class Lectures extends Model
     protected $fillable = [
         'content_type_id',
         'activity_id',
-        'text_body',
+        'file_url',
+        'file_mime_type',
         'file_name',
     ];
 }

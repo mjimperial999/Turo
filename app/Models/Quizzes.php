@@ -19,6 +19,7 @@ class Quizzes extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'activity_id',
         'number_of_attempts',
         'quiz_type_id',
         'time_limit',
@@ -30,5 +31,11 @@ class Quizzes extends Model
     public function questions()
     {
         return $this->hasMany(Questions::class, 'activity_id');
+    }
+
+    public function keptResult($userID = null)
+    {
+        return $this->hasOne(AssessmentResult::class,'activity_id','activity_id')         
+            ->where('is_kept', 1);
     }
 }

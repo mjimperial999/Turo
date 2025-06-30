@@ -7,7 +7,7 @@ if ($percentage === null) {
     $color = '#999999';
     $percentage_display = '--';
 } elseif ($percentage >= 80) {
-    $color = '#01EE2C';
+    $color = '#00cc25';
     $percentage_display = round($percentage);
 } elseif ($percentage >= 75) {
     $color = '#caee01';

@@ -19,6 +19,7 @@ class LongQuizOptions extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'long_quiz_option_id',
         'long_quiz_question_id',
         'option_text',
         'is_correct',

@@ -3,7 +3,35 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+use Carbon\Carbon;
+
 use App\Models\Users;
+use App\Models\Students;
+use App\Models\Courses;
+use App\Models\CourseImage;
+use App\Models\Modules;
+use App\Models\ModuleImage;
+use App\Models\Screening;
+use App\Models\ScreeningConcept;
+use App\Models\ScreeningTopic;
+use App\Models\ScreeningQuestion;
+use App\Models\ScreeningQuestionImage;
+use App\Models\ScreeningOption;
+use App\Models\Activities;
+use App\Models\Quizzes;
+use App\Models\Questions;
+use App\Models\QuestionImages;
+use App\Models\Options;
+use App\Models\LongQuizzes;
+use App\Models\LongQuizQuestions;
+use App\Models\LongQuizOptions;
+use App\Models\LongQuizQuestionImages;
+use App\Models\AssessmentResult;
+use App\Models\LongQuizAssessmentResult;
 
 class TeacherController extends Controller
 {
@@ -27,6 +55,1479 @@ class TeacherController extends Controller
         $userID = session('user_id');
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
-        return view('student-profile', compact('users'));
+        $courses = Courses::with('image')->get();
+
+        return view('teacher.teachers-panel', compact('courses', 'users',));
+    }
+
+    // ---------------------------------------------
+    // ---------------------------------------------
+    // Course CRUD
+    public function createCourse()
+    {
+        $userID = session('user_id');
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+        $courses = Courses::with('image')->get();
+
+        return view('teacher.course-create', compact('courses', 'users'));
+    }
+
+    public function storeCourse(Request $req)
+    {
+        $req->validate([
+            'course_name' => 'required|string|max:255',
+            'course_code' => 'required|string|max:255',
+            'course_description' => 'nullable|string',
+            'image'        => 'nullable|image|max:2048'
+        ]);
+
+        $course = Courses::create([
+            'course_id'          => Str::uuid()->toString(),
+            'course_code'        => $req->course_code,
+            'course_name'        => $req->course_name,
+            'course_description' => $req->course_description ?? '',
+            'course_picture'     => null,
+            'start_date'         => null,
+            'end_date'           => null,
+            'teacher_id'         => session('user_id')
+        ]);
+
+        if ($req->hasFile('image')) {
+            $blob = file_get_contents($req->file('image')->getRealPath());
+            $mime = $req->file('image')->getMimeType();
+
+            CourseImage::updateOrCreate(
+                ['course_id' => $course->course_id],
+                [
+                    'image'     => $blob,
+                    'mime_type' => $mime ?? 'image/jpeg'
+                ]
+            );
+        }
+
+        return redirect("/teachers-panel")
+            ->with('success', 'A new course has been created.');
+    }
+
+    public function editCourse(Courses $course)
+    {
+        return view('teacher.course-edit', compact('course'));
+    }
+
+    public function updateCourse(Request $req, Courses $course)
+    {
+        $req->validate([
+            'course_name' => 'required|string|max:255',
+            'course_code' => 'required|string|max:255',
+            'image'       => 'nullable|image|max:2048'
+        ]);
+
+        $course->course_name = $req->course_name;
+        $course->course_code = $req->course_code;
+        $course->course_description = $req->course_description;
+        $course->save();
+
+        if ($req->hasFile('image')) {
+            $blob = file_get_contents($req->file('image')->getRealPath());
+            $mime = $req->file('image')->getMimeType();
+
+            $course->image()->updateOrCreate(
+                ['course_id' => $course->course_id],
+                [
+                    'image' => $blob,
+                    'mime_type' => $mime ?? 'image/jpeg'
+                ]
+            );
+        }
+
+        return redirect()->back()->with('success', 'Course has been updated.');
+    }
+
+    public function deleteCourse(Courses $course)
+    {
+        $course->delete();
+        return redirect('/teachers-panel')->with('success', 'Course has been deleted.');
+    }
+
+
+    public function viewCourse(Courses $course)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+
+        $courses = Courses::with([
+            'modules.moduleimage',
+            'longquizzes',
+            'screenings',
+        ])->get();
+
+        return view('teacher.view-course', compact('course', 'users'));
+    }
+
+    // ---------------------------------------------
+    // ---------------------------------------------
+    // Module CRUD
+    public function createModule(Courses $course)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+        $courses = Courses::with([
+            'modules.moduleimage',
+        ])->get();
+
+        return view('teacher.module-create', compact('course', 'users'));
+    }
+
+    public function storeModule(Request $req, Courses $course)
+    {
+        $req->validate([
+            'module_name'        => 'required|string|max:255',
+            'image'              => 'nullable|image|max:2048'
+        ]);
+
+        $module = Modules::create([
+            'module_id'         => Str::uuid()->toString(),
+            'course_id'         => $course->course_id,
+            'module_name'       => $req->module_name,
+            'module_description' => $req->module_description
+        ]);
+
+        if ($req->hasFile('image')) {
+            $blob = file_get_contents($req->file('image')->getRealPath());
+            $mime = $req->file('image')->getMimeType();
+
+            $module->moduleimage()->updateOrCreate(
+                ['module_id' => $module->module_id],
+                [
+                    'image'     => $blob,
+                    'mime_type' => $mime ?? 'image/jpeg'
+                ]
+
+            );
+        }
+
+        return redirect()->back()->with('success', 'A new module has been created.');
+    }
+
+    public function editModule(Courses $course, Modules $module)
+    {
+        return view('teacher.module-edit', compact('course', 'module'));
+    }
+
+    public function updateModule(Request $req, $courseID, Modules $module)
+    {
+        $req->validate([
+            'module_name'        => 'required|string|max:255',
+            'image'              => 'nullable|image|max:2048'
+        ]);
+
+        $module->update($req->only('module_name', 'module_description'));
+
+        $blob = file_get_contents($req->file('image')->getRealPath());
+        $mime = $req->file('image')->getMimeType();
+
+        if ($req->hasFile('image')) {
+            $blob = file_get_contents($req->file('image')->getRealPath());
+            $mime = $req->file('image')->getMimeType();
+
+            $module->moduleimage()->updateOrCreate(
+                ['module_id' => $module->module_id],
+                [
+                    'image'     => $blob,
+                    'mime_type' => $mime ?? 'image/jpeg'
+                ]
+
+            );
+        }
+
+        return redirect()->back()->with('success', 'Module has been updated.');
+    }
+
+    public function deleteModule($courseID, Modules $module)
+    {
+        $module->delete();
+        return back()->with('success', 'Module deleted.');
+    }
+
+    public function viewModule(Courses $course, Modules $module)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+
+        $module->load('activities.quiz');
+
+        return view('teacher.view-module', compact('course', 'module', 'users'));
+    }
+
+    // ---------------------------------------------
+    // ---------------------------------------------
+    // Long Quiz CRUD
+    public function createLongQuiz(Courses $course)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        return view('teacher.longquiz-create', compact('course', 'users'));
+    }
+
+    /* 3-c  Store new quiz  */
+    public function storeLongQuiz(Request $req, Courses $course)
+    {
+        /* ---------- validation ---------- */
+        $rules = [
+            'long_quiz_name'         => 'required|string|max:255',
+            'long_quiz_instructions' => 'required|string',
+            'number_of_attempts'     => 'required|integer|min:1',
+            'number_of_questions'    => 'required|integer|min:1',
+            'time_limit_minutes'     => 'required|integer|min:1',
+            'unlock_date'            => 'required|date',
+            'deadline_date'          => 'required|date|after:unlock_date',
+            'has_answers_shown'      => 'nullable|boolean',
+
+            /* question / option structure */
+            'questions'                      => 'required|array|min:1',
+            'questions.*.text'               => 'required|string',
+            'questions.*.correct'            => 'required|integer|min:0',
+            'questions.*.options'            => 'required|array|min:1|max:4',
+            'questions.*.options.*'          => 'required|string',
+            'questions.*.image'              => 'nullable|image|max:2048',
+        ];
+
+        $validator = Validator::make($req->all(), $rules);
+
+        /* make sure the question bank ≥ draw size */
+        $validator->after(function ($v) use ($req) {
+            if (count($req->questions) < $req->number_of_questions) {
+                $v->errors()->add(
+                    'number_of_questions',
+                    '“Number of Questions” can’t exceed the number of questions you entered.'
+                );
+            }
+        });
+
+        $validator->validate();
+
+        /* ---------- DB tx ---------- */
+        DB::transaction(function () use ($req, $course) {
+
+            /* 1) quiz shell */
+            $longquiz = LongQuizzes::create([
+                'long_quiz_id'          => Str::uuid()->toString(),
+                'course_id'             => $course->course_id,
+                'long_quiz_name'        => $req->long_quiz_name,
+                'long_quiz_instructions' => $req->long_quiz_instructions,
+                'number_of_attempts'    => $req->number_of_attempts,
+                'number_of_questions'   => $req->number_of_questions,
+                'overall_points'        => $req->number_of_questions,
+                'time_limit'            => $req->time_limit_minutes * 60,
+                'has_answers_shown'     => $req->boolean('has_answers_shown'),
+                'unlock_date'           => Carbon::parse($req->unlock_date),
+                'deadline_date'         => Carbon::parse($req->deadline_date),
+            ]);
+
+            /* 2) questions + options */
+            foreach ($req->questions as $qData) {
+
+                $question = $longquiz->longquizquestions()->create([
+                    'long_quiz_question_id' => Str::uuid()->toString(),
+                    'question_text'         => $qData['text'],
+                    'question_type_id'      => 1,
+                    'score'                 => 1,
+                ]);
+
+                /* optional image */
+                if (isset($qData['image'])) {
+                    $img = $qData['image'];
+                    $question->longquizimage()->updateOrCreate(
+                        [],
+                        [
+                            'image'     => file_get_contents($img->getRealPath()),
+                            'mime_type' => $img->getMimeType() ?? 'image/jpeg',
+                        ]
+                    );
+                }
+
+                /* options */
+                foreach ($qData['options'] as $oIdx => $optText) {
+                    $question->longquizoptions()->create([
+                        'long_quiz_option_id' => Str::uuid()->toString(),
+                        'option_text'         => $optText,
+                        'is_correct'          => ($oIdx == $qData['correct']) ? 1 : 0,
+                    ]);
+                }
+            }
+        });
+
+        return redirect("/teachers-panel/course/{$course->course_id}")
+            ->with('success', 'Long-quiz created.');
+    }
+
+    /* 3-d  Edit form */
+    public function editLongQuiz(Courses $course, LongQuizzes $longquiz)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $longquiz->load('longquizquestions.longquizoptions');
+        return view('teacher.longquiz-edit', compact('course', 'longquiz', 'users'));
+    }
+
+    /* 3-e  Update */
+    public function updateLongQuiz(Request $req, Courses $course, LongQuizzes $longquiz)
+    {
+        /* same validation rules as above */
+        $validator = Validator::make($req->all(), [
+            'long_quiz_name'         => 'required|string|max:255',
+            'long_quiz_instructions' => 'required|string',
+            'number_of_attempts'     => 'required|integer|min:1',
+            'number_of_questions'    => 'required|integer|min:1',
+            'time_limit_minutes'     => 'required|integer|min:1',
+            'unlock_date'            => 'required|date',
+            'deadline_date'          => 'required|date|after:unlock_date',
+            'has_answers_shown'      => 'nullable|boolean',
+
+            'questions'                     => 'required|array|min:1',
+            'questions.*.text'              => 'required|string',
+            'questions.*.correct'           => 'required|integer|min:0',
+            'questions.*.options'           => 'required|array|min:1|max:4',
+            'questions.*.options.*.text'    => 'required|string',
+            'questions.*.image'             => 'nullable|image|max:2048',
+        ]);
+
+        $validator->after(function ($v) use ($req) {
+            if (count($req->questions) < $req->number_of_questions) {
+                $v->errors()->add(
+                    'number_of_questions',
+                    '“Number of Questions” can’t exceed the number of questions you entered.'
+                );
+            }
+        });
+
+        $validator->validate();
+
+        /* --------------- TX --------------- */
+        DB::transaction(function () use ($req, $longquiz) {
+
+            /* A) quiz meta */
+            $longquiz->update([
+                'long_quiz_name'         => $req->long_quiz_name,
+                'long_quiz_instructions' => $req->long_quiz_instructions,
+                'number_of_attempts'     => $req->number_of_attempts,
+                'number_of_questions'    => $req->number_of_questions,
+                'overall_points'         => $req->number_of_questions,
+                'time_limit'             => $req->time_limit_minutes * 60,
+                'has_answers_shown'      => $req->boolean('has_answers_shown'),
+                'unlock_date'            => Carbon::parse($req->unlock_date),
+                'deadline_date'          => Carbon::parse($req->deadline_date),
+            ]);
+
+            /* B) questions + options */
+            $keptQ = [];
+
+            foreach ($req->questions as $qData) {
+
+                $qid = trim($qData['qid'] ?? '') ?: Str::uuid()->toString();
+
+                $question = LongQuizQuestions::updateOrCreate(
+                    ['long_quiz_question_id' => $qid],
+                    [
+                        'long_quiz_id'    => $longquiz->long_quiz_id,
+                        'question_text'   => $qData['text'],
+                        'question_type_id' => 1,
+                        'score'           => 1,
+                    ]
+                );
+                $keptQ[] = $question->long_quiz_question_id;
+
+                /* image (replace only if new file chosen) */
+                if (isset($qData['image'])) {
+                    $img = $qData['image'];
+                    $question->longquizimage()->updateOrCreate(
+                        [],
+                        [
+                            'image'     => file_get_contents($img->getRealPath()),
+                            'mime_type' => $img->getMimeType(),
+                        ]
+                    );
+                }
+
+                /* options */
+                $keptO = [];
+                foreach ($qData['options'] as $oIdx => $opt) {
+                    $oid  = trim($opt['oid'] ?? '') ?: Str::uuid()->toString();
+                    $row = LongQuizOptions::updateOrCreate(
+                        ['long_quiz_option_id' => $oid],
+                        [
+                            'long_quiz_question_id' => $question->long_quiz_question_id,
+                            'option_text'           => $opt['text'],
+                            'is_correct'            => ($oIdx == $qData['correct']) ? 1 : 0,
+                        ]
+                    );
+                    $keptO[] = $row->long_quiz_option_id;
+                }
+
+                /* delete dropped options */
+                $question->longquizoptions()
+                    ->whereNotIn('long_quiz_option_id', $keptO)
+                    ->delete();
+            }
+
+            /* delete dropped questions */
+            $longquiz->longquizquestions()
+                ->whereNotIn('long_quiz_question_id', $keptQ)
+                ->delete();
+        });
+
+        return back()->with('success', 'Long-quiz updated.');
+    }
+
+    /* 3-f  Destroy  –  cascades via FK or manual */
+    public function deleteLongQuiz(Courses $course, LongQuizzes $longquiz)
+    {
+        $longquiz->delete();   // FK ON DELETE CASCADE wipes related Q/Opt/Img
+        return back()->with('success', 'Long quiz deleted.');
+    }
+
+    public function viewLongQuiz(Courses $course, $longQuizID)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+
+        $longquiz = LongQuizzes::findOrFail($longQuizID);
+
+        $bestResults = LongQuizAssessmentResult::with(['student.user'])
+            ->where('long_quiz_id',  $longquiz->long_quiz_id)
+            ->where('is_kept',       1)              // flag you already store
+            ->orderByDesc('score_percentage')        // highest first
+            ->get();
+
+        return view('teacher.view-longquiz', compact('course', 'longquiz', 'users', 'bestResults'));
+    }
+
+    // ---------------------------------------------
+    // ---------------------------------------------
+    // Lecture CRUD
+    public function createLecture(Courses $course, Modules $module)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+
+        return view('teacher.lecture-create', compact('course', 'module', 'users'));
+    }
+
+    public function storeLecture(Request $req, Courses $course, Modules $module)
+    {
+        $req->validate([
+            'activity_name'           => 'required|string|max:255',
+            'activity_description'    => 'required|string|max:255',
+            'pdf'                     => 'required|file|mimes:pdf|max:2048'
+        ]);
+
+        $activity = Activities::create([
+            'activity_id'         => Str::uuid()->toString(),
+            'module_id'         => $module->module_id,
+            'activity_type'       => 'LECTURE',
+            'activity_name'       => $req->activity_name,
+            'activity_description' => $req->activity_description,
+            'unlock_date'          => $req->unlock_date,
+            'deadline_date'        => null
+
+        ]);
+
+        if ($req->hasFile('pdf')) {
+            $blob = file_get_contents($req->file('pdf')->getRealPath());
+            $mime = $req->file('pdf')->getMimeType();
+
+            $activity->lecture()->updateOrCreate(
+                ['activity_id' => $activity->activity_id],           // match column
+                [
+                    'content_type_id' => 2,                           // “PDF/DOCS”
+                    'file_url'        => $blob,                     // store blob
+                    'file_mime_type'  => $mime,
+                    'file_name'       => $req->file('pdf')->getClientOriginalName(),
+                ]
+            );
+        }
+
+        return redirect()->back()->with('success', 'A new lecture has been created.');
+    }
+
+    public function editLecture(Courses $course, Modules $module, Activities $activity)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $activity->load('lecture');
+        return view('teacher.lecture-edit', compact('course', 'module', 'activity', 'users'));
+    }
+
+    public function updateLecture(Request $req, Courses $course, Modules $module, Activities $activity)
+    {
+        $req->validate([
+            'activity_name'           => 'required|string|max:255',
+            'activity_description'    => 'required|string|max:255',
+            'pdf'                     => 'nullable|file|mimes:pdf|max:2048'
+        ]);
+
+        $activity->update([
+            'activity_name'        => $req->activity_name,
+            'activity_description' => $req->activity_description,
+            'unlock_date'          => $req->unlock_date,
+        ]);
+
+        if ($req->hasFile('pdf')) {
+            $blob = file_get_contents($req->file('pdf')->getRealPath());
+            $mime = $req->file('pdf')->getMimeType();
+
+            $activity->lecture()->updateOrCreate(
+                ['activity_id' => $activity->activity_id],           // match column
+                [
+                    'content_type_id' => 2,                           // “PDF/DOCS”
+                    'file_url'        => $blob,                     // store blob
+                    'file_mime_type'  => $mime,
+                    'file_name'       => $req->file('pdf')->getClientOriginalName(),
+                ]
+            );
+        }
+
+        return redirect()->back()->with('success', 'Lecture material has been updated.');
+    }
+
+    public function deleteLecture(Courses $course, Modules $module, Activities $activity)
+    {
+        $activity->delete();
+        return back()->with('success', 'Lecture deleted');
+    }
+
+    public function viewLecture(Courses $course, Modules $module, Activities $activity)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+
+        $activity->load('lecture');
+
+        return view('teacher.view-lecture', compact('course', 'module', 'activity', 'users'));
+    }
+
+    // ---------------------------------------------
+    // ---------------------------------------------
+    // Tutorial Video CRUD
+    public function createTutorial(Courses $course, Modules $module)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        return view('teacher.tutorial-create', compact('course', 'module', 'users'));
+    }
+
+    /* ────────────────────────────────────────────────────────────────
+   3-b  Store new record
+   ───────────────────────────────────────────────────────────────*/
+    public function storeTutorial(Request $req, Courses $course, Modules $module)
+    {
+        $req->validate([
+            'activity_name'        => 'required|string|max:255',
+            'activity_description' => 'required|string|max:255',
+            'video_url'            => 'required|url',
+            'unlock_date'          => 'required|date',
+        ]);
+
+        /* 1) parent activity */
+        $activity = Activities::create([
+            'activity_id'         => Str::uuid()->toString(),
+            'module_id'           => $module->module_id,
+            'activity_type'       => 'TUTORIAL',
+            'activity_name'       => $req->activity_name,
+            'activity_description' => $req->activity_description,
+            'unlock_date'         => Carbon::parse($req->unlock_date),
+            'deadline_date'       => null,
+        ]);
+
+        /* 2) tutorial row */
+        $activity->tutorial()->create([
+            'content_type_id' => 3,                // VIDEO
+            'video_url'       => $req->video_url,
+        ]);
+
+        return back()->with('success', 'Tutorial video has been posted.');
+    }
+
+    /* ────────────────────────────────────────────────────────────────
+   3-c  Edit form
+   ───────────────────────────────────────────────────────────────*/
+    public function editTutorial(Courses $course, Modules $module, Activities $activity)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $activity->load('tutorial');
+        return view('teacher.tutorial-edit', compact('course', 'module', 'activity', 'users'));
+    }
+
+    /* ────────────────────────────────────────────────────────────────
+   3-d  Update
+   ───────────────────────────────────────────────────────────────*/
+    public function updateTutorial(Request $req, Courses $course, Modules $module, Activities $activity)
+    {
+        $req->validate([
+            'activity_name'        => 'required|string|max:255',
+            'activity_description' => 'required|string|max:255',
+            'video_url'            => 'required|url',
+            'unlock_date'          => 'required|date',
+        ]);
+
+        $activity->update([
+            'activity_name'        => $req->activity_name,
+            'activity_description' => $req->activity_description,
+            'unlock_date'          => Carbon::parse($req->unlock_date),
+        ]);
+
+        $activity->tutorial()->updateOrCreate(
+            ['activity_id' => $activity->activity_id],
+            [
+                'content_type_id' => 3,
+                'video_url'       => $req->video_url,
+            ]
+        );
+
+        return back()->with('success', 'Tutorial updated.');
+    }
+
+    /* ────────────────────────────────────────────────────────────────
+   3-e  Delete
+   ───────────────────────────────────────────────────────────────*/
+    public function deleteTutorial(Courses $course, Modules $module, Activities $activity)
+    {
+        $activity->delete();
+        return back()->with('success', 'Tutorial video deleted.');
+    }
+
+    /* ────────────────────────────────────────────────────────────────
+   3-f  View (teacher or student)
+   ───────────────────────────────────────────────────────────────*/
+    public function viewTutorial(Courses $course, Modules $module, Activities $activity)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $activity->load('tutorial');
+        return view('teacher.view-tutorial', compact('course', 'module', 'activity', 'users'));
+    }
+
+    // ---------------------------------------------
+    // ---------------------------------------------
+    // Short Quiz CRUD
+    public function createShortQuiz(Courses $course, Modules $module)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        return view('teacher.shortquiz-create', compact('course', 'module', 'users'));
+    }
+
+    /* 2 ─────────────── Store */
+    public function storeShortQuiz(Request $req, Courses $course, Modules $module)
+    {
+        /* ▸ a) validate ------------------------------------------------------- */
+        $rules = [
+            'quiz_name'            => 'required|string|max:255',
+            'quiz_instructions'    => 'required|string',
+            'number_of_attempts'   => 'required|integer|min:1',
+            'number_of_questions'  => 'required|integer|min:1',
+            'time_limit_minutes'   => 'required|integer|min:1',
+            'unlock_date'          => 'required|date',
+            'deadline_date'        => 'required|date|after:unlock_date',
+            'has_answers_shown'    => 'nullable|boolean',
+
+            'questions'                     => 'required|array|min:1',
+            'questions.*.text'              => 'required|string',
+            'questions.*.correct'           => 'required|integer|min:0',
+            'questions.*.options'           => 'required|array|min:1|max:4',
+            'questions.*.options.*'         => 'required|string',
+            'questions.*.image'             => 'nullable|image|max:2048',
+        ];
+
+        $validator = Validator::make($req->all(), $rules);
+        $validator->after(function ($v) use ($req) {
+            if (count($req->questions) < $req->number_of_questions) {
+                $v->errors()->add(
+                    'number_of_questions',
+                    '“Number of Questions” can’t exceed the number of questions you entered.'
+                );
+            }
+        });
+        $validator->validate();
+
+        /* ▸ b) TX ------------------------------------------------------------- */
+        DB::transaction(function () use ($req, $module) {
+
+            /* i) activity row */
+            $activityID = Str::uuid()->toString();
+            $activity   = Activities::create([
+                'activity_id'         => $activityID,
+                'module_id'           => $module->module_id,
+                'activity_type'       => 'QUIZ',
+                'activity_name'       => $req->quiz_name,
+                'activity_description' => $req->quiz_instructions,
+                'unlock_date'         => Carbon::parse($req->unlock_date),
+                'deadline_date'       => Carbon::parse($req->deadline_date),
+            ]);
+
+            /* ii) quiz row (short = id 1) */
+            Quizzes::create([
+                'activity_id'        => $activityID,
+                'number_of_attempts' => $req->number_of_attempts,
+                'quiz_type_id'       => 1,                       // short-quiz
+                'time_limit'         => $req->time_limit_minutes * 60,
+                'number_of_questions' => $req->number_of_questions,
+                'overall_points'     => $req->number_of_questions,
+                'has_answers_shown'  => $req->boolean('has_answers_shown'),
+            ]);
+
+            /* iii) question bank */
+            foreach ($req->questions as $qIdx => $qData) {
+
+                $questionID = Str::uuid()->toString();
+                $question   = Questions::create([
+                    'question_id'     => $questionID,
+                    'question_text'   => $qData['text'],
+                    'question_type_id' => 1,
+                    'score'           => 1,
+                    'activity_id'     => $activityID,
+                ]);
+
+                /* optional image */
+                if (isset($qData['image'])) {
+                    $img = $qData['image'];
+                    QuestionImages::updateOrCreate(
+                        ['question_id' => $questionID],
+                        [
+                            'image' => file_get_contents($img->getRealPath())
+                        ]
+                    );
+                }
+
+                /* options */
+                foreach ($qData['options'] as $oIdx => $optText) {
+                    Options::create([
+                        'option_id'  => Str::uuid()->toString(),
+                        'question_id' => $questionID,
+                        'option_text' => $optText,
+                        'is_correct' => ($oIdx == $qData['correct']) ? 1 : 0,
+                    ]);
+                }
+            }
+        });
+
+        return redirect()
+            ->to("/teachers-panel/course/{$course->course_id}/module/{$module->module_id}")
+            ->with('success', 'Short-quiz created.');
+    }
+
+    /* 3 ─────────────── Edit form */
+    public function editShortQuiz(Courses $course, Modules $module, Activities $activity)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $activity->load('quiz', 'quiz.questions.options', 'quiz.questions.questionimage');
+        return view('teacher.shortquiz-edit', compact('course', 'module', 'activity', 'users'));
+    }
+
+    /* 4 ─────────────── Update */
+    public function updateShortQuiz(Request $req, Courses $course, Modules $module, Activities $activity)
+    {
+        /* same validation as store … */
+        $rules = [
+            'quiz_name'            => 'required|string|max:255',
+            'quiz_instructions'    => 'required|string',
+            'number_of_attempts'   => 'required|integer|min:1',
+            'number_of_questions'  => 'required|integer|min:1',
+            'time_limit_minutes'   => 'required|integer|min:1',
+            'unlock_date'          => 'required|date',
+            'deadline_date'        => 'required|date|after:unlock_date',
+            'has_answers_shown'    => 'nullable|boolean',
+
+            'questions'                     => 'required|array|min:1',
+            'questions.*.text'              => 'required|string',
+            'questions.*.correct'           => 'required|integer|min:0',
+            'questions.*.options'           => 'required|array|min:1|max:4',
+            'questions.*.options.*.text'    => 'required|string',
+            'questions.*.image'             => 'nullable|image|max:2048',
+
+        ];
+
+        $validator = Validator::make($req->all(), $rules);
+        $validator->after(function ($v) use ($req) {
+            if (count($req->questions) < $req->number_of_questions) {
+                $v->errors()->add(
+                    'number_of_questions',
+                    '“Number of Questions” can’t exceed the number of questions you entered.'
+                );
+            }
+        });
+        $validator->validate();
+
+        DB::transaction(function () use ($req, $activity) {
+
+            /* A) activity + quiz meta */
+            $activity->update([
+                'activity_name'        => $req->quiz_name,
+                'activity_description' => $req->quiz_instructions,
+                'unlock_date'          => Carbon::parse($req->unlock_date),
+                'deadline_date'        => Carbon::parse($req->deadline_date),
+            ]);
+
+            $activity->quiz()->update([
+                'number_of_attempts'  => $req->number_of_attempts,
+                'number_of_questions' => $req->number_of_questions,
+                'overall_points'      => $req->number_of_questions,
+                'time_limit'          => $req->time_limit_minutes * 60,
+                'has_answers_shown'   => $req->boolean('has_answers_shown'),
+            ]);
+
+            /* B) questions */
+            $keptQ = [];
+
+            foreach ($req->questions as $qIdx => $qData) {
+
+                $qid = trim($qData['qid'] ?? '') ?: Str::uuid()->toString();
+
+                $question = Questions::updateOrCreate(
+                    ['question_id' => $qid],
+                    [
+                        'activity_id'      => $activity->activity_id,
+                        'question_text'    => $qData['text'],
+                        'question_type_id' => 1,
+                        'score'            => 1,
+                    ]
+                );
+                $keptQ[] = $qid;
+
+                /* image replacement */
+                if (isset($qData['image'])) {
+                    $img = $qData['image'];
+                    QuestionImages::updateOrCreate(
+                        ['question_id' => $qid],
+                        ['image' => file_get_contents($img->getRealPath())]
+                    );
+                }
+
+                /* options */
+                $keptO = [];
+                foreach ($qData['options'] as $oIdx => $opt) {
+                    $oid = trim($opt['oid'] ?? '') ?: Str::uuid()->toString();
+                    $row = Options::updateOrCreate(
+                        ['option_id' => $oid],
+                        [
+                            'question_id' => $qid,
+                            'option_text' => $opt['text'],
+                            'is_correct'  => ($oIdx == $qData['correct']) ? 1 : 0,
+                        ]
+                    );
+                    $keptO[] = $oid;
+                }
+                Options::where('question_id', $qid)
+                    ->whereNotIn('option_id', $keptO)
+                    ->delete();
+            }
+
+            /* delete removed questions */
+            Questions::where('activity_id', $activity->activity_id)
+                ->whereNotIn('question_id', $keptQ)
+                ->delete();
+        });
+
+        return back()->with('success', 'Short-quiz updated.');
+    }
+
+    /* 5 ─────────────── Destroy */
+    public function deleteShortQuiz(Courses $course, Modules $module, Activities $activity)
+    {
+        $activity->delete();   // cascades to quiz / questions / options via FK
+        return back()->with('success', 'Short-quiz deleted.');
+    }
+
+    /* 6 ─────────────── View (read-only) */
+    public function viewShortQuiz(Courses $course, Modules $module, Activities $activity)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $activity->load('quiz.questions.options', 'quiz.questions.questionimage');
+
+        $bestResults = AssessmentResult::with(['student.user'])
+            ->where('activity_id',  $activity->quiz->activity_id)
+            ->where('is_kept',       1)              // flag you already store
+            ->orderByDesc('score_percentage')        // highest first
+            ->get();
+
+        return view('teacher.view-shortquiz', compact('course', 'module', 'activity', 'users', 'bestResults'));
+    }
+
+
+    // ---------------------------------------------
+    // ---------------------------------------------
+    // Practice Quiz CRUD
+    public function createPracticeQuiz(Courses $course, Modules $module)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        return view('teacher.practicequiz-create', compact('course', 'module', 'users'));
+    }
+
+    /* 2 ─────────────── Store */
+    public function storePracticeQuiz(Request $req, Courses $course, Modules $module)
+    {
+        /* a) validation — identical to short-quiz but without attempts field */
+        $rules = [
+            'quiz_name'           => 'required|string|max:255',
+            'quiz_instructions'   => 'required|string',
+            'number_of_questions' => 'required|integer|min:1',
+            'time_limit_minutes'  => 'required|integer|min:1',
+            'unlock_date'         => 'required|date',
+            'deadline_date'       => 'required|date|after:unlock_date',
+            'has_answers_shown'   => 'nullable|boolean',
+
+            'questions'                    => 'required|array|min:1',
+            'questions.*.text'             => 'required|string',
+            'questions.*.correct'          => 'required|integer|min:0',
+            'questions.*.options'          => 'required|array|min:1|max:4',
+            'questions.*.options.*'        => 'required|string',
+            'questions.*.image'            => 'nullable|image|max:2048',
+        ];
+
+        $validator = Validator::make($req->all(), $rules);
+        $validator->after(function ($v) use ($req) {
+            if (count($req->questions) < $req->number_of_questions) {
+                $v->errors()->add(
+                    'number_of_questions',
+                    '“Number of Questions” can’t exceed the questions you entered.'
+                );
+            }
+        });
+        $validator->validate();
+
+        /* b) DB-TX ----------------------------------------------------------- */
+        DB::transaction(function () use ($req, $module) {
+
+            /* i) parent activity row */
+            $activityID = Str::uuid()->toString();
+            Activities::create([
+                'activity_id'         => $activityID,
+                'module_id'           => $module->module_id,
+                'activity_type'       => 'QUIZ',
+                'activity_name'       => $req->quiz_name,
+                'activity_description' => $req->quiz_instructions,
+                'unlock_date'         => Carbon::parse($req->unlock_date),
+                'deadline_date'       => Carbon::parse($req->deadline_date),
+            ]);
+
+            /* ii) quiz row – quiz_type_id = 2, attempts = INT(11) max */
+            Quizzes::create([
+                'activity_id'         => $activityID,
+                'number_of_attempts'  => 2147483647,   // infinite
+                'quiz_type_id'        => 2,            // practice-quiz
+                'time_limit'          => $req->time_limit_minutes * 60,
+                'number_of_questions' => $req->number_of_questions,
+                'overall_points'      => $req->number_of_questions,
+                'has_answers_shown'   => $req->boolean('has_answers_shown'),
+            ]);
+
+            /* iii) question bank (unchanged) */
+            foreach ($req->questions as $qIdx => $qData) {
+                $questionID = Str::uuid()->toString();
+                Questions::create([
+                    'question_id'      => $questionID,
+                    'question_text'    => $qData['text'],
+                    'question_type_id' => 1,
+                    'score'            => 1,
+                    'activity_id'      => $activityID,
+                ]);
+
+                if (isset($qData['image'])) {
+                    $img = $qData['image'];
+                    QuestionImages::updateOrCreate(
+                        ['question_id' => $questionID],
+                        ['image' => file_get_contents($img->getRealPath())]
+                    );
+                }
+
+                foreach ($qData['options'] as $oIdx => $optText) {
+                    Options::create([
+                        'option_id'   => Str::uuid()->toString(),
+                        'question_id' => $questionID,
+                        'option_text' => $optText,
+                        'is_correct'  => ($oIdx == $qData['correct']) ? 1 : 0,
+                    ]);
+                }
+            }
+        });
+
+        return redirect()
+            ->to("/teachers-panel/course/{$course->course_id}/module/{$module->module_id}")
+            ->with('success', 'Practice-quiz created.');
+    }
+
+    /* 3 ─────────────── Edit form */
+    public function editPracticeQuiz(Courses $course, Modules $module, Activities $activity)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $activity->load('quiz', 'quiz.questions.options', 'quiz.questions.questionimage');
+        return view('teacher.practicequiz-edit', compact('course', 'module', 'activity', 'users'));
+    }
+
+    /* 4 ─────────────── Update */
+    public function updatePracticeQuiz(Request $req, Courses $course, Modules $module, Activities $activity)
+    {
+        /* identical rules as store, still no attempts field */
+        $rules = [
+            'quiz_name'           => 'required|string|max:255',
+            'quiz_instructions'   => 'required|string',
+            'number_of_questions' => 'required|integer|min:1',
+            'time_limit_minutes'  => 'required|integer|min:1',
+            'unlock_date'         => 'required|date',
+            'deadline_date'       => 'required|date|after:unlock_date',
+            'has_answers_shown'   => 'nullable|boolean',
+
+            'questions'                    => 'required|array|min:1',
+            'questions.*.text'             => 'required|string',
+            'questions.*.correct'          => 'required|integer|min:0',
+            'questions.*.options'          => 'required|array|min:1|max:4',
+            'questions.*.options.*.text'   => 'required|string',
+            'questions.*.image'            => 'nullable|image|max:2048',
+        ];
+        $validator = Validator::make($req->all(), $rules);
+        $validator->after(function ($v) use ($req) {
+            if (count($req->questions) < $req->number_of_questions) {
+                $v->errors()->add(
+                    'number_of_questions',
+                    '“Number of Questions” can’t exceed the questions you entered.'
+                );
+            }
+        });
+        $validator->validate();
+
+        DB::transaction(function () use ($req, $activity) {
+
+            /* A) activity + quiz meta */
+            $activity->update([
+                'activity_name'        => $req->quiz_name,
+                'activity_description' => $req->quiz_instructions,
+                'unlock_date'          => Carbon::parse($req->unlock_date),
+                'deadline_date'        => Carbon::parse($req->deadline_date),
+            ]);
+
+            $activity->quiz()->update([
+                'number_of_attempts'  => 2147483647,
+                'number_of_questions' => $req->number_of_questions,
+                'overall_points'      => $req->number_of_questions,
+                'time_limit'          => $req->time_limit_minutes * 60,
+                'has_answers_shown'   => $req->boolean('has_answers_shown'),
+            ]);
+
+            /* B) questions + options (same logic as short-quiz update) */
+            $keptQ = [];
+
+            foreach ($req->questions as $qData) {
+                $qid = trim($qData['qid'] ?? '') ?: Str::uuid()->toString();
+
+                $question = Questions::updateOrCreate(
+                    ['question_id' => $qid],
+                    [
+                        'activity_id'      => $activity->activity_id,
+                        'question_text'    => $qData['text'],
+                        'question_type_id' => 1,
+                        'score'            => 1,
+                    ]
+                );
+                $keptQ[] = $qid;
+
+                if (isset($qData['image'])) {
+                    $img = $qData['image'];
+                    QuestionImages::updateOrCreate(
+                        ['question_id' => $qid],
+                        ['image' => file_get_contents($img->getRealPath())]
+                    );
+                }
+
+                $keptO = [];
+                foreach ($qData['options'] as $oIdx => $opt) {
+                    $oid = trim($opt['oid'] ?? '') ?: Str::uuid()->toString();
+                    Options::updateOrCreate(
+                        ['option_id' => $oid],
+                        [
+                            'question_id' => $qid,
+                            'option_text' => $opt['text'],
+                            'is_correct'  => ($oIdx == $qData['correct']) ? 1 : 0,
+                        ]
+                    );
+                    $keptO[] = $oid;
+                }
+                Options::where('question_id', $qid)
+                    ->whereNotIn('option_id', $keptO)
+                    ->delete();
+            }
+
+            Questions::where('activity_id', $activity->activity_id)
+                ->whereNotIn('question_id', $keptQ)
+                ->delete();
+        });
+
+        return back()->with('success', 'Practice-quiz updated.');
+    }
+
+    /* 5 ─────────────── Destroy */
+    public function deletePracticeQuiz(Courses $course, Modules $module, Activities $activity)
+    {
+        $activity->delete();  // cascades to quiz / questions / options via FK
+        return back()->with('success', 'Practice-quiz deleted.');
+    }
+
+    /* 6 ─────────────── View (read-only) */
+    public function viewPracticeQuiz(Courses $course, Modules $module, Activities $activity)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $activity->load('quiz.questions.options', 'quiz.questions.questionimage');
+        
+        $bestResults = AssessmentResult::with(['student.user'])
+            ->where('activity_id',  $activity->quiz->activity_id)
+            ->where('is_kept',       1)              // flag you already store
+            ->orderByDesc('score_percentage')        // highest first
+            ->get();
+
+        return view('teacher.view-practicequiz',compact('course', 'module', 'activity', 'users','bestResults'));
+    }
+
+    // ---------------------------------------------
+    // ---------------------------------------------
+    // Screening Exam CRUD
+    public function createScreening(Courses $course)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        return view('teacher.screening-create', compact('course', 'users'));
+    }
+
+    /* 2 ── Store new screening */
+    public function storeScreening(Request $req, Courses $course)
+    {
+        /* a)  validation ---------------------------------------------------- */
+        $rules = [
+            'screening_name'         => 'required|string|max:255',
+            'screening_instructions' => 'required|string',
+            'number_of_questions'    => 'required|integer|min:1',
+            'time_limit_minutes'     => 'required|integer|min:1',
+            'has_answers_shown'      => 'nullable|boolean',
+
+            /* concept / topic / question tree */
+            'concepts'                                 => 'required|array|min:1',
+            'concepts.*.concept_name'                  => 'required|string',
+            'concepts.*.topics'                        => 'required|array|min:1',
+            'concepts.*.topics.*.topic_name'           => 'required|string',
+            'concepts.*.topics.*.questions'            => 'required|array|min:1',
+            'concepts.*.topics.*.questions.*.text'     => 'required|string',
+            'concepts.*.topics.*.questions.*.correct'  => 'required|integer|min:0',
+            'concepts.*.topics.*.questions.*.options'  => 'required|array|min:1|max:4',
+            'concepts.*.topics.*.questions.*.options.*' => 'required|string',
+            'concepts.*.topics.*.questions.*.image'    => 'nullable|image|max:2048',
+        ];
+
+        Validator::make($req->all(), $rules)->validate();
+
+        /* b)  transaction --------------------------------------------------- */
+        DB::transaction(function () use ($req, $course) {
+
+            /*  i) screening header  */
+            $screeningID = Str::uuid()->toString();
+            $screening = Screening::create([
+                'screening_id'         => $screeningID,
+                'course_id'            => $course->course_id,
+                'screening_name'       => $req->screening_name,
+                'screening_instructions' => $req->screening_instructions,
+                'number_of_questions'  => $req->number_of_questions,
+                'overall_points'       => $req->number_of_questions,
+                'time_limit'           => $req->time_limit_minutes * 60,
+                'number_of_attempts'   => PHP_INT_MAX,          // ∞ attempts
+                'has_answers_shown'    => $req->boolean('has_answers_shown'),
+                'unlock_date'          => Carbon::parse($req->unlock_date),
+                'deadline_date'        => Carbon::parse($req->deadline_date),
+            ]);
+
+            /* ii) loop concepts → topics → questions ----------------------- */
+            foreach ($req->concepts as $cData) {
+
+                $conceptID = Str::of($cData['concept_name'])
+                    ->trim()
+                    ->replace(' ', '_')
+                    ->lower();
+
+                if (ScreeningConcept::where([
+                    ['screening_concept_id', $conceptID],
+                    ['screening_id', $screeningID],
+                ])->exists()) {
+                    $conceptID = $conceptID . '_' . Str::uuid()->toString();
+                }
+
+                $concept = ScreeningConcept::updateOrCreate(
+                    ['screening_concept_id' => $conceptID],
+                    [
+                        'screening_id'  => $screeningID,
+                        'concept_name'  => $cData['concept_name'],
+                        'passing_score' => 60,
+                    ]
+                );
+
+                foreach ($cData['topics'] as $tData) {
+
+                    $topicID = Str::of($tData['topic_name'])
+                        ->trim()->replace(' ', '_')->lower();
+
+                    if (ScreeningTopic::where([
+                        ['screening_topic_id', $topicID],
+                        ['screening_concept_id', $conceptID],
+                    ])->exists()) {
+                        $topicID = $topicID . '_' . Str::uuid()->toString();
+                    }
+
+                    $topic = ScreeningTopic::updateOrCreate(
+                        ['screening_topic_id' => $topicID],
+                        [
+                            'screening_concept_id' => $conceptID,
+                            'topic_name'           => $tData['topic_name'],
+                        ]
+                    );
+
+                    foreach ($tData['questions'] as $qIdx => $qData) {
+
+                        $qid = Str::uuid()->toString();
+                        $question = $topic->questions()->create([
+                            'screening_question_id'      => $topicID,
+                            'screening_topic_id'      => $qid,
+                            'question_text'    => $qData['text'],
+                            'question_type_id' => 1,    // MCQ
+                            'score'            => 1,
+                        ]);
+
+                        /* optional image */
+                        if (isset($qData['image'])) {
+                            $img = $qData['image'];
+                            $question->image()->updateOrCreate(
+                                [],
+                                [
+                                    'image'     => file_get_contents($img->getRealPath()),
+                                    'mime_type' => $img->getMimeType() ?? 'image/jpeg',
+                                ]
+                            );
+                        }
+
+                        /* options */
+                        foreach ($qData['options'] as $oIdx => $optTxt) {
+                            $question->options()->create([
+                                'screening_option_id'   => Str::uuid()->toString(),
+                                'screening_question_id' => $qid,
+                                'option_text'           => $optTxt,
+                                'is_correct'            => ($oIdx == $qData['correct']) ? 1 : 0,
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
+
+        return redirect("/teachers-panel/course/{$course->course_id}")
+            ->with('success', 'Screening exam created.');
+    }
+
+    /* 3 ── Edit form  */
+    public function editScreening(Courses $course, Screening $screening)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $screening->load('concepts.topics.questions.options', 'concepts.topics.questions.image');
+        return view('teacher.screening-edit', compact('course', 'screening', 'users'));
+    }
+
+    /* 4 ── Update  */
+    public function updateScreening(
+        Request $req,
+        Courses  $course,
+        Screening $screening
+    ) {
+        /* a) validate – identical rules ------------------------------------ */
+        $rules = [
+            'screening_name'         => 'required|string|max:255',
+            'screening_instructions' => 'required|string',
+            'number_of_questions'    => 'required|integer|min:1',
+            'time_limit_minutes'     => 'required|integer|min:1',
+            'has_answers_shown'      => 'nullable|boolean',
+
+            'concepts'                                 => 'required|array|min:1',
+            'concepts.*.concept_name'                  => 'required|string',
+            'concepts.*.topics'                        => 'required|array|min:1',
+            'concepts.*.topics.*.topic_name'           => 'required|string',
+            'concepts.*.topics.*.questions'            => 'required|array|min:1',
+            'concepts.*.topics.*.questions.*.text'     => 'required|string',
+            'concepts.*.topics.*.questions.*.correct'  => 'required|integer|min:0',
+            'concepts.*.topics.*.questions.*.options'  => 'required|array|min:1|max:4',
+            'concepts.*.topics.*.questions.*.options.*' => 'required|string',
+            'concepts.*.topics.*.questions.*.image'    => 'nullable|image|max:2048',
+        ];
+        Validator::make($req->all(), $rules)->validate();
+
+        /* b) transaction --------------------------------------------------- */
+        DB::transaction(function () use ($req, $screening) {
+
+            /* ── A) update header row ─────────────────────────────────── */
+            $screening->update([
+                'screening_name'        => $req->screening_name,
+                'screening_instructions' => $req->screening_instructions,
+                'number_of_questions'   => $req->number_of_questions,
+                'overall_points'        => $req->number_of_questions,
+                'time_limit'            => $req->time_limit_minutes * 60,
+                'has_answers_shown'     => $req->boolean('has_answers_shown'),
+                'unlock_date'           => Carbon::parse($req->unlock_date),
+                'deadline_date'         => Carbon::parse($req->deadline_date),
+            ]);
+
+            /* ── B) sync concepts / topics / questions ─────────────────── */
+            $keepConcept = [];
+
+            foreach ($req->concepts as $cData) {
+
+                // ------------ concept ------------
+                $conceptID = Str::of($cData['concept_name'])
+                    ->trim()->replace(' ', '_')->lower();
+                // keep existing id if form sent one
+                $conceptID = $cData['concept_id'] ?? $conceptID;
+
+                $concept = ScreeningConcept::updateOrCreate(
+                    ['screening_concept_id' => $conceptID],
+                    [
+                        'screening_id'  => $screening->screening_id,
+                        'concept_name'  => $cData['concept_name'],
+                        'passing_score' => 60,
+                    ]
+                );
+                $keepConcept[] = $conceptID;
+
+                $keepTopic = [];
+
+                foreach ($cData['topics'] as $tData) {
+
+                    // ---------- topic ----------
+                    $topicID = Str::of($tData['topic_name'])
+                        ->trim()->replace(' ', '_')->lower();
+                    $topicID = $tData['topic_id'] ?? $topicID;
+
+                    $topic = ScreeningTopic::updateOrCreate(
+                        ['screening_topic_id' => $topicID],
+                        [
+                            'screening_concept_id' => $conceptID,
+                            'topic_name'           => $tData['topic_name'],
+                        ]
+                    );
+                    $keepTopic[] = $topicID;
+
+                    $keepQ = [];
+
+                    foreach ($tData['questions'] as $qData) {
+
+                        // ------ question -------
+                        $qID = $qData['question_id'] ?? Str::uuid()->toString();
+
+                        $question = ScreeningQuestion::updateOrCreate(
+                            ['screening_question_id' => $qID],
+                            [
+                                'screening_topic_id' => $topicID,
+                                'question_text'      => $qData['text'],
+                                'question_type_id'   => 1,
+                                'score'              => 1,
+                            ]
+                        );
+                        $keepQ[] = $qID;
+
+                        // image (replace iff file present)
+                        if (isset($qData['image'])) {
+                            $img = $qData['image'];
+                            $question->image()->updateOrCreate(
+                                [],
+                                [
+                                    'image'     => file_get_contents($img->getRealPath()),
+                                    'mime_type' => $img->getMimeType() ?? 'image/jpeg',
+                                ]
+                            );
+                        }
+
+                        // options
+                        $keepOpt = [];
+                        foreach ($qData['options'] as $oIdx => $optTxt) {
+                            $oID = $qData['option_ids'][$oIdx] ?? Str::uuid()->toString();
+                            $row = ScreeningOption::updateOrCreate(
+                                ['screening_option_id' => $oID],
+                                [
+                                    'screening_question_id' => $qID,
+                                    'option_text'           => $optTxt,
+                                    'is_correct'            => ($oIdx == $qData['correct']) ? 1 : 0,
+                                ]
+                            );
+                            $keepOpt[] = $row->screening_option_id;
+                        }
+                        // prune dropped options
+                        $question->options()
+                            ->whereNotIn('screening_option_id', $keepOpt)
+                            ->delete();
+                    }
+                    // prune dropped questions
+                    $topic->questions()
+                        ->whereNotIn('screening_question_id', $keepQ)
+                        ->delete();
+                }
+                // prune dropped topics
+                $concept->topics()
+                    ->whereNotIn('screening_topic_id', $keepTopic)
+                    ->delete();
+            }
+            // prune dropped concepts
+            $screening->concepts()
+                ->whereNotIn('screening_concept_id', $keepConcept)
+                ->delete();
+        });
+
+        return back()->with('success', 'Screening exam updated.');
+    }
+
+    /* 5 ── Delete */
+    public function deleteScreening(Courses $course, Screening $screening)
+    {
+        $screening->delete();   // FK cascade removes all children
+        return back()->with('success', 'Screening exam deleted.');
+    }
+
+    /* 6 ── View (read-only) */
+    public function viewScreening(Courses $course, Screening $screening)
+    {
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        $screening->load('concepts.topics.questions.options', 'concepts.topics.questions.image');
+        return view('teacher.view-screening', compact('course', 'screening', 'users'));
+    }
+
+    /* Helper – reuse the validation array in update() */
+    private function screeningRules(): array
+    {
+        return [
+            'screening_name'         => 'required|string|max:255',
+            'screening_instructions' => 'required|string',
+            'number_of_questions'    => 'required|integer|min:1',
+            'time_limit_minutes'     => 'required|integer|min:1',
+            'unlock_date'            => 'required|date',
+            'deadline_date'          => 'required|date|after:unlock_date',
+            'has_answers_shown'      => 'nullable|boolean',
+
+            'concepts'                                 => 'required|array|min:1',
+            'concepts.*.concept_name'                  => 'required|string',
+            'concepts.*.topics'                        => 'required|array|min:1',
+            'concepts.*.topics.*.topic_name'           => 'required|string',
+            'concepts.*.topics.*.questions'            => 'required|array|min:1',
+            'concepts.*.topics.*.questions.*.text'     => 'required|string',
+            'concepts.*.topics.*.questions.*.correct'  => 'required|integer|min:0',
+            'concepts.*.topics.*.questions.*.options'  => 'required|array|min:1|max:4',
+            'concepts.*.topics.*.questions.*.options.*' => 'required|string',
+            'concepts.*.topics.*.questions.*.image'    => 'nullable|image|max:2048',
+        ];
     }
 }

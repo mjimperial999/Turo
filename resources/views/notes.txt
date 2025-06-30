@@ -44,7 +44,8 @@ Screening Exam
     └▶ Concepts
             └▶  Topics
                     └▶  Questions
-                            └▶  Options
+                            ├▶  Options
+                            └▶  Images
 
 There are tiers of attempts, one and two. For the first attempt, summary of screening exam would show you the results for each concept only. If the score for the concept is less than 60% (can be edited by the teacher/admin hence why there is a column handling this data), at the bottom of the scores for the concept there would be a button that links them to a page that displays educational resources (can be pdfs, youtube video embeds, or both) for the student user to study to improve in this area of concept. For example: You get 20/20 score in arithmetic questions, then 8/20 score in geometry. Below geometry is a button that sends them a page link that contains education resources for that concept.
 
@@ -79,3 +80,305 @@ The long-quiz.php view is where the format for the display of diagnostics will b
 For the css, change the long-quiz class to screening class, then the background gradient should be shades of gray. Long-quiz uses the blue gradient.
 
 Then I will ask later to create SQL lines to populate the data for an example screening exam.
+
+
+Now, we can focus on CRUD for Long Quiz. Please read all files and take your time to analyze all this. You can copy the same format from module crud, but add necessary tweaks.
+Logic for LongQuiz:
+longquiz
+    └▶questions
+            ├▶image
+            └▶options
+
+Longquiz has a lot of variables:
+course_id is inherited,
+long_quiz_name
+long_quiz_instructions
+number_of_attempts
+time_limit (for this one: let the user type in minutes, then convert it to seconds when sending this data)
+number_of_questions
+overall_points (this is not a user-inputted data, this data is based from the sum of all 'score' from longquiz_question table)
+has_answers_shown
+unlock_date
+deadline_date
+
+Longquiz doesn't have an image to represent a longquiz, but a question can either have an image or not.
+As for the questions, make it so that the user can add or delete as many questions as they can (like add a + button to add an input field, then - to delete the input field (just make sure that you can't delete if there is only one question field to prevent issues.))
+Questions can have maximum of 4 options, and make the one input field marked as green then it will be sent as is_correct = 1, while the rest are 0.
+
+
+Here are the TEACHER ROUTES for reference
+Route::prefix('teachers-panel')->group(function () {
+
+    // Courses
+
+    Route::get('/', [TeacherController::class,'teacherPanel']);
+    Route::get('/course/{course}', [TeacherController::class, 'viewCourse']);
+    
+    Route::get ('/create-course', [TeacherController::class,'createCourse']);
+    Route::post('/store-course', [TeacherController::class,'storeCourse']);
+
+    Route::get   ('/course/{course}/edit',   [TeacherController::class, 'editCourse']);
+    Route::post  ('/course/{course}/edit',   [TeacherController::class, 'updateCourse']);
+    Route::post  ('/course/{course}/delete', [TeacherController::class, 'deleteCourse']);
+
+        Route::prefix('course/{course}')->group(function () {
+
+        // Modules
+
+        Route::get('/module/{module}', [TeacherController::class, 'viewModule']);
+        
+        Route::get('/create-module',   [TeacherController::class, 'createModule']);
+        Route::post('/store-module',  [TeacherController::class, 'storeModule']);
+        
+        Route::get('/module/{module}/edit',      [TeacherController::class, 'editModule']);
+        Route::post('/module/{module}/edit',     [TeacherController::class, 'updateModule']);
+        Route::post('/module/{module}/delete',   [TeacherController::class, 'deleteModule']);
+
+    });
+
+});
+
+
+// This is the TeacherController. Copy the naming scheme.
+<?php 
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Users;
+use App\Models\Students;
+use App\Models\Courses;
+use App\Models\CourseImage;
+use App\Models\Modules;
+use App\Models\ModuleImage;
+use App\Models\Screening;
+use App\Models\Activities;
+use App\Models\LongQuizzes;
+use App\Models\AssessmentResult;
+use App\Models\LongQuizAssessmentResult;
+
+class TeacherController extends Controller
+{
+    private function checkTeacherAccess()
+    {
+        if (!session()->has('user_id')) {
+            return redirect('/login');
+        }
+
+        if (session('role_id') == 1) {
+            return redirect('/home-tutor');
+        }
+
+        return null;
+    }
+
+    public function teacherPanel()
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session('user_id');
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+        $courses = Courses::with('image')->get();
+
+        return view('teacher.teachers-panel', compact('courses', 'users',));
+    }
+
+    // Course CRUD
+    public function createCourse()
+    {
+        $userID = session('user_id');
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+        $courses = Courses::with('image')->get();
+
+        return view('teacher.course-create', compact('courses', 'users'));
+    }
+
+    public function storeCourse(Request $req)
+    {
+        $req->validate([
+            'course_name' => 'required|string|max:255',
+            'course_code' => 'required|string|max:255',
+            'course_description' => 'nullable|string',
+            'image'        => 'nullable|image|max:2048'
+        ]);
+
+        $course = Courses::create([
+            'course_id'          => uniqid(),
+            'course_code'        => $req->course_code,
+            'course_name'        => $req->course_name,
+            'course_description' => $req->course_description ?? '',
+            'course_picture'     => null,
+            'start_date'         => null,
+            'end_date'           => null,
+            'teacher_id'         => session('user_id')
+        ]);
+
+        if ($req->hasFile('image')) {
+            $blob = file_get_contents($req->file('image')->getRealPath());
+            $mime = $req->file('image')->getMimeType();
+
+            CourseImage::updateOrCreate(
+                ['course_id' => $course->course_id],
+                [
+                    'image'     => $blob,
+                    'mime_type' => $mime ?? 'image/jpeg'
+                ]
+            );
+        }
+
+        return redirect("/teachers-panel")
+            ->with('success', 'A new course has been created.');
+    }
+
+    public function editCourse(Courses $course)
+    {
+        return view('teacher.course-edit', compact('course'));
+    }
+
+    public function updateCourse(Request $req, Courses $course)
+    {
+        $req->validate([
+            'course_name' => 'required|string|max:255',
+            'course_code' => 'required|string|max:255',
+            'image'       => 'nullable|image|max:2048'
+        ]);
+
+        $course->course_name = $req->course_name;
+        $course->course_code = $req->course_code;
+        $course->course_description = $req->course_description;
+        $course->save();
+
+        if ($req->hasFile('image')) {
+            $blob = file_get_contents($req->file('image')->getRealPath());
+            $mime = $req->file('image')->getMimeType();
+
+            $course->image()->updateOrCreate(
+                ['course_id' => $course->course_id],
+                [
+                    'image' => $blob,
+                    'mime_type' => $mime ?? 'image/jpeg'
+                ]
+            );
+        }
+
+        return redirect()->back()->with('success', 'Course has been updated.');
+    }
+
+    public function deleteCourse(Courses $course)
+    {
+        $course->delete();
+        return redirect('/teachers-panel')->with('success', 'Course has been deleted.');
+    }
+
+
+    public function viewCourse(Courses $course)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+
+        $courses = Courses::with([
+            'modules.moduleimage',
+            'longquizzes',
+            'screenings',
+        ])->get();
+
+        return view('teacher.view-course', compact('course', 'users'));
+    }
+
+    // Module CRUD
+    public function createModule(Courses $course)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+        $courses = Courses::with([
+            'modules.moduleimage',
+        ])->get();
+
+        return view('teacher.module-create', compact('course','users'));
+    }
+
+    public function storeModule(Request $req, Courses $course)
+    {
+        $req->validate([
+            'module_name'        => 'required|string|max:255',
+            'image'              => 'nullable|image|max:2048'
+        ]);
+
+        $module = Modules::create([
+            'module_id'         => uniqid(),
+            'course_id'         => $course->course_id,
+            'module_name'       => $req->module_name,
+            'module_description' => $req->module_description
+        ]);
+
+        if ($req->hasFile('image')) {
+            $blob = file_get_contents($req->file('image')->getRealPath());
+            $mime = $req->file('image')->getMimeType();
+
+            $module->moduleimage()->updateOrCreate(
+                ['module_id' => $module->module_id],
+                ['image'     => $blob,
+                'mime_type' => $mime ?? 'image/jpeg']
+
+            );
+        }
+
+        return redirect()->back()->with('success', 'A new module has been created.');
+    }
+
+    public function editModule(Courses $course, Modules $module)
+    {
+        return view('teacher.module-edit', compact('course', 'module'));
+    }
+
+    public function updateModule(Request $req, $courseID, Modules $module)
+    {
+        $req->validate([
+            'module_name'        => 'required|string|max:255',
+            'image'              => 'nullable|image|max:2048'
+        ]);
+
+        $module->update($req->only('module_name', 'module_description'));
+
+        $blob = file_get_contents($req->file('image')->getRealPath());
+        $mime = $req->file('image')->getMimeType();
+
+        if ($req->hasFile('image')) {
+            $blob = file_get_contents($req->file('image')->getRealPath());
+            $mime = $req->file('image')->getMimeType();
+
+            $module->moduleimage()->updateOrCreate(
+                ['module_id' => $module->module_id],
+                ['image'     => $blob,
+                'mime_type' => $mime ?? 'image/jpeg']
+
+            );
+        }
+
+        return redirect()->back()->with('success', 'Module has been updated.');
+    }
+
+    public function deleteModule($courseID, Modules $module)
+    {
+        $module->delete();
+        return back()->with('success', 'Module deleted.');
+    }
+
+    public function viewModule(Courses $course, Modules $module)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+
+        $module->load('activities.quiz');
+
+        return view('teacher.view-module', compact('course', 'module', 'users'));
+    }
+}

@@ -19,6 +19,7 @@ class Options extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'option_id',
         'question_id',
         'option_text',
         'is_correct',

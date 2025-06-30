@@ -3,14 +3,18 @@
 </footer>
 </body>
 <script>
-    const nav = document.getElementById('primary-navigation');
+    const navMobile = document.getElementById('primary-navigation');
+
     const toggle = document.querySelector('.nav-toggle');
 
+    
+
     toggle.addEventListener('click', () => {
-        const isOpen = nav.getAttribute('data-visible') === 'true';
-        nav.setAttribute('data-visible', String(!isOpen));
+        const isOpen = navMobile.getAttribute('data-visible') === 'true';
+        navMobile.setAttribute('data-visible', String(!isOpen));
         toggle.setAttribute('aria-expanded', String(!isOpen));
     });
-</script>
 
-</html>
+
+
+</script>

@@ -14,6 +14,7 @@ class Admin extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'user_id',
         'user_name',
         'password_hash',
     ];

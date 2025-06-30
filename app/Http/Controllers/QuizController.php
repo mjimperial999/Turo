@@ -3,6 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+
+use App\Services\StudentAnalytics;
+
+use App\Models\Courses;
+use App\Models\Modules;
 use App\Models\Activities;
 use App\Models\AssessmentResult;
 use App\Models\Questions;
@@ -15,7 +20,8 @@ use Carbon\Carbon;
 
 class QuizController extends Controller
 {
-    public function computeStudentAnalytics($studentId)
+    /*
+    public function computeStudentAnalytics($studentId, $courseId)
     {
         // Short quiz data (with module_id)
         $short = AssessmentResult::where('student_id', $studentId)->where('is_kept', 1);
@@ -43,15 +49,19 @@ class QuizController extends Controller
         StudentProgress::updateOrCreate(
             ['student_id' => $studentId],
             [
+                'course_id'  => $courseId,
                 'average_score' => $combinedAvg,
                 'score_percentage' => $combinedAvg,
                 'total_points' => $totalPoints,
             ]
         );
-    }
+    } */
 
-    public function startQuiz($activityID)
+    public function startQuiz(Courses $course, Modules $module, Activities $activity)
     {
+        $courseID = $course->course_id;
+        $moduleID = $module->module_id;
+        $activityID = $activity->activity_id;
         $activity = Activities::with('quiz.questions.options')->findOrFail($activityID);
 
         $questions = $activity->quiz->questions->shuffle()->take($activity->quiz->number_of_questions)->values();
@@ -64,11 +74,15 @@ class QuizController extends Controller
         Session::put("quiz_{$activityID}_deadline", $deadline);
         Session::put("quiz_{$activityID}_in_progress", true);
 
-        return redirect("/home-tutor/quiz/{$activityID}/s/q/0");
+        return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}/s/q/0");
     }
 
-    public function showQuestion($activityID, $index)
+    public function showQuestion(Courses $course, Modules $module, Activities $activity, $index)
     {
+        $courseID = $course->course_id;
+        $moduleID = $module->module_id;
+        $activityID = $activity->activity_id;
+
         $studentID = session('user_id');
         $activity = Activities::with('quiz')->findOrFail($activityID);
         $questionIDs = Session::get("quiz_{$activityID}_questions");
@@ -83,42 +97,41 @@ class QuizController extends Controller
         $maxAttempts = $activity->quiz->number_of_attempts;
 
         if ($currentAttempts >= $maxAttempts) {
-            return redirect("/home-tutor/quiz/{$activityID}")
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
                 ->with('error', 'You have reached the maximum number of quiz attempts.');
         }
 
         if (!Session::get("quiz_{$activityID}_in_progress")) {
-            return redirect("/home-tutor/module/{$activity->module_id}")
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
                 ->with('error', 'Quiz has already ended or you accessed an invalid link.');
         }
 
-        // 🔒 Protection: No session = Not taking quiz
         if (!$questionIDs || !$deadline) {
-            return redirect("/home-tutor/quiz/{$activityID}")
-                ->with('error', 'You must start the quiz first.');
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Quiz has not started yet. Wait for a bit.');
         }
 
-        // 🔒 Protection: Time already expired
         if (Carbon::now('Asia/Manila')->gt(Carbon::parse($deadline))) {
             Session::forget("quiz_{$activityID}_questions");
             Session::forget("quiz_{$activityID}_answers");
             Session::forget("quiz_{$activityID}_deadline");
 
-            return redirect("/home-tutor/quiz/{$activityID}")
-                ->with('error', 'Your quiz session has expired.');
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Timer is already finised. Invalid access.');
         }
 
-        // 🔒 Protection: Invalid index (out of bounds)
         if (!isset($questionIDs[$index])) {
-            return redirect("/home-tutor/quiz/{$activityID}")
-                ->with('error', 'Invalid question number.');
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Question number unavailable.');
         }
 
         $questionID = $questionIDs[$index];
         $question = Questions::with(['options', 'questionimage'])->findOrFail($questionID);
         $remainingSeconds = (int) max(0, Carbon::now('Asia/Manila')->diffInSeconds(Carbon::parse($deadline), false));
 
-        return response()->view('student.quiz-interface', [
+        return response()->view('student.activity-quiz-interface', [
+            'course' => $course,
+            'module' => $module,
             'activity' => $activity,
             'question' => $question,
             'index' => $index,
@@ -127,8 +140,12 @@ class QuizController extends Controller
         ]);
     }
 
-    public function submitAnswer(Request $request, $activityID, $index)
+    public function submitAnswer(Request $request, Courses $course, Modules $module, Activities $activity, $index)
     {
+        $courseID = $course->course_id;
+        $moduleID = $module->module_id;
+        $activityID = $activity->activity_id;
+
         $selectedOption = $request->input('answer');
         $answers = session()->get("quiz_{$activityID}_answers", []);
         $answers[$index] = $selectedOption;
@@ -145,12 +162,12 @@ class QuizController extends Controller
         }
 
         if (!$questionIDs || !$deadline) {
-            return redirect("/home-tutor/quiz/{$activityID}")
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
                 ->with('error', 'Invalid quiz session.');
         }
 
         if ($nextIndex < count($questionIDs)) {
-            return redirect("/home-tutor/quiz/{$activityID}/s/q/{$nextIndex}");
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}/s/q/{$nextIndex}");
         } else {
             $correct = 0;
             foreach ($answers as $i => $selectedOptionID) {
@@ -187,9 +204,9 @@ class QuizController extends Controller
             Session::forget("quiz_{$activityID}_deadline");
             Session::forget("quiz_{$activityID}_in_progress");
 
-            $this->computeStudentAnalytics($studentID);
+            app(StudentAnalytics::class)->update($studentID, $moduleID, $courseID);
 
-            return redirect("/home-tutor/quiz/{$activityID}/summary")
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}/summary")
                 ->with('success', 'Quiz has been submitted.');
         }
     }

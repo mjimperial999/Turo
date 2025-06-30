@@ -3,17 +3,19 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\LearningResource;          // Your existing resources table
+use App\Models\Courses;    
+use App\Models\Screening;    
+use App\Models\LearningResource;
 
 class ScreeningResourcesController extends Controller
 {
-    public function show(string $courseId, string $screeningId, string $resourceId)
+    public function show(Courses $course, Screening $screening, string $resourceId)
 {
     $resource = LearningResource::findOrFail($resourceId);
 
     return view('student.screening-resources', [
-        'courseId'    => $courseId,
-        'screeningId' => $screeningId,         
+        'course'    => $course,
+        'screening' => $screening,         
         'resources'   => collect([$resource])
     ]);
 }

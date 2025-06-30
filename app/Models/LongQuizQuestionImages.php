@@ -15,6 +15,7 @@ class LongQuizQuestionImages extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'lq_image_id',
         'long_quiz_question_id',
         'image',
     ];

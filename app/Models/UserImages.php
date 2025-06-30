@@ -15,6 +15,7 @@ class UserImages extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'user_image_id',
         'user_id',
         'image',
     ];

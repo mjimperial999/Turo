@@ -8,6 +8,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ScreeningController;
 use App\Http\Controllers\ScreeningResourcesController;
+use App\Http\Controllers\TeacherController;
 
 // GENERAL
 Route::get('/', [MainController::class, 'landingRedirect']);
@@ -41,23 +42,58 @@ Route::get('/home-screening', function () {
 Route::get('/profile', [MainController::class, 'profilePage']);
 Route::get('/performance', [MainController::class, 'performancePage']);
 
-Route::get('/home-tutor', [MainController::class, 'courseList']);
-Route::get('/home-tutor/course/{course}', [MainController::class, 'moduleList']);
-Route::get('/home-tutor/module/{module}', [MainController::class, 'activityList']);
-Route::get('/home-tutor/lecture/{lecture}', [MainController::class, 'lecturePage']);
-Route::get('/home-tutor/tutorial/{tutorial}', [MainController::class, 'tutorialPage']);
+Route::prefix('home-tutor')->group(function () {
 
-Route::get('/home-tutor/quiz/{quiz}', [MainController::class, 'quizPage']);
-Route::get('/home-tutor/quiz/{activity}/s', [QuizController::class, 'startQuiz']);
-Route::get('/home-tutor/quiz/{activity}/s/q/{index}', [QuizController::class, 'showQuestion']);
-Route::post('/home-tutor/quiz/{activity}/s/q/{index}', [QuizController::class, 'submitAnswer']);
-Route::get('/home-tutor/quiz/{activity}/summary', [MainController::class, 'summary']);
+    Route::get('/', [MainController::class, 'courseList']);
 
-Route::get('/home-tutor/long-quiz/{course}/{longquiz}', [MainController::class, 'longquizPage']);
-Route::get('/home-tutor/long-quiz/{course}/{longquiz}/s', [LongQuizController::class, 'startQuiz']);
-Route::get('/home-tutor/long-quiz/{course}/{longquiz}/s/q/{index}', [LongQuizController::class, 'showQuestion']);
-Route::post('/home-tutor/long-quiz/{course}/{longquiz}/s/q/{index}', [LongQuizController::class, 'submitAnswer']);
-Route::get('/home-tutor/long-quiz/{course}/{longquiz}/summary', [MainController::class, 'longquizSummary']);
+    Route::prefix('course/{course}')->group(function () {
+
+        Route::get('/', [MainController::class, 'moduleList']);
+
+        Route::prefix('/longquiz/{longquiz}')->group(function () {
+
+            Route::get('/', [MainController::class, 'longquizPage']);
+            Route::get('/s', [LongQuizController::class, 'startQuiz']);
+            Route::get('/s/q/{index}', [LongQuizController::class, 'showQuestion']);
+            Route::post('/s/q/{index}', [LongQuizController::class, 'submitAnswer']);
+            Route::get('/summary', [MainController::class, 'longquizSummary']);
+        });
+
+        Route::prefix('module/{module}')->group(function () {
+
+            Route::get('/', [MainController::class, 'activityList']);
+            Route::get('lecture/{activity:activity_id}', [MainController::class, 'lecturePage']);
+            Route::get('tutorial/{activity:activity_id}', [MainController::class, 'tutorialPage']);
+            Route::prefix('quiz/{activity:activity_id}')->group(function () {
+
+                Route::get('/', [MainController::class, 'quizPage']);
+                Route::get('/s',          [QuizController::class, 'startQuiz']);
+                Route::get('/s/q/{index}',   [QuizController::class, 'showQuestion']);
+                Route::post('/s/q/{index}',  [QuizController::class, 'submitAnswer']);
+                Route::get('/summary',     [MainController::class, 'summary']);
+            });
+        });
+    });
+});
+
+Route::get('/lecture-file/{activity:activity_id}', function (App\Models\Activities $activity) {
+    $lecture = $activity->lecture;
+    abort_unless($lecture, 404);
+
+    return response($lecture->file_url, 200, [
+        'Content-Type'        => $lecture->file_mime_type ?? 'application/pdf',
+        'Content-Disposition' => 'inline; filename="' . $lecture->file_name . '"',
+    ]);
+});
+
+
+/*
+Route::get('/home-tutor/course/{course}/long-quiz/{longquiz}', [MainController::class, 'longquizPage']);
+Route::get('/home-tutor/course/{course}/long-quiz/{longquiz}/s', [LongQuizController::class, 'startQuiz']);
+Route::get('/home-tutor/course/{course}/long-quiz/{longquiz}/s/q/{index}', [LongQuizController::class, 'showQuestion']);
+Route::post('/home-tutor/course/{course}/long-quiz/{longquiz}/s/q/{index}', [LongQuizController::class, 'submitAnswer']);
+Route::get('/home-tutor/course/{course}/long-quiz/{longquiz}/summary', [MainController::class, 'longquizSummary']);
+*/
 
 Route::prefix('/home-tutor/course/{course}/')->group(function () {
 
@@ -67,22 +103,114 @@ Route::prefix('/home-tutor/course/{course}/')->group(function () {
     Route::post('{screening}/start', [ScreeningController::class, 'start']);
 
     // single-question player (same URI for GET to show & POST to submit)
-    Route::match(['get','post'],
-                 '{screening}/q/{index}',
-                 [ScreeningController::class, 'play']);
+    Route::match(['get', 'post'], '{screening}/q/{index}', [ScreeningController::class, 'play']);
 
     // end-of-attempt summary
     Route::get('{screening}/summary', [ScreeningController::class, 'summary']);
 
     // optional: resource links for weak concepts / topics
-    Route::get('{screening}/resources/{resource}',
-               [ScreeningResourcesController::class, 'show']);
+    Route::get(
+        '{screening}/resources/{resource}',
+        [ScreeningResourcesController::class, 'show']
+    );
 });
 
-// TEACHER
 
-Route::get('/teachers-panel', [MainController::class, 'teacherPanel']);
 
+// TEACHER ROUTES
+Route::prefix('teachers-panel')->group(function () {
+
+    // Courses
+    Route::get('/', [TeacherController::class, 'teacherPanel']);
+    Route::get('/course/{course}', [TeacherController::class, 'viewCourse']);
+
+    Route::get('/create-course', [TeacherController::class, 'createCourse']);
+    Route::post('/store-course', [TeacherController::class, 'storeCourse']);
+
+    Route::get('/course/{course}/edit',   [TeacherController::class, 'editCourse']);
+    Route::post('/course/{course}/edit',   [TeacherController::class, 'updateCourse']);
+    Route::post('/course/{course}/delete', [TeacherController::class, 'deleteCourse']);
+
+    Route::prefix('course/{course}')->group(function () {
+
+        // Modules
+        Route::get('/module/{module}', [TeacherController::class, 'viewModule']);
+
+        Route::get('/create-module',   [TeacherController::class, 'createModule']);
+        Route::post('/store-module',  [TeacherController::class, 'storeModule']);
+
+        Route::get('/module/{module}/edit',      [TeacherController::class, 'editModule']);
+        Route::post('/module/{module}/edit',     [TeacherController::class, 'updateModule']);
+        Route::post('/module/{module}/delete',   [TeacherController::class, 'deleteModule']);
+
+
+        // Long Quizzes
+        Route::get('/longquiz/{longquiz}',            [TeacherController::class, 'viewLongQuiz']);
+
+        Route::get('/create-longquiz',               [TeacherController::class, 'createLongQuiz']);
+        Route::post('/store-longquiz',                [TeacherController::class, 'storeLongQuiz']);
+
+        Route::get('/longquiz/{longquiz}/edit',      [TeacherController::class, 'editLongQuiz']);
+        Route::post('/longquiz/{longquiz}/edit',      [TeacherController::class, 'updateLongQuiz']);
+        Route::post('/longquiz/{longquiz}/delete',    [TeacherController::class, 'deleteLongQuiz']);
+
+        // Screening Exam
+        Route::get('/screening/{screening}',[TeacherController::class, 'viewScreening']);
+
+        Route::get('/create-screening', [TeacherController::class, 'createScreening']);
+        Route::post('/store-screening',[TeacherController::class, 'storeScreening']);
+
+        Route::get('/screening/{screening}/edit',[TeacherController::class, 'editScreening']);
+        Route::post('/screening/{screening}/edit',[TeacherController::class, 'updateScreening']);
+        Route::post('/screening/{screening}/delete',[TeacherController::class, 'deleteScreening']);
+
+
+        Route::prefix('module/{module}')->group(function () {
+
+            // Lecture
+            Route::get('/lecture/{activity}', [TeacherController::class, 'viewLecture']);
+
+            Route::get('/create-lecture',   [TeacherController::class, 'createLecture']);
+            Route::post('/store-lecture',  [TeacherController::class, 'storeLecture']);
+
+            Route::get('/lecture/{activity}/edit',      [TeacherController::class, 'editLecture']);
+            Route::post('/lecture/{activity}/edit',     [TeacherController::class, 'updateLecture']);
+            Route::post('/lecture/{activity}/delete',   [TeacherController::class, 'deleteLecture']);
+
+
+            // Tutorial
+            Route::get('/tutorial/{activity}',            [TeacherController::class, 'viewTutorial']);
+
+            Route::get('/create-tutorial',                [TeacherController::class, 'createTutorial']);
+            Route::post('/store-tutorial',                [TeacherController::class, 'storeTutorial']);
+
+            Route::get('/tutorial/{activity}/edit',       [TeacherController::class, 'editTutorial']);
+            Route::post('/tutorial/{activity}/edit',      [TeacherController::class, 'updateTutorial']);
+            Route::post('/tutorial/{activity}/delete',    [TeacherController::class, 'deleteTutorial']);
+
+
+            // Practice Quiz
+            Route::get('/create-practicequiz',            [TeacherController::class, 'createPracticeQuiz']);
+            Route::post('/store-practicequiz',            [TeacherController::class, 'storePracticeQuiz']);
+
+            Route::get('/practicequiz/{activity}/edit',   [TeacherController::class, 'editPracticeQuiz']);
+            Route::post('/practicequiz/{activity}/edit',  [TeacherController::class, 'updatePracticeQuiz']);
+            Route::post('/practicequiz/{activity}/delete', [TeacherController::class, 'deletePracticeQuiz']);
+
+            Route::get('/practicequiz/{activity}',        [TeacherController::class, 'viewPracticeQuiz']);
+
+            // Short Quiz
+            Route::get('/create-shortquiz',               [TeacherController::class, 'createShortQuiz']);
+            Route::post('/store-shortquiz',               [TeacherController::class, 'storeShortQuiz']);
+
+            Route::get('/shortquiz/{activity}/edit',      [TeacherController::class, 'editShortQuiz']);
+            Route::post('/shortquiz/{activity}/edit',     [TeacherController::class, 'updateShortQuiz']);
+            Route::post('/shortquiz/{activity}/delete',   [TeacherController::class, 'deleteShortQuiz']);
+
+            Route::get('/shortquiz/{activity}',           [TeacherController::class, 'viewShortQuiz']);
+        });
+    });
+});
 
 // TEST
 Route::get('/test-session', function () {

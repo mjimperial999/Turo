@@ -9,10 +9,13 @@ class ScreeningConcept extends Model
     protected $primaryKey = 'screening_concept_id';
     public    $incrementing = false;
     protected $keyType    = 'string';
+    public $timestamps   = false; 
 
     protected $fillable = [
-        'screening_concept_id', 'screening_id',
-        'concept_name', 'passing_score'
+        'screening_concept_id', 
+        'screening_id',
+        'concept_name',
+        'passing_score',
     ];
 
     public function screening()
