@@ -61,6 +61,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
 <body>
     <?php
+
     include __DIR__ . '/../partials/nav.php';
 
     /* ----- colour-ring settings ----- */
@@ -135,6 +136,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                         </div>
                     </div>
                 </div>
+
             </div>
 
             <div class="content-container screening-exam">
@@ -209,10 +211,18 @@ include __DIR__ . '/../partials/head.php'; ?>
                                 </div>
                             </div>
                         </div>
+                    <?php endif; ?>
 
-                    <?php
-                    // ---------- first attempt ---------- 
-                    elseif ($isFirstAttempt): ?>
+                    <?php if ($passed): ?>
+                        <div class="content padding">
+                            <div class="no-items">
+                                <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
+                                Congratulations – you passed!
+                            </div>
+                        </div>
+
+
+                    <?php elseif ($attempts == 1): ?>
                         <div class="screening-results-container">
                             <div class="content">
                                 <div class="header logo-sub">
@@ -222,6 +232,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                         </div>
                                         <div class="text title">
                                             <h5><b>Tier 1</b></h5>
+                                            <p>Attempt <?= $attempts ?> / 3</p>
                                             <p class="italic-albert">If you get a low score on a certain topic, resources will be given to you for improvement.</p>
                                         </div>
                                     </div>
@@ -237,9 +248,8 @@ include __DIR__ . '/../partials/head.php'; ?>
                             </div>
 
                         </div>
-                    <?php
-                    // ---------- second attempt and beyond ---------- 
-                    else: ?>
+
+                    <?php elseif ($attempts == 2): ?>
                         <div class="screening-results-container">
 
                             <div class="content">
@@ -250,6 +260,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                         </div>
                                         <div class="text title">
                                             <h5><b>Tier 2</b></h5>
+                                            <p>Attempt <?= $attempts ?> / 3</p>
                                             <p class="italic-albert">Low scores under topics will get more specific study materials. Use it to improve your areas that you are struggling.</p>
                                         </div>
                                     </div>
@@ -261,20 +272,50 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     <?php foreach ($conceptData as $cid => $c): ?>
                                         <?php include __DIR__ . '/../partials/screening-resource-t2-hero.php'; ?>
                                     <?php endforeach; ?>
-                                <?php endif; ?>
                                 </div>
                             </div>
 
                         </div>
 
-                </div>
+                    <?php else: ?>
+                        <div class="screening-results-container">
 
+                            <div class="content">
+                                <div class="header logo-sub">
+                                    <div class="logo-and-title" style="padding: 0rem 1rem;">
+                                        <div class="logo">
+                                            <img class="svg" src="/icons/screener.svg" width="50em" height="auto" />
+                                        </div>
+                                        <div class="text title">
+                                            <h5><b>Tier 3</b></h5>
+                                            <p>Attempt <?= $attempts ?> / 3</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="content padding">
+                                <div class="screening-results-container-results">
+                                    <p> You have used all three attempts.<br>
+                                        You will now enter the personalised catch-up program.</p>
+                                </div>
+                                <a class="btn edit" href="/home-tutor">Begin Catch-up Program</a>
+                            </div>
+
+                        </div>
+                    <?php endif; ?>
+                </div>
+                </div>
+                </div>
+            <div class="spacing side">
+                <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
             </div>
         </div>
-        <div class="spacing side">
-            <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
-        </div>
-        </div>
+
+
+
+
+
         <?php include __DIR__ . '/../partials/footer.php'; ?>
 </body>
 

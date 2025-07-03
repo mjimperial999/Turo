@@ -34,34 +34,7 @@ include __DIR__ . '/../partials/head.php'; ?>
             <div class="content-container padding box-gold">
             </div>
 
-            <?php /*
-            <div class="content-container">
-                <div class="content padding heading box-gray">
-
-                    <div class="header">
-                        <div class="text title">
-                            <h5> Performance Analysis </h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="content padding box-page">
-                </div>
-
-            </div>
-
-            <div class="content-container">
-                <div class="content padding heading box-gray">
-
-                    <div class="header">
-                        <div class="text title">
-                            <h5> Achievements </h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="content padding box-page">
-                </div>
-
-            </div> */ ?>
+        
         </div>
         <div class="spacing side">
             <?php include __DIR__ . '/../partials/right-side-notifications.php'; ?>

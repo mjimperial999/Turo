@@ -47,6 +47,22 @@ Screening Exam
                             ├▶  Options
                             └▶  Images
 
+create the view for performance page (no blade)
+i just need the syntax
+
+I need to display:
+Course Name
+    ├▶ Modules 
+    │       ├▶ Practices - Average
+    │       │       └▶ Practice Quiz 1        
+    │       └▶ Short Quizzes - Average
+    │               └▶ Short Quiz 1
+    ├▶ Long Quizzes - Average
+    │       └▶ Long Quiz 1
+    ├▶ Screening Exam 1
+    ├▶ Screening Exam 2 etc.
+    └▶ Overall Grade (Short and Long Quiz)
+
 There are tiers of attempts, one and two. For the first attempt, summary of screening exam would show you the results for each concept only. If the score for the concept is less than 60% (can be edited by the teacher/admin hence why there is a column handling this data), at the bottom of the scores for the concept there would be a button that links them to a page that displays educational resources (can be pdfs, youtube video embeds, or both) for the student user to study to improve in this area of concept. For example: You get 20/20 score in arithmetic questions, then 8/20 score in geometry. Below geometry is a button that sends them a page link that contains education resources for that concept.
 
 Display logic:

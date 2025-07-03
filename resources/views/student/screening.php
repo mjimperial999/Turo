@@ -27,25 +27,37 @@ include __DIR__ . '/../partials/head.php'; ?>
     include __DIR__ . '/../partials/nav.php';
     include __DIR__ . '/../partials/time-lock-check-screening.php';
 
+    $studentId = session('user_id');
+
+    $latest = \App\Models\ScreeningResult::where([
+        ['student_id',   $studentId],
+        ['screening_id', $screening->screening_id],
+    ])->orderByDesc('attempt_number')->first();
+
+    $attempts = $latest ? $latest->attempt_number : 0;
+    $passed   = $latest && $latest->score_percentage >= 70;
+
+    $canRetake = !$passed && $attempts < 3;
+
     $percentage = $latestResult ? $latestResult->score_percentage : null;
     $circle_display = $percentage !== null ? (450 - (450 * $percentage) / 100) : 450;
 
     // Color based on percentage
     if ($percentage === null) {
-        $color = '#999999';
-        $percentage_display = '--';
+    $color = '#999999';
+    $percentage_display = '--';
     } elseif ($percentage >= 80) {
-        $color = '#01EE2C';
-        $percentage_display = round($percentage);
+    $color = '#01EE2C';
+    $percentage_display = round($percentage);
     } elseif ($percentage >= 75) {
-        $color = '#caee01';
-        $percentage_display = round($percentage);
+    $color = '#caee01';
+    $percentage_display = round($percentage);
     } elseif ($percentage >= 50) {
-        $color = '#ee8301';
-        $percentage_display = round($percentage);
+    $color = '#ee8301';
+    $percentage_display = round($percentage);
     } else {
-        $color = '#ee0101';
-        $percentage_display = round($percentage);
+    $color = '#ee0101';
+    $percentage_display = round($percentage);
     }
 
     $seconds = $screening->time_limit;
@@ -141,11 +153,13 @@ include __DIR__ . '/../partials/head.php'; ?>
                             </div>
                         </div>
                         <div class="module-section quiz-button-section">
+                            <?php if ($canRetake): ?>
                             <form method="POST"
                                 action="/home-tutor/course/<?= $course->course_id ?>/<?= $screening->screening_id ?>/start">
                                 <?= csrf_field() ?>
                                 <button class="quiz-button activity-button screening-button">Start&nbsp;Exam</button>
                             </form>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

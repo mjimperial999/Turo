@@ -7,7 +7,7 @@
 
     const toggle = document.querySelector('.nav-toggle');
 
-    
+
 
     toggle.addEventListener('click', () => {
         const isOpen = navMobile.getAttribute('data-visible') === 'true';
@@ -16,5 +16,13 @@
     });
 
 
-
+    /* ─── click-to-show details inside calendar ───────*/
+    document.querySelectorAll('.calendar td').forEach(td => {
+        td.addEventListener('click', () => {
+            const copy = td.cloneNode(true);
+            copy.querySelectorAll('.num').forEach(n => n.remove());
+            document.getElementById('details').innerHTML =
+                copy.innerHTML.trim() ? copy.innerHTML : '<em>No items this day</em>';
+        });
+    });
 </script>

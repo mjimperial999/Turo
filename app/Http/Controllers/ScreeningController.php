@@ -12,6 +12,7 @@ use App\Services\StudentAnalytics;
 
 use App\Models\Users;
 use App\Models\Courses;
+use App\Models\Students;
 use App\Models\Screening;
 use App\Models\ScreeningQuestion;
 use App\Models\ScreeningOption;
@@ -21,6 +22,14 @@ use App\Models\LearningResource;
 
 class ScreeningController extends Controller
 {
+    private function attemptsTaken(string $studentId, string $screeningId): int
+    {
+        return ScreeningResult::where([
+            ['student_id',   $studentId],
+            ['screening_id', $screeningId],
+        ])->count();
+    }
+
     /*--------------------------------------------------------
     | LIST
     *-------------------------------------------------------*/
@@ -272,15 +281,23 @@ class ScreeningController extends Controller
                 'earned_points'    => $earned,
                 'is_kept'          => $isKept
             ]);
+
+            $failed   = $percent < 70;
+            $attempts = $state['attempt_no'];          // you already pass 1 | 2 | 3
+
+            if ($failed && $attempts >= 3) {
+                // send the learner into catch-up mode
+                Students::where('user_id', $studentId)
+                    ->update(['isCatchUp' => 1]);
+            }
+
+            Session::forget("se_{$screeningId}");
         });
 
-        /* ---------------------------------------------------------------------
-     * 8 ▸ Clear session & redirect
-     * --------------------------------------------------------------------- */
-        Session::forget("se_{$screeningId}");
-
         return redirect("/home-tutor/course/{$courseId}/{$screeningId}/summary")
-            ->with('success', 'Exam has been submitted.');
+            ->with([
+                'success'   => 'Exam has been submitted.',
+            ]);
     }
 
     /*--------------------------------------------------------
@@ -364,6 +381,9 @@ class ScreeningController extends Controller
         $screeningName = Screening::where('screening_id', $screeningId)
             ->value('screening_name');
 
+        $attempts = session('attempts', $latest->attempt_number);
+        $passed   = session('passed',   $latest->score_percentage >= 70);
+
         return view('student.screening-summary', [
             'users'       => $users,
             'course'    => $course,
@@ -373,6 +393,8 @@ class ScreeningController extends Controller
             'result'      => $latest,
             'conceptData' => $conceptData,
             'topicData'   => $topicData,
+            'attempts'   => $attempts,
+            'passed'     => $passed,
         ]);
     }
 }

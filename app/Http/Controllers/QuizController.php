@@ -204,7 +204,11 @@ class QuizController extends Controller
             Session::forget("quiz_{$activityID}_deadline");
             Session::forget("quiz_{$activityID}_in_progress");
 
-            app(StudentAnalytics::class)->update($studentID, $moduleID, $courseID);
+            StudentAnalytics::updateAfterQuiz(
+                $studentID,
+                $courseID,
+                $moduleID   // null for course-level exams
+            );
 
             return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}/summary")
                 ->with('success', 'Quiz has been submitted.');

@@ -106,15 +106,7 @@ include __DIR__ . '/../partials/head.php'; ?>
         cWrap.appendChild(tpl);
     }
     // init
-    window.addEventListener('DOMContentLoaded', () => {
-        const data = <?= json_encode(
-                            $initialData,
-                            JSON_UNESCAPED_UNICODE | JSON_HEX_APOS
-                        ) ?>;
-        if (data.length) {
-            data.forEach(addConcept);
-        } else addConcept(); // fallback (should not happen)
-    });
+    document.addEventListener('DOMContentLoaded', () => addQuestion()); // first block
 </script>
 </head>
 

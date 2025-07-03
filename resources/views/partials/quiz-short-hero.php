@@ -64,7 +64,7 @@ if (session('role_id') == 1) {
     } else {
         echo
         '<div class="quiz-flex-box locked">
-        <div class="quiz-box">
+        <div class="quiz-box short">
             <div class="quiz-title">
                 <div class="logo">
                     <img class="svg" src="/icons/short-quiz.svg" width="42em" height="auto" />
@@ -72,11 +72,6 @@ if (session('role_id') == 1) {
                 <div class="text title">
                     <h6>' . $activity->activity_name . ' (LOCKED)</h6>
                     <p>' . $description . '</p>
-                </div>
-            </div>
-            <div class="quiz-score">
-                <div class="text title">
-                    <h6>' . $percentage . '</h6>
                 </div>
             </div>
         </div>

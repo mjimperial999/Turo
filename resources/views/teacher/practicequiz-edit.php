@@ -169,8 +169,8 @@ include __DIR__ . '/../partials/head.php'; ?>
                             </div>
 
                             <div class="form-box">
-                                <div class="form-label"><label>Number of Attempts:</label></div>
-                                <div class="form-input"><input type="number" name="number_of_attempts" min="1" value="<?= $activity->quiz->number_of_attempts ?>" required></div>
+                                <div class="form-label"><label>Number of Questions:</label></div>
+                                <div class="form-input"><input type="number" name="number_of_questions" min="1" value="<?= htmlspecialchars($activity->quiz->number_of_questions) ?>" required></div>
                             </div>
 
                             <div class="form-box">

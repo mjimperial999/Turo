@@ -11,6 +11,11 @@ class AssessmentResult extends Model
         return $this->belongsTo(Students::class, 'student_id', 'user_id');
     }
 
+    public function activity()
+    {
+        return $this->belongsTo(Activities::class,'activity_id','activity_id');
+    }
+
     public function quiz()
     {
         return $this->belongsTo(Quizzes::class,'activity_id','activity_id');
@@ -34,4 +39,9 @@ class AssessmentResult extends Model
         'earned_points',
         'is_kept',
     ];
+
+    public function scopeKept($q)
+    {
+        return $q->where('is_kept', 1);
+    }
 }

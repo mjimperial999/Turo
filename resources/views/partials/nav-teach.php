@@ -39,8 +39,6 @@ function getMimeTypeFromBlob($blob)
         <div class="nav__links">
             <a class="nav" href="/teachers-panel">DASHBOARD</a>
             <a class="nav" href="/profile">PROFILE</a>
-            <a class="nav" href="/performance">PERFORMANCE</a>
-            <a class="nav" href="#">LEADERBOARDS</a>
             <a class="nav" href="#">INBOX</a>
             <a class="nav" href="/logout">LOGOUT</a>
         </div>

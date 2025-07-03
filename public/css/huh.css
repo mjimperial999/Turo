@@ -1426,7 +1426,7 @@ h5.description,
     border-radius: 0.5rem;
 }
 
-.profile-color {
+.performance-card {
     background:
         linear-gradient(135deg, rgb(230, 182, 182) 0%, rgb(234, 212, 185) 50%, rgb(231, 217, 177) 100%) padding-box,
         linear-gradient(135deg, rgb(219, 84, 84) 0%, rgb(223, 165, 94) 50%, rgb(219, 190, 112) 100%) border-box;
@@ -1746,14 +1746,6 @@ h5.description,
     font-family: Alexandria, sans-serif;
 }
 
-span.failed {
-    color: rgb(168, 52, 52);
-}
-
-span.passed {
-    color: rgb(50, 162, 50);
-}
-
 .mobile-display-only {
     display: none;
 }
@@ -1774,6 +1766,110 @@ span.passed {
     flex-direction: row;
     align-items: center;
     gap: 0.5rem;
+}
+
+.calendar {
+    width: 100%;
+    table-layout:fixed;
+    border-collapse: collapse;
+    font-family: Albert-Sans, sans-serif;
+}
+
+.sidebar-box.calendar a {
+    text-decoration: none;
+    color: #000000;
+}
+
+.sidebar-box.notifications {
+    max-height: 18rem;
+    display: flex;
+    flex-direction: column;
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+    gap: 0.5rem;
+}
+
+.notif-block {
+    max-height: 18rem;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.sidebar-box.notifications a {
+    text-decoration: none;
+    color: #000000;
+}
+
+.sidebar-box.notifications .notif-link:hover {
+    text-decoration: underline;
+    color: #000000;
+}
+
+
+.calendar th {
+    border: 1px solid #ddd;
+    font-size: 0.9rem;
+    height: 2rem;
+    background: #eee;
+    padding: .4rem;
+    text-align: center;
+}
+
+.calendar td {
+    font-size: 0.8rem;
+    border: 1px solid #ddd;
+    height: 2rem;
+    vertical-align: top;
+    padding: .2rem;
+    position: relative;
+}
+
+.calendar .num {
+    font-weight: 300;
+}
+
+.calendar .today {
+    background: #fdd !important;
+}
+
+.calendar .entry {
+    display: block;
+    font-size: 11px;
+    margin: .1rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.calendar .ev {
+    color: #c00;
+}
+
+.calendar .ac {
+    color: #1976d2;
+}
+
+.sidebar-box {
+    background: #fffaf8;
+}
+
+.sidebar-box h4 {
+    margin: 0 0 .5rem;
+    font: 600 16px Alata, sans-serif;
+}
+
+.notif a {
+    color: #333;
+    text-decoration: none;
+    display: block;
+    padding: .3rem 0;
+}
+
+.notif small {
+    display: block;
+    font-size: 11px;
+    color: #666;
 }
 
 @media only screen and (max-width: 1000px) {

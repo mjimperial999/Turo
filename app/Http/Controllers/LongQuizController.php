@@ -190,7 +190,10 @@ class LongQuizController extends Controller
             Session::forget("lq_{$longQuizID}_deadline");
             Session::forget("lq_{$longQuizID}_in_progress");
 
-            app(StudentAnalytics::class)->update($studentID, $courseID);
+            StudentAnalytics::updateAfterQuiz(
+                $studentID,
+                $courseID
+            );
 
             return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}/summary")
                 ->with('success', 'Quiz has been submitted.');

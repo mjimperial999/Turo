@@ -48,6 +48,11 @@ include __DIR__ . '/../partials/head.php'; ?>
     <?php
     $title = $course->course_name;
     include __DIR__ . '/../partials/nav.php';
+
+
+    $student   = \App\Models\Students::find(session('user_id'));
+    $isLocked  = ($student->isCatchUp == 0);
+
     ?>
 
     <div class="screen">
@@ -72,6 +77,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                 </div>
             </div>
 
+            <?php if(!$isLocked): ?>
             <div class="content-container">
                 <div class="content padding heading box-gray">
 
@@ -126,7 +132,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                 </div>
 
             </div>
-
+            <?php endif; ?>
 
             <div class="content-container box-page">
                 <div class="content padding heading box-gray">
@@ -141,7 +147,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                     <div class="flex-box">
                         <?php if ($course->screenings->isEmpty()): ?>
-                             <div class="no-items">
+                            <div class="no-items">
                                 <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
                                 No screening exams available for this course.
                             </div>

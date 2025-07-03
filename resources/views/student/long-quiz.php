@@ -140,7 +140,7 @@ include __DIR__ . '/../partials/head.php';
                                 <div class="points-container">
                                     <br>
                                     <p class="description" style="text-align: center;">Total Points Garnered</p>
-                                    <p class="description points" style="text-align: center;"><b><?= ($assessment?->earned_points * 10) ?? 0 ?></b></p>
+                                    <p class="description points" style="text-align: center;"><b><?= ($assessment?->earned_points * 100) ?? 0 ?></b></p>
                                 </div>
                             </div>
                         </div>

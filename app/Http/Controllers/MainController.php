@@ -5,15 +5,20 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+use App\Services\StudentAnalytics;
+
 use App\Models\Users;
 use App\Models\Students;
 use App\Models\StudentProgress;
+use App\Models\ModuleProgress;
 use App\Models\Courses;
 use App\Models\Modules;
 use App\Models\Screening;
+use App\Models\ScreeningResult;
 use App\Models\Activities;
 use App\Models\LongQuizzes;
 use App\Models\AssessmentResult;
+use App\Models\CalendarEvent;
 use App\Models\LongQuizAssessmentResult;
 
 
@@ -44,6 +49,31 @@ class MainController extends Controller
             : redirect('/teachers-panel');
     }
 
+    protected function mustHaveCatchUp(string $courseId = null)
+{
+    $isCatchUp = Students::where('user_id', session('user_id'))
+                 ->value('isCatchUp');
+
+    if ($isCatchUp == 0) {
+        return redirect("/home-tutor")
+               ->with('error',
+                   'Invalid Access.');
+    }
+
+    return null;
+}
+
+    public function showAnnouncement($announcementID)
+    {
+        if ($redirect = $this->checkStudentAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+        $announcement = CalendarEvent::findOrFail($announcementID);
+
+        return view('student.view-annoucement', compact('users','announcement'));
+    }
+
 
     public function profilePage()
     {
@@ -71,6 +101,7 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
+
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
@@ -87,6 +118,8 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
+
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
@@ -98,6 +131,8 @@ class MainController extends Controller
     public function lecturePage(Courses $course, Modules $module, Activities $activity)
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
+
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -112,6 +147,8 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
+
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
@@ -122,6 +159,8 @@ class MainController extends Controller
     public function quizPage(Courses $course, Modules $module, Activities $activity)
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
+
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -149,6 +188,8 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
+
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
         $activityID = $activity->activity_id;
@@ -174,6 +215,8 @@ class MainController extends Controller
     public function longquizPage($courseID, $longQuizID)
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
+
+        if ($redirect = $this->mustHaveCatchUp($courseID)) {return $redirect;}
 
         $course = Courses::findOrFail($courseID);
         $longquiz = LongQuizzes::findOrFail($longQuizID);
@@ -202,6 +245,8 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
+        if ($redirect = $this->mustHaveCatchUp($courseID)) {return $redirect;}
+
         $course = Courses::findOrFail($courseID);
         $longquiz = LongQuizzes::findOrFail($longQuizID);
         $userID = session()->get('user_id');
@@ -228,112 +273,117 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
-        $userID = session()->get('user_id');
-        $users = Users::with('image')->findOrFail($userID);
-        $studentID = $userID;
+        $studentId = session('user_id');
 
-        /* -------------------------------------------------------------
-     | 1.  overall progress row (may be null)
-     |------------------------------------------------------------ */
-        $progress = StudentProgress::where('student_id', $studentID)->first();
+        /* ── keep all roll-ups fresh ───────────── */
+        StudentAnalytics::refreshStudentSummary($studentId);
 
-        /* -------------------------------------------------------------
-     | 2.  courses in which the student is enrolled
-     |------------------------------------------------------------ */
-        $courses = Courses::query()
-            ->join('enrollment', 'course.course_id', '=', 'enrollment.course_id')
-            ->where('enrollment.student_id', $studentID)
-            ->select('course.course_id', 'course.course_name')
+        /* ── basic user + grand-total row ───────── */
+        $users   = Users::with('image')->findOrFail($studentId);
+        $overall = Students::findOrFail($studentId);       // <- has total_points
+
+        /* ── course-level aggregates (already built by StudentAnalytics) */
+        $courses = StudentProgress::with('course')         // eager-loads course name
+            ->where('student_id', $studentId)
             ->get();
 
-        /* -------------------------------------------------------------
-     | 3.  module-level averages  (short quizzes only)
-     |------------------------------------------------------------ */
-        $moduleAverages = AssessmentResult::query()
-            ->join('module', 'assessmentresult.module_id', '=', 'module.module_id')
-            ->join('course',  'module.course_id', '=', 'course.course_id')
-            ->where([
-                ['assessmentresult.student_id', $studentID],
-                ['assessmentresult.is_kept',    1],
-            ])
-            ->groupBy('assessmentresult.module_id', 'module.module_name', 'module.course_id')
-            ->get([
-                'assessmentresult.module_id',
-                'module.module_name',
-                'module.course_id',
-                DB::raw('AVG(score_percentage) as average_score'),
-            ]);
+        /* ── module averages (short+practice) for each course */
+        $modules = ModuleProgress::with('module')          // pull module name
+            ->where('student_id', $studentId)
+            ->get()
+            ->groupBy('course_id');                 // ⇒ $modules[<course>][]
 
-        /* -------------------------------------------------------------
-     | 4.  short-quiz average per course
-     |------------------------------------------------------------ */
-        $shortAverages = AssessmentResult::query()
-            ->join('module', 'assessmentresult.module_id', '=', 'module.module_id')
+        /* ── practice-quiz breakdown inside every module */
+        $practice = AssessmentResult::query()
+            ->from('assessmentresult as ar')                 // alias main table
+            ->join('activity as a',   'ar.activity_id', '=', 'a.activity_id')
+            ->join('quiz as q',       'a.activity_id',  '=', 'q.activity_id')
+            ->selectRaw('
+        a.module_id                              as module_id,
+        ar.activity_id,
+        a.activity_name                          as quiz_name,
+        AVG(ar.score_percentage)                 as avg
+    ')
             ->where([
-                ['assessmentresult.student_id', $studentID],
-                ['assessmentresult.is_kept',    1],
+                ['ar.student_id',  $studentId],
+                ['ar.is_kept',     1],
+                ['q.quiz_type_id', 2],                   // PRACTICE
             ])
-            ->groupBy('module.course_id')
-            ->get([
-                'module.course_id',
-                DB::raw('AVG(score_percentage) as short_avg'),
-            ])
-            ->keyBy('course_id');
+            ->groupBy('a.module_id', 'ar.activity_id', 'a.activity_name')
+            ->get()
+            ->groupBy('module_id');
 
-        /* -------------------------------------------------------------
-     | 5.  long-quiz average per course
-     |------------------------------------------------------------ */
-        $longAverages = LongQuizAssessmentResult::query()
+        /* ── short-quiz breakdown (same idea, quiz_type_id = 1) */
+        $short = AssessmentResult::query()
+            ->from('assessmentresult as ar')
+            ->join('activity as a', 'ar.activity_id', '=', 'a.activity_id')
+            ->join('quiz as q',     'a.activity_id',  '=', 'q.activity_id')
+            ->selectRaw('
+        a.module_id,
+        ar.activity_id,
+        a.activity_name      as quiz_name,
+        AVG(ar.score_percentage) as avg
+    ')
+            ->where([
+                ['ar.student_id',  $studentId],
+                ['ar.is_kept',     1],
+                ['q.quiz_type_id', 1],          // SHORT
+            ])
+            ->groupBy('a.module_id', 'ar.activity_id', 'a.activity_name')
+            ->get()
+            ->groupBy('module_id');
+
+        /* ── long-quiz averages & per-quiz rows (course-scoped) */
+        $long = LongQuizAssessmentResult::query()
+            ->selectRaw(
+                'longquiz.course_id,
+             longquiz.long_quiz_id,
+             longquiz.long_quiz_name as quiz_name,
+             AVG(score_percentage)   as avg'
+            )
             ->join('longquiz', 'long_assessmentresult.long_quiz_id', '=', 'longquiz.long_quiz_id')
             ->where([
-                ['long_assessmentresult.student_id', $studentID],
-                ['long_assessmentresult.is_kept',    1],
+                ['student_id', $studentId],
+                ['is_kept',    1]
             ])
-            ->groupBy('longquiz.course_id')
-            ->get([
-                'longquiz.course_id',
-                DB::raw('AVG(score_percentage) as long_avg'),
-            ])
-            ->keyBy('course_id');
+            ->groupBy('longquiz.course_id', 'longquiz.long_quiz_id', 'longquiz.long_quiz_name')
+            ->get()
+            ->groupBy('course_id');        // $long[<course>][]
 
-        /* -------------------------------------------------------------
-     | 6.  per-quiz breakdown for long quizzes                       
-     |------------------------------------------------------------ */
-        $longQuizzes = LongQuizAssessmentResult::query()
-            ->join('longquiz', 'long_assessmentresult.long_quiz_id', '=', 'longquiz.long_quiz_id')
-            ->where([
-                ['long_assessmentresult.student_id', $studentID],
-                ['long_assessmentresult.is_kept',    1],
-            ])
-            ->groupBy('longquiz.course_id', 'longquiz.long_quiz_name')
-            ->get([
-                'longquiz.course_id',
-                'longquiz.long_quiz_name',
-                DB::raw('AVG(long_assessmentresult.score_percentage) as average_score'),
-            ]);
+        /* ── best screening-exam score per exam (optional) */
+        $screening = ScreeningResult::query()
+            ->join(
+                'screening',      // ← grab title / course id
+                'screening.screening_id',
+                '=',
+                'screeningresult.screening_id'
+            )
+            ->where('screeningresult.student_id', $studentId)
+            ->groupBy(
+                'screening.screening_id',
+                'screening.course_id',
+                'screening.screening_name'
+            )
+            ->select(
+                'screening.screening_id',
+                'screening.course_id',
+                'screening.screening_name',
+                DB::raw('MAX(score_percentage) as best_score')
+            )
+            ->get()
+            ->groupBy('course_id');           // $screening[<course>][]
 
-        /* -------------------------------------------------------------
-     | 7.  convenience numbers for a dashboard card / gauge
-     |------------------------------------------------------------ */
-        $percentage = $progress
-            ? round($progress->average_score ?? 0, 2)
-            : null;
-
-        /* -------------------------------------------------------------
-     | 8.  pass everything to a view
-     |     (adjust view name & compact vars as you need)
-     |------------------------------------------------------------ */
         return view(
-            'student.student-performance',   // <- create / reuse this blade or php view
+            'student.student-performance',
             compact(
                 'users',
+                'overall',
                 'courses',
-                'moduleAverages',
-                'shortAverages',
-                'longAverages',
-                'longQuizzes',
-                'progress',
-                'percentage'
+                'modules',
+                'practice',
+                'short',
+                'long',
+                'screening'
             )
         );
     }

@@ -173,12 +173,12 @@ include __DIR__ . '/../partials/head.php';
                             </div>
                             <div class="quiz-points-container">
                                 <div class="quiz-points-details">
-                                    <p class="description">POINTS GARNERED: <b><?= ($assessment->earned_points * 10) ?></b></p>
-                                    <p class="description italic">You got <?= ($assessment->earned_points * 10) ?> points for getting <?= $assessment->earned_points ?> correct answers.</p>
+                                    <p class="description">POINTS GARNERED: <b><?= ($assessment->earned_points * 100) ?></b></p>
+                                    <p class="description italic">You got <?= ($assessment->earned_points * 100) ?> points for getting <?= $assessment->earned_points ?> correct answers.</p>
                                     <hr>
                                     <p class="description"><b>SCORE CONDITIONS: </b></p>
                                     <p class="description"><b>SCORE X 10 = POINTS </b></p>
-                                    <p class="description"><b><?= ($assessment->earned_points) ?></b> X 10 = <b><?= ($assessment->earned_points * 10) ?></b></p>
+                                    <p class="description"><b><?= ($assessment->earned_points) ?></b> X 100 = <b><?= ($assessment->earned_points * 100) ?></b></p>
                                 </div>
                             </div>
                             <div class="quiz-graphics">

@@ -3,30 +3,6 @@ $title = 'Performance';
 include __DIR__ . '/../partials/head.php';
 ?>
 <style>
-    table,
-    th,
-    td {
-        border: 0.04em solid #C9C9C9;
-        border-collapse: collapse;
-    }
-
-    table {
-        width: 100%;
-        margin: 0;
-    }
-
-    .table-left-padding {
-        width: 2em;
-    }
-
-    .table-right-padding {
-        padding: 1em 1.5em;
-    }
-
-    h5 {
-        font-family: Alata, sans-serif;
-    }
-
     .performance-container {
         width: 100%;
         display: flex;
@@ -43,84 +19,125 @@ include __DIR__ . '/../partials/head.php';
         flex-direction: column;
 
         font-size: 1rem;
-        color: #492C2C;
-        gap: 1rem;
+    }
+
+    .performance-course {
+        width: 100%;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+        display: flex;
+        flex-direction: column;
+        background-color: rgb(228, 222, 212);
+    }
+
+    .performance-course-details {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+
+        font-size: 1.2rem;
+        background-color: rgb(79, 76, 71);
+
+    }
+
+    .performance-course-details span.score {
+        padding: 0 0.25rem;
+        border-radius: 0.25rem;
+
+        font-size: 1.2rem;
+        background-color: #ffffff;
+        color: white;
+    }
+
+    .performance-module {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+
+        font-size: 1rem;
+        background-color: rgb(199, 193, 183);
+    }
+
+    .performance-module:nth-child(even) {
+        background-color: rgb(198, 190, 181);
+    }
+
+    .performance-module-title {
+        width: 100%;
+        padding: 0.25rem 0.25rem 0.25rem 0.5rem;
+    }
+
+    .subcat-row {
+        color: black;
+        width: 100%;
+        padding: 0 0.5rem 0 2.4rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .quiz-row {
+        color: black;
+        width: 100%;
+        padding: 0 0.5rem 0 3.6rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+        font-family: Albert-Sans-IT, 'sans-serif';
+        color: rgb(52, 52, 52);
+        background-color: rgba(173, 173, 173, 0.22);
+    }
+
+    .quiz-row:nth-child(even) {
+        background-color: rgba(147, 147, 147, 0.22);
+    }
+
+    .subcourse-row {
+        color: black;
+        width: 100%;
+        padding: 0.25rem 0.25rem 0.25rem 0.5rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .longquiz-row {
+        color: black;
+        width: 100%;
+        padding: 0 0.5rem 0 1.2rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        color: rgb(52, 52, 52);
+        background-color: rgba(173, 173, 173, 0.22);
+    }
+
+    .score.failed {
+        background: rgb(255, 88, 88);
+        background: linear-gradient(135deg, rgb(255, 134, 134) 0%, rgb(255, 88, 88) 100%);
+    }
+
+    .score.passed {
+        background: rgb(174, 255, 88);
+        background: linear-gradient(135deg, rgb(179, 238, 117) 0%, rgb(133, 220, 41) 100%);
     }
 
     .performance-graphics {
         width: 25%;
         display: flex;
         flex-direction: column;
-    }
-
-    .performance-course-element {
-        margin: 0;
-        border-radius: 0.4em;
-        gap: 1rem;
-    }
-
-    .performance-course-element b {
-        color: rgb(45, 45, 45);
-    }
-
-    .performance-table {
-        border-radius: 1rem;
-    }
-
-    .performance-table th,
-    .performance-table td {
-        border: 0.04em solid #492C2C;
-        margin: 0;
-        padding: 0.1rem 0.5rem;
-    }
-
-    .performance-table .results {
-        width: 2.5rem;
-        text-align: right;
-    }
-
-    .performance-table .results-sub {
-        text-align: right;
-        font-size: 0.8rem;
-        color: rgb(116, 94, 94);
-    }
-
-    .performance-table .results-main {
-        text-align: right;
-        font-size: 1.2rem;
-        background-color: rgba(214, 118, 16, 0.14);
-        color: rgb(44, 40, 40);
-    }
-
-    .performance-course {
-        font-size: 1.2rem;
-        background-color: rgba(120, 79, 74, 0.4);
-        color: #492C2C;
-        margin: 0;
-        font-weight: 700;
-    }
-
-    .performance-overall {
-        font-size: 1rem;
-        color: #492C2C;
-        margin: 0;
-    }
-
-    .performance-module {
-        font-size: 0.9rem;
-        color: #492C2C;
-        color: rgb(108, 96, 96);
-        margin: 0;
-    }
-
-    .performance-module.span {
-        padding-left: 1.5rem;
-    }
-
-    .performance-overall-both {
-        font-size: 1.1rem;
-        color: #492C2C;
-        margin: 0;
     }
 
     .performance-points {
@@ -176,9 +193,6 @@ include __DIR__ . '/../partials/head.php';
                     </div>
                 <?php endif; ?>
 
-            </div>
-
-            <div class="content-container">
 
                 <div class="content padding heading box-gold">
                     <div class="header logo-sub">
@@ -193,20 +207,23 @@ include __DIR__ . '/../partials/head.php';
                     </div>
                 </div>
 
-                <div class="content padding quiz-background profile-color">
+                <div class="content padding quiz-background box-page">
                     <div class="performance-container">
                         <div class="performance-details">
                             <b>ALL COURSES</b>
+                            <?php foreach ($courses as $c): ?>
+                                <b><?= htmlspecialchars($c->course_name) ?></b>
+                            <?php endforeach; ?>
                             <?php include __DIR__ . '/../partials/course-performance-hero.php'; ?>
                         </div>
                         <div class="performance-graphics">
                             <div class="performance-points">
                                 <img class="svg" src="/icons/points.svg" width="100em" height="auto" />
                                 <p class="points-total-header">Total Points Gained</p>
-                                <p class="points-total-points"><?= $progress->total_points ?? 0 ?></p>
+                                <p class="points-total-points"><?= $overall->total_points ?? 0 ?></p>
                                 <hr class="divider-hr">
                                 <p class="points-total-header">Current Points Stored</p>
-                                <p class="points-total-points"><?= $progress->total_points ?? 0 ?></p>
+                                <p class="points-total-points"><?= $overall->total_points ?? 0 ?></p>
                             </div>
                         </div>
                     </div>
