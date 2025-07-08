@@ -15,7 +15,8 @@ use App\Http\Resources\{
     ModuleStudentResource,
     ActivityCollectionResource,
     LectureResource,
-    ResultResource
+    ResultResource,
+    TutorialResource
 };
 
 use App\Http\Requests\{
@@ -125,14 +126,34 @@ class MobileModelController extends Controller
             activity.activity_id,
             activity.activity_name,
             activity.activity_description,
-            activity.unlock_date,
-            activity.deadline_date,
             l.file_url    as file_blob       -- BLOB column
         ')
             ->firstOrFail();
 
         return response()->json(
             new LectureResource($lecture)
+        );
+    }
+
+    public function showTutorial(Request $r)
+    {
+        $r->validate([
+            'activity_id' => 'required|exists:activity,activity_id',
+        ]);
+
+        $lecture = Activities::query()
+            ->where('activity.activity_id', $r->activity_id)
+            ->leftJoin('lecture as l', 'l.activity_id', '=', 'activity.activity_id')
+            ->selectRaw('
+            activity.activity_id,
+            activity.activity_name,
+            activity.activity_description,
+            l.video_url    as video_url
+        ')
+            ->firstOrFail();
+
+        return response()->json(
+            new TutorialResource($lecture)
         );
     }
 
