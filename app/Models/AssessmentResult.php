@@ -13,12 +13,12 @@ class AssessmentResult extends Model
 
     public function activity()
     {
-        return $this->belongsTo(Activities::class,'activity_id','activity_id');
+        return $this->belongsTo(Activities::class, 'activity_id', 'activity_id');
     }
 
     public function quiz()
     {
-        return $this->belongsTo(Quizzes::class,'activity_id','activity_id');
+        return $this->belongsTo(Quizzes::class, 'activity_id', 'activity_id');
     }
 
     protected $table = 'assessmentresult';
@@ -39,6 +39,12 @@ class AssessmentResult extends Model
         'earned_points',
         'is_kept',
     ];
+
+    public function answers()
+    {
+        return $this->hasMany(AssessmentResultAnswer::class,'result_id','result_id');
+    }
+
 
     public function scopeKept($q)
     {

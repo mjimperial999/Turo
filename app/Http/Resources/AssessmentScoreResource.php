@@ -5,8 +5,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class AssessmentScoreResource extends JsonResource
 {
-    /* Because some schemas do NOT store attempt_number, we
-       generate it on the fly using the $this->additional index. */
     public function toArray($req)
     {
         return [

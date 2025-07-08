@@ -16,6 +16,7 @@ use App\Http\Resources\{
     ModuleResource,
     CoursesResource,
     AssessmentScoreResource,
+    AssessmentResultResource,
     ModuleCollectionResource,
     ModuleStudentResource,
     ActivityCollectionResource,
@@ -241,7 +242,7 @@ class MobileModelController extends Controller
             $result = AssessmentResult::create([
                 'result_id' => (string) Str::uuid(),
                 'student_id'          => $r->student_id,
-                'module_id'           => $r->module_id, 
+                'module_id'           => $r->module_id,
                 'activity_id'         => $r->activity_id,
                 'attempt_number'      => $attemptNumber,
                 'tier_level_id'      => 1,
@@ -279,6 +280,27 @@ class MobileModelController extends Controller
         });
 
         return response()->json(['message' => 'Result saved'], 201);
+    }
+
+    public function assessmentResults(Request $r)
+    {
+        $r->validate([
+            'student_id'      => 'required|exists:student,user_id',
+            'activity_id'     => 'required|exists:activity,activity_id',
+        ]);
+
+        /* pull every attempt (latest first) + their answers */
+        $results = AssessmentResult::where([
+            'student_id'  => $r->student_id,
+            'activity_id' => $r->activity_id,
+        ])
+            ->with(['answers'])          // eager-load student answers
+            ->orderByDesc('attempt_number')
+            ->get();
+
+        return response()->json([
+            'data' => AssessmentResultResource::collection($results)
+        ]);
     }
 
     /* ---------- POST create_module.php ---------- */

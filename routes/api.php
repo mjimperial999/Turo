@@ -26,6 +26,7 @@ Route::prefix('v1')->group(function () {
         Route::get('get-quiz', [MobileModelController::class, 'showQuiz']);
         Route::get('get-quiz-content', [MobileModelController::class, 'showQuizContent']);
         Route::post('save-assessment-result', [MobileModelController::class, 'saveAssessmentResult']);
+        Route::get('get-assessment-result-for-student-and-quiz',[MobileModelController::class, 'assessmentResults']);
 
         Route::delete('delete_module_in_course.php',       [MobileModelController::class, 'destroy']);
         Route::post('create_module.php',                  [MobileModelController::class, 'store']);
