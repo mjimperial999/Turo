@@ -247,7 +247,7 @@ class MobileModelController extends Controller
                 'tier_level_id'      => 1,
                 'score_percentage'    => $r->score_percentage,
                 'earned_points'       => $r->earned_points,
-                'date_taken'          => $now,
+                'date_taken'          => Carbon::now('Asia/Manila'),
                 'is_kept'             => 0,          // change later if you keep best
             ]);
 
