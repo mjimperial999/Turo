@@ -10,7 +10,7 @@ class AssessmentScoreResource extends JsonResource
     public function toArray($req)
     {
         return [
-            'result_id'       => $this->assessmentresult_id,
+            'result_id'       => $this->result_id,
             'attempt_number'  => $this->additional['idx'] ?? $this->attempt_number ?? 1,
             'score_percentage'=> (double) $this->score_percentage,
         ];
