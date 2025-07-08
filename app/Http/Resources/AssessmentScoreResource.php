@@ -13,6 +13,7 @@ class AssessmentScoreResource extends JsonResource
             'result_id'       => $this->result_id,
             'attempt_number'  => $this->additional['idx'] ?? $this->attempt_number ?? 1,
             'score_percentage'=> (double) $this->score_percentage,
+            'date_taken'      => $this->date_taken,
         ];
     }
 
