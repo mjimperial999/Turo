@@ -14,6 +14,7 @@ use App\Http\Resources\{
     ModuleCollectionResource,
     ModuleStudentResource,
     ActivityCollectionResource,
+    LectureResource,
     ResultResource
 };
 
@@ -45,15 +46,6 @@ class MobileModelController extends Controller
     public function course()
     {
         return CoursesResource::collection(Users::all());
-    }
-
-    public function indexTeacher(Request $r)
-    {
-        $mods = Modules::where('course_id', $r->course_id)
-            ->orderBy('position')
-            ->get();
-
-        return new ModuleCollectionResource($mods);
     }
 
     /* ---------- GET get-course_modules-for-student ---------- */
@@ -120,6 +112,30 @@ class MobileModelController extends Controller
         ]);
     }
 
+    public function showLecture(Request $r)
+    {
+        $r->validate([
+            'activity_id' => 'required|exists:activity,activity_id',
+        ]);
+
+        $lecture = Activities::query()
+            ->where('activity.activity_id', $r->activity_id)
+            ->leftJoin('lecture as l', 'l.activity_id', '=', 'activity.activity_id')
+            ->selectRaw('
+            activity.activity_id,
+            activity.activity_name,
+            activity.activity_description,
+            activity.unlock_date,
+            activity.deadline_date,
+            l.file_url    as file_blob       -- BLOB column
+        ')
+            ->firstOrFail();
+
+        return response()->json(
+            new LectureResource($lecture)
+        );
+    }
+
     /* ---------- POST create_module.php ---------- */
     public function store(ModuleStoreRequest $req)
     {
@@ -128,5 +144,4 @@ class MobileModelController extends Controller
         return (new ResultResource($mod))
             ->response()->setStatusCode(201);   // Created
     }
-
 }

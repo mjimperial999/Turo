@@ -17,8 +17,11 @@ Route::prefix('v1')->group(function () {
         Route::get('get_course_modules_for_teacher', [MobileModelController::class, 'indexTeacher']);
 
         Route::get('get-activities-in-module',        [MobileModelController::class, 'activities']);
-        
+
         Route::get('get-scores-for-student-and-quiz', [MobileModelController::class, 'scoresForStudentAndQuiz']);
+
+        Route::get('get-lecture', [MobileModelController::class, 'showLecture']);
+        
 
         Route::delete('delete_module_in_course.php',       [MobileModelController::class, 'destroy']);
         Route::post('create_module.php',                  [MobileModelController::class, 'store']);
