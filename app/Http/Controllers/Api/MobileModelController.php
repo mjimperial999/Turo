@@ -239,7 +239,7 @@ class MobileModelController extends Controller
 
             /* create parent row */
             $result = AssessmentResult::create([
-                'assessmentresult_id' => (string) Str::uuid(),
+                'result_id' => (string) Str::uuid(),
                 'student_id'          => $r->student_id,
                 'activity_id'         => $r->activity_id,
                 'attempt_number'      => $attemptNumber,
@@ -268,7 +268,7 @@ class MobileModelController extends Controller
             /* store every answer */
             foreach ($r->input('answers') as $ans) {
                 AssessmentResultAnswer::create([
-                    'assessmentresult_id' => $result->result_id,
+                    'result_id' => $result->result_id,
                     'question_id'         => $ans['question_id'],
                     'option_id'           => $ans['option_id'],
                     'is_correct'          => $ans['is_correct'],
