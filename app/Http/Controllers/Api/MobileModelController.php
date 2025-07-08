@@ -16,6 +16,7 @@ use App\Http\Resources\{
     ActivityCollectionResource,
     LectureResource,
     ResultResource,
+    QuizResource,
     TutorialResource
 };
 
@@ -154,6 +155,37 @@ class MobileModelController extends Controller
 
         return response()->json(
             new TutorialResource($lecture)
+        );
+    }
+
+    public function showQuiz(Request $r)
+    {
+        $r->validate([
+            'activity_id' => 'required|exists:activity,activity_id',
+        ]);
+
+        $quiz = Activities::query()
+        ->join('module      as m', 'm.module_id',  '=', 'activity.module_id')
+        ->join('quiz        as q', 'q.activity_id','=', 'activity.activity_id')
+        ->selectRaw('
+            activity.activity_id,
+            m.module_name,
+            activity.activity_type,
+            activity.activity_name,
+            activity.activity_description,
+            activity.unlock_date,
+            activity.deadline_date,
+            q.quiz_type_id,
+            q.time_limit,
+            q.number_of_questions,
+            q.overall_points,
+            q.has_answers_shown
+        ')
+        ->where('activity.activity_id', $r->activity_id)
+        ->firstOrFail();
+
+        return response()->json(
+            new QuizResource($quiz)
         );
     }
 

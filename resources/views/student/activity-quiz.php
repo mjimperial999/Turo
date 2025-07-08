@@ -98,7 +98,14 @@ include __DIR__ . '/../partials/head.php';
                                     <div class="quiz-categories">
                                         <div class="quiz-categories-desc">
                                             <p class="description"><b>QUESTIONS: </b><?= $activity->quiz->number_of_questions ?></p>
-                                            <p class="description"><b>TOTAL ATTEMPTS: </b><?= $activity->quiz->number_of_attempts ?></p>
+
+                                            <p class="description"><b>TOTAL ATTEMPTS: </b>
+                                            <?php if ($activity->quiz->quiz_type_id == 2): ?>
+                                                Unlimited
+                                            <?php else: ?>
+                                                <?= $activity->quiz->number_of_attempts ?>
+                                            <?php endif; ?>
+                                            </p>
                                             <p class="description"><b>TIME LIMIT: </b><?= $fTimeLimit ?> min/s</p>
                                         </div>
                                     </div>

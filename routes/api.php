@@ -22,6 +22,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('get-lecture', [MobileModelController::class, 'showLecture']);
         Route::get('get-tutorial', [MobileModelController::class, 'showTutorial']);
+        Route::get('get-quiz', [MobileModelController::class, 'showQuiz']);
         
 
         Route::delete('delete_module_in_course.php',       [MobileModelController::class, 'destroy']);
