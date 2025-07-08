@@ -10,6 +10,7 @@ use App\Http\Resources\{
     ModuleResource,
     CoursesResource,
     ModuleCollectionResource,
+    ModuleStudentResource,
     ActivityCollectionResource,
     ResultResource
 };
@@ -24,7 +25,8 @@ use App\Models\{
     Modules,
     Activities,
     Students,
-    Users
+    Users,
+    ModuleProgress
 };
 
 class MobileModelController extends Controller
@@ -115,9 +117,24 @@ class MobileModelController extends Controller
     /* ---------- GET get-current-module ---------- */
     public function current(Request $r)
     {
-        $current = Students::findOrFail($r->student_id)
-            ->currentModule($r->course_id);   // assume a model scope
+        /* 1. student row (need isCatchUp flag) */
+        $student = Students::findOrFail($r->student_id);
 
-        return new ModuleResource($current);
+        /* 2. whatever logic your scope uses to pick “current module” */
+        $module = $student->currentModule($r->course_id)
+            ->load('moduleimage');                  // eager-load picture blob
+
+        /* 3. progress % for this (student, course, module) triple */
+        $progress = ModuleProgress::where([
+            'student_id' => $student->user_id,
+            'course_id'  => $r->course_id,
+            'module_id'  => $module->module_id,
+        ])->value('progress') ?? 0;
+
+        /* 4. attach dynamic attributes so the Resource can read them */
+        $module->progress_value = $progress;
+        $module->isCatchUp      = $student->isCatchUp;
+
+        return new ModuleStudentResource($module);
     }
 }
