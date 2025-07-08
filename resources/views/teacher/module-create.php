@@ -8,6 +8,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 <body>
     <?php
     include __DIR__ . '/../partials/nav-teach.php';
+
     $blobData = $module->moduleimage->image ?? null;
     if (!$blobData) {
         $backgroundImage = "/images/no-image.jpeg";
@@ -19,7 +20,7 @@ include __DIR__ . '/../partials/head.php'; ?>
     ?>
     <div class="screen">
         <div class="spacing main">
-            <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/store-module" enctype="multipart/form-data">
+            <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/store-module" enctype="multipart/form-data">
                 <?= csrf_field(); ?>
                 <div class="content-container box-page">
                     <div class="mini-navigation">
@@ -31,7 +32,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <h6> > </h6>
                         </div>
                         <div class="text title">
-                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>"><?= $course->course_name ?></a></h6>
+                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>"><?= $course->course_name ?></a></h6>
                             <div class="line"></div>
                         </div>
                         <div class="divider">
@@ -61,13 +62,9 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                 <div class="content-container box-page">
                     <div class="content">
-                        <?php if (session()->has('error')): ?>
-                            <div class="alert alert-danger alert-message padding" role="alert">
-                                <?= session('error') ?>
-                            </div>
-                        <?php elseif (session()->has('success')): ?>
-                            <div class="alert alert-success alert-message padding" role="alert">
-                                <?= session('success') ?>
+                        <?php if ($errors->any()): ?>
+                            <div class="alert alert-danger alert-message padding">
+                                <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
                             </div>
                         <?php endif; ?>
                     </div>

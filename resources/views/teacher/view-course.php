@@ -72,24 +72,6 @@ include __DIR__ . '/../partials/head.php'; ?>
                 </div>
             </div>
 
-            <div class="content-container box-page">
-
-                <?php if (session()->has('error')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-danger alert-message" role="alert">
-                            <?= session('error') ?>
-                        </div>
-                    </div>
-                <?php elseif (session()->has('success')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-success alert-message" role="alert">
-                            <?= session('success') ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-            </div>
-
             <div class="content-container">
                 <div class="content padding heading box-gray crud">
 
@@ -100,7 +82,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                     </div>
 
                     <div class="crud-header">
-                        <form action="/teachers-panel/course/<?= $course->course_id ?>/create-module" method="GET">
+                        <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/create-module" method="GET">
                             <button type="submit" class="crud-button-add">
                                 New Module <img src="/icons/new-black.svg" width="25em" height="25em" />
                             </button>
@@ -135,7 +117,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                     </div>
 
                     <div class="crud-header">
-                        <form action="/teachers-panel/course/<?= $course->course_id ?>/create-longquiz" method="GET">
+                        <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/create-longquiz" method="GET">
                             <button type="submit" class="crud-button-add">
                                 New Long Quiz <img src="/icons/new-black.svg" width="25em" height="25em" />
                             </button>
@@ -172,7 +154,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                     </div>
 
                     <div class="crud-header">
-                        <form action="/teachers-panel/course/<?= $course->course_id ?>/create-screening" method="GET">
+                        <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/create-screening" method="GET">
                             <button type="submit" class="crud-button-add">
                                 New Screener <img src="/icons/new-black.svg" width="25em" height="25em" />
                             </button>
@@ -208,22 +190,50 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                     </div>
                 </div>
+            </div>
 
+            <div class="content-container box-page">
+                <div class="content padding heading box-gray">
+
+                    <div class="header">
+                        <div class="text title">
+                            <h5> Students – <?= htmlspecialchars($section->section_name) ?></h5>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="content padding">
+                    <table class="striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Points</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($students as $s): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($s->user->last_name . ', ' . $s->user->first_name) ?></td>
+                                    <td><?= number_format($s->total_points) ?></td>
+                                    <td>
+                                        <a class="link"
+                                            href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/student/<?= $s->user_id ?>/performance">
+                                            View&nbsp;Performance
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+
+                </div>
             </div>
 
 
 
-            <?php /*
-                <div class="home-tutor-courses-header">
-                    <h5>Modules</h5>
-                    <div class="return-prev-cont">
-                        <?= '<a class="activity-link" href="/home-tutor">
-                        <div class="return-prev">Back to Courses</div>
-                                </a>' ?>
-                    </div>
-                </div>
-                <hr>
-                */ ?>
+
 
         </div>
 

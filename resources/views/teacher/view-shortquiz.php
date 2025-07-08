@@ -53,14 +53,14 @@ include __DIR__ . '/../partials/head.php';
                         <h6> > </h6>
                     </div>
                     <div class="text title">
-                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>"><?= $course->course_name ?></a></h6>
+                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>"><?= $course->course_name ?></a></h6>
                         <div class="line"></div>
                     </div>
                     <div class="divider">
                         <h6> > </h6>
                     </div>
                     <div class="text title">
-                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>"><?= $module->module_name ?></a></h6>
+                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>"><?= $module->module_name ?></a></h6>
                         <div class="line"></div>
                     </div>
                     <div class="divider">
@@ -90,28 +90,10 @@ include __DIR__ . '/../partials/head.php';
                 </div>
             </div>
 
-            <div class="content-container box-page">
-
-                <?php if (session()->has('error')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-danger alert-message" role="alert">
-                            <?= session('error') ?>
-                        </div>
-                    </div>
-                <?php elseif (session()->has('success')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-success alert-message" role="alert">
-                            <?= session('success') ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-            </div>
-
             <div class="content-container short-quiz">
                 <div class="content flex-column">
 
-                    <div class="form-box" >
+                    <div class="form-box">
                         <div class="form-label" style="margin: 0; width: 50%;">
                             <p class="description"><b>QUESTIONS: </b></p>
                         </div>
@@ -142,7 +124,7 @@ include __DIR__ . '/../partials/head.php';
                         <div class="form-label" style="margin: 0; width: 50%;">
                             <p class="description"><b>OPENS: </b></p>
                         </div>
-                        <div class="form-input"style="margin: 0; width: 50%;">
+                        <div class="form-input" style="margin: 0; width: 50%;">
                             <p class="description"><?= $formattedUnlockDate ?></p>
                         </div>
                     </div>
@@ -155,13 +137,13 @@ include __DIR__ . '/../partials/head.php';
                             <p class="description"><?= $formattedDeadline ?></p>
                         </div>
                     </div>
-                    
+
                     <hr class="divider-hr">
 
-                    <p class="description"><b>INSTUCTIONS:</b> <?= $activity->activity_description ?></p>
-                        
-                    
-                   
+                    <p class="description"><b>INSTUCTIONS:</b><br> <?= nl2br(htmlspecialchars($activity->activity_description)) ?></p>
+
+
+
                 </div>
 
             </div>
@@ -192,7 +174,42 @@ include __DIR__ . '/../partials/head.php';
                 </div>
 
                 <div class="content padding">
-                    Hi
+                    <?php foreach ($questions as $index => $q): ?>
+                        <?php $num = $index + 1; /* 1-based counter */ ?>
+                        <div class="question-card">
+                            <h6><b>
+                                    Q<?= $num ?>. <?= htmlspecialchars($q->question_text) ?>
+                            </h6></b>
+
+                            <?php if ($q->questionimage && $q->questionimage->image):        // BLOB present 
+                            ?>
+                                <?php
+                                $blob     = $q->questionimage->image;
+                                $mimeType = getMimeTypeFromBlob($blob);
+                                $imgURL   = "data:$mimeType;base64," . base64_encode($blob);
+                                ?>
+                                <img src="<?= $imgURL ?>" style="max-width:280px;margin:.4rem 0">
+                            <?php endif; ?>
+
+                            <?php foreach ($q->options as $opt): ?>
+                                <?php $isCorrect = $opt->is_correct; ?>
+                                <div style="
+                                    padding:.35rem .6rem;
+                                    border:1px solid #ccc;
+                                    border-radius:.3rem;
+                                    margin:.2rem 0;
+                                    background:<?= $isCorrect ? '#eaf8e3' : '#fff' ?>;
+                                    color:<?= $isCorrect ? '#256029' : '#333' ?>;
+                                ">
+                                    <?= htmlspecialchars($opt->option_text) ?>
+                                    <?php if ($isCorrect): ?>
+                                        <span style="font-size:.75rem;font-weight:700;margin-left:.4rem">&#10004;</span>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <hr class="divider-hr">
+                    <?php endforeach; ?>
                 </div>
 
             </div>
@@ -200,9 +217,9 @@ include __DIR__ . '/../partials/head.php';
         </div>
 
 
-    <div class="spacing side">
-        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
-    </div>
+        <div class="spacing side">
+            <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+        </div>
 
     </div>
     <?php include __DIR__ . '/../partials/footer.php'; ?>

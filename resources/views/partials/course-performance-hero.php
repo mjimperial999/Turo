@@ -1,47 +1,3 @@
-<?php /*
-foreach ($courses as $course): ?>
-    <div class="performance-course-element">
-        <table class="performance-table">
-            <tr>
-                <th colspan="2" class="performance-course"><?= $course->course_name ?></th>
-            </tr>
-            <tr>
-                <th class="performance-overall">Short Quiz Average</th>
-                <th class="results"><?= (!is_null($shortAvg) ? round($shortAvg, 2) . "%" : "No data") ?></th>
-            </tr>
-
-            <?php foreach ($moduleAverages as $m): ?>
-                <?php if ($m->course_id === $course->course_id): ?>
-                    <tr>
-                        <th class="performance-module span"><?= $m->module_name ?></th>
-                        <th class="results-sub"><?= round($m->average_score, 2) ?>%</th>
-                    </tr>
-                <?php endif; ?>
-            <?php endforeach; ?>
-
-            <tr>
-                <th class="performance-overall">Long Quiz Average:</th>
-                <th class="results"><?= (!is_null($longAvg) ? round($longAvg) . "%" : "No Data") ?></th>
-            </tr>
-
-            <?php foreach ($longQuizzes as $lq): ?>
-                <?php if ($lq->course_id === $course->course_id): ?>
-                    <tr>
-                        <th class="performance-module span"><?= $lq->long_quiz_name ?></th>
-                        <th class="results-sub"><?= round($lq->average_score, 2) ?> %</th>
-                    </tr>
-                <?php endif; ?>
-            <?php endforeach; ?>
-
-            <tr>
-                <th class="performance-overall-both">Course Average:</th>
-                <th class="results-main"><?= (!is_null($percentage) ? round($percentage) . "%" : "No data") ?></th>
-            </tr>
-        </table>
-    </div>
-<?php endforeach; */ ?>
-
-
 <div class="performance-course">
     <?php foreach ($courses as $c): ?>
         <div class="performance-course-details">
@@ -62,7 +18,7 @@ foreach ($courses as $course): ?>
                     <!-- ───── PRACTICE QUIZZES ───── -->
                     <?php
                     $pRow = $practice[$m->module?->module_id]   ?? null;       // row (avg + quizzes)
-                    $pHas = $pRow->isNotEmpty();
+                    $pHas = $pRow;
                     ?>
                     <?php if ($pHas): ?>
                         <div class="subcat-row">
@@ -80,7 +36,7 @@ foreach ($courses as $course): ?>
                     <!-- ───── SHORT QUIZZES ───── -->
                     <?php
                     $sRow = $short[$m->module?->module_id]      ?? null;
-                    $sHas = $sRow->isNotEmpty();
+                    $sHas = $sRow;
                     ?>
                     <?php if ($sHas): ?>
                         <div class="subcat-row">
@@ -102,7 +58,7 @@ foreach ($courses as $course): ?>
         <!-- ───── LONG QUIZZES (course scope) ───── -->
         <?php
         $lRow = $long[$c->course?->course_id]         ?? null;
-        $lHas = $lRow->isNotEmpty();
+        $lHas = $lRow;
         ?>
         <?php if ($lHas): ?>
             <div class="subcourse-row">

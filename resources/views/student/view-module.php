@@ -103,11 +103,11 @@ include __DIR__ . '/../partials/head.php';  ?>
 
                 <div class="content padding activity-list">
                     <div class="lecture-flex-area">
-                        <?php foreach ($module->activities->where('activity_type', 'LECTURE') as $activity) {
+                        <?php foreach ($module->activities?->where('activity_type', 'LECTURE') as $activity) {
                             include __DIR__ . '/../partials/time-lock-check.php';
                             include __DIR__ . '/../partials/lecture-hero.php';
                         }; ?>
-                        <?php foreach ($module->activities->where('activity_type', 'TUTORIAL') as $activity) {
+                        <?php foreach ($module->activities?->where('activity_type', 'TUTORIAL') as $activity) {
                             include __DIR__ . '/../partials/time-lock-check.php';
                             include __DIR__ . '/../partials/tutorial-hero.php';
                         }; ?>
@@ -135,7 +135,7 @@ include __DIR__ . '/../partials/head.php';  ?>
 
                 <div class="content padding activity-list">
                     <?php foreach ($module->activities->where('activity_type', 'QUIZ') as $activity): {
-                            if ($activity->quiz->quiz_type_id == 2): {
+                            if ($activity->quiz?->quiz_type_id == 2): {
                                     include __DIR__ . '/../partials/time-lock-check.php';
                                     include __DIR__ . '/../partials/quiz-practice-hero.php';
                                 }
@@ -164,7 +164,7 @@ include __DIR__ . '/../partials/head.php';  ?>
                 <div class="content padding activity-list">
                     <div class="quiz-flex-area">
                         <?php foreach ($module->activities->where('activity_type', 'QUIZ') as $activity): {
-                                if ($activity->quiz->quiz_type_id == 1): {
+                                if ($activity->quiz?->quiz_type_id == 1): {
                                         include __DIR__ . '/../partials/time-lock-check.php';
                                         include __DIR__ . '/../partials/quiz-short-hero.php';
                                     };

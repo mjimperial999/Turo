@@ -76,7 +76,7 @@ include __DIR__ . '/../partials/head.php'; ?>
     ?>
     <div class="screen">
         <div class="spacing main">
-            <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/store-practicequiz" enctype="multipart/form-data">
+            <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/store-practicequiz" enctype="multipart/form-data">
                 <?= csrf_field(); ?>
                 <div class="content-container box-page">
                     <div class="mini-navigation">
@@ -88,7 +88,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <h6> > </h6>
                         </div>
                         <div class="text title">
-                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>">
+                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>">
                                     <?= $course->course_name ?></a></h6>
                             <div class="line"></div>
                         </div>
@@ -96,7 +96,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <h6> > </h6>
                         </div>
                         <div class="text title">
-                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>">
+                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>">
                                     <?= $module->module_name ?></a></h6>
                             <div class="line"></div>
                         </div>
@@ -129,20 +129,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                     <div class="content">
                         <?php if ($errors->any()): ?>
                             <div class="alert alert-danger alert-message padding">
-                                <ul style="margin:0; padding-left:1.2rem; color:#000000;">
-                                    <?php foreach ($errors->all() as $msg): ?>
-                                        <li style="color:#000000;"><?= htmlspecialchars($msg) ?></li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </div>
-                        <?php endif; ?>
-                        <?php if (session()->has('error')): ?>
-                            <div class="alert alert-danger alert-message padding" role="alert">
-                                <?= session('error') ?>
-                            </div>
-                        <?php elseif (session()->has('success')): ?>
-                            <div class="alert alert-success alert-message padding" role="alert">
-                                <?= session('success') ?>
+                                <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
                             </div>
                         <?php endif; ?>
                     </div>

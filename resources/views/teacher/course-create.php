@@ -46,13 +46,9 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                 <div class="content-container box-page">
                     <div class="content">
-                        <?php if (session()->has('error')): ?>
-                            <div class="alert alert-danger alert-message padding" role="alert">
-                                <?= session('error') ?>
-                            </div>
-                        <?php elseif (session()->has('success')): ?>
-                            <div class="alert alert-success alert-message padding" role="alert">
-                                <?= session('success') ?>
+                        <?php if ($errors->any()): ?>
+                            <div class="alert alert-danger alert-message padding">
+                                <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
                             </div>
                         <?php endif; ?>
                     </div>

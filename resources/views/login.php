@@ -1,5 +1,5 @@
 <?php
-$title = "Login - Turo";
+$title = "Login";
 include __DIR__ . '/partials/head.php';  ?>
 <style>
 

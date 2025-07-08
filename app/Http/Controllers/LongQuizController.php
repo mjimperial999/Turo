@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Services\StudentAnalytics;
+use App\Services\AchievementService;
 
 use App\Models\LongQuizzes;
 use App\Models\AssessmentResult;
@@ -194,6 +195,8 @@ class LongQuizController extends Controller
                 $studentID,
                 $courseID
             );
+
+            AchievementService::evaluate($studentID);
 
             return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}/summary")
                 ->with('success', 'Quiz has been submitted.');

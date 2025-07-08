@@ -95,7 +95,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <h6> > </h6>
                         </div>
                         <div class="text title">
-                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>">
+                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>">
                                     <?= $course->course_name ?></a></h6>
                             <div class="line"></div>
                         </div>
@@ -103,7 +103,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <h6> > </h6>
                         </div>
                         <div class="text title">
-                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>">
+                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>">
                                     <?= $module->module_name ?></a></h6>
                             <div class="line"></div>
                         </div>
@@ -136,20 +136,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                     <div class="content">
                         <?php if ($errors->any()): ?>
                             <div class="alert alert-danger alert-message padding">
-                                <ul style="margin:0; padding-left:1.2rem; color:#000000;">
-                                    <?php foreach ($errors->all() as $msg): ?>
-                                        <li style="color:#000000;"><?= htmlspecialchars($msg) ?></li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </div>
-                        <?php endif; ?>
-                        <?php if (session()->has('error')): ?>
-                            <div class="alert alert-danger alert-message padding" role="alert">
-                                <?= session('error') ?>
-                            </div>
-                        <?php elseif (session()->has('success')): ?>
-                            <div class="alert alert-success alert-message padding" role="alert">
-                                <?= session('success') ?>
+                                <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -165,7 +152,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                             <div class="form-box">
                                 <div class="form-label"><label>Instructions:</label></div>
-                                <div class="form-input"><textarea name="quiz_instructions"><?= htmlspecialchars($activity->activity_description) ?></textarea></div>
+                                <div class="form-input"><textarea name="quiz_instructions"><?= nl2br(htmlspecialchars($activity->activity_description)) ?></textarea></div>
                             </div>
 
                             <div class="form-box">
@@ -214,7 +201,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     <!-- text / score -->
                                     <div class="form-box">
                                         <div class="form-label"><label>Question Text:</label></div>
-                                        <div class="form-input"><textarea name="questions[<?= $qi ?>][text]" required><?= htmlspecialchars($q->question_text) ?></textarea></div>
+                                        <div class="form-input"><textarea name="questions[<?= $qi ?>][text]" required><?= nl2br(htmlspecialchars($q->question_text)) ?></textarea></div>
                                     </div>
 
                                     <!-- replace image -->
@@ -265,7 +252,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
             </form>
 
-            <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/practicequiz/<?= $activity->activity_id ?>/delete"
+            <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/practicequiz/<?= $activity->activity_id ?>/delete"
                 onsubmit="return confirm('Really delete this long quiz?');">
                 <?= csrf_field(); ?>
                 <div class="content-container">

@@ -48,6 +48,19 @@ include __DIR__ . '/../partials/head.php'; ?>
         background: linear-gradient(135deg, rgb(179, 238, 117) 0%, rgb(133, 220, 41) 100%);
     }
 
+    .screening-results-container-topic-material {
+        gap: 0.5rem;
+    }
+
+    .screening-results-container-topic-material .screening-results-container-concept-link{
+        width: 100%;
+        font-size: 0.9rem;
+    }
+
+    .screening-results-container-concept-link .activity .activity-button {
+        width: 14rem;
+    }
+
 
 
     @keyframes anim {
@@ -63,6 +76,7 @@ include __DIR__ . '/../partials/head.php'; ?>
     <?php
 
     include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/flash-stack.php';
 
     /* ----- colour-ring settings ----- */
     $percentage = $result ? $result->score_percentage : null;      // was $assessment
@@ -141,15 +155,6 @@ include __DIR__ . '/../partials/head.php'; ?>
 
             <div class="content-container screening-exam">
                 <div class="content padding">
-                    <?php if (session()->has('error')): ?>
-                        <div class="alert alert-danger alert-message" role="alert">
-                            <?= session('error') ?>
-                        </div>
-                    <?php elseif (session()->has('success')): ?>
-                        <div class="alert alert-success alert-message" role="alert">
-                            <?= session('success') ?>
-                        </div>
-                    <?php endif; ?>
                     <div class="module-section quiz-background">
                         <div class="module-section quiz-header summary">
                             <div class="quiz-summary-container">

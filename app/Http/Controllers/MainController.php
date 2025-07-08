@@ -6,20 +6,28 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 use App\Services\StudentAnalytics;
+use App\Services\AchievementService;
 
-use App\Models\Users;
-use App\Models\Students;
-use App\Models\StudentProgress;
-use App\Models\ModuleProgress;
-use App\Models\Courses;
-use App\Models\Modules;
-use App\Models\Screening;
-use App\Models\ScreeningResult;
-use App\Models\Activities;
-use App\Models\LongQuizzes;
-use App\Models\AssessmentResult;
-use App\Models\CalendarEvent;
-use App\Models\LongQuizAssessmentResult;
+use App\Models\{
+    Achievements,
+    Activities,
+    Courses,
+    Modules,
+    ModuleProgress,
+    StudentProgress,
+    LongQuizzes,
+    Badges,
+    StudentAchievements,
+    StudentBadges,
+    Screening,
+    ScreeningResult,
+    Students,
+    Users,
+    UserImages,
+    CalendarEvent,
+    AssessmentResult,
+    LongQuizAssessmentResult
+};
 
 
 class MainController extends Controller
@@ -28,6 +36,10 @@ class MainController extends Controller
     {
         if (!session()->has('user_id')) {
             return redirect('/login')->with('error', 'You must be logged in');
+        }
+
+        if (session('role_id') == 3) {
+            return redirect('/admin-panel');
         }
 
         if (session('role_id') == 2) {
@@ -50,18 +62,20 @@ class MainController extends Controller
     }
 
     protected function mustHaveCatchUp(string $courseId = null)
-{
-    $isCatchUp = Students::where('user_id', session('user_id'))
-                 ->value('isCatchUp');
+    {
+        $isCatchUp = Students::where('user_id', session('user_id'))
+            ->value('isCatchUp');
 
-    if ($isCatchUp == 0) {
-        return redirect("/home-tutor")
-               ->with('error',
-                   'Invalid Access.');
+        if ($isCatchUp == 0) {
+            return redirect("/home-tutor")
+                ->with(
+                    'error',
+                    'Invalid Access.'
+                );
+        }
+
+        return null;
     }
-
-    return null;
-}
 
     public function showAnnouncement($announcementID)
     {
@@ -71,17 +85,52 @@ class MainController extends Controller
         $users = Users::with('image')->findOrFail($userID);
         $announcement = CalendarEvent::findOrFail($announcementID);
 
-        return view('student.view-annoucement', compact('users','announcement'));
+        return view('student.view-annoucement', compact('users', 'announcement'));
     }
 
 
-    public function profilePage()
+    public function profilePage(Request $request)
     {
+        /* ----------  auth guard (already there) ---------- */
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
-        $userID = session()->get('user_id');
+        $userID = session('user_id');
+
+        /* ----------  handle image upload  ---------- */
+        if ($request->isMethod('post')) {
+            $request->validate([
+                'profile_pic' => 'required|file|mimes:jpg,jpeg,png|max:2048',   // 2 MB
+            ]);
+
+            $blob = file_get_contents($request->file('profile_pic')->path());
+
+            UserImages::updateOrCreate(
+                ['user_id' => $userID],
+                ['image'   => $blob]
+            );
+
+            return back();                            // flash success if you like
+        }
+
+        /* ----------  user + blob image for GET ---------- */
         $users = Users::with('image')->findOrFail($userID);
-        return view('student.student-profile', compact('users'));
+
+        /* ----------  section / rank / points ---------- */
+        $student = Students::with(['section'])        // assumes section() relation
+            ->findOrFail($userID);
+
+        /* simple rank inside the student’s section */
+        $rank = Students::where('section_id', $student->section_id)
+            ->orderByDesc('total_points')
+            ->pluck('user_id')
+            ->search($userID) + 1;   // 1-based
+
+        return view('student.student-profile', [
+            'users'     => $users,
+            'section'   => $student->section->section_name ?? '—',
+            'rank'      => $rank,
+            'points'    => $student->total_points,
+        ]);
     }
 
 
@@ -118,7 +167,9 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
-        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {
+            return $redirect;
+        }
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -132,7 +183,9 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
-        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {
+            return $redirect;
+        }
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -147,7 +200,9 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
-        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {
+            return $redirect;
+        }
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -160,7 +215,9 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
-        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {
+            return $redirect;
+        }
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -188,7 +245,9 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
-        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {return $redirect;}
+        if ($redirect = $this->mustHaveCatchUp($course->course_id)) {
+            return $redirect;
+        }
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -216,7 +275,9 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
-        if ($redirect = $this->mustHaveCatchUp($courseID)) {return $redirect;}
+        if ($redirect = $this->mustHaveCatchUp($courseID)) {
+            return $redirect;
+        }
 
         $course = Courses::findOrFail($courseID);
         $longquiz = LongQuizzes::findOrFail($longQuizID);
@@ -245,7 +306,9 @@ class MainController extends Controller
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
 
-        if ($redirect = $this->mustHaveCatchUp($courseID)) {return $redirect;}
+        if ($redirect = $this->mustHaveCatchUp($courseID)) {
+            return $redirect;
+        }
 
         $course = Courses::findOrFail($courseID);
         $longquiz = LongQuizzes::findOrFail($longQuizID);
@@ -277,6 +340,7 @@ class MainController extends Controller
 
         /* ── keep all roll-ups fresh ───────────── */
         StudentAnalytics::refreshStudentSummary($studentId);
+        AchievementService::evaluate($studentId);
 
         /* ── basic user + grand-total row ───────── */
         $users   = Users::with('image')->findOrFail($studentId);
@@ -373,6 +437,35 @@ class MainController extends Controller
             ->get()
             ->groupBy('course_id');           // $screening[<course>][]
 
+        $ownedAchIds = StudentAchievements::where('student_id', $studentId)
+            ->pluck('achievement_id')
+            ->toArray();                       // quick lookup array
+
+        $ownedBadgeIds = StudentBadges::where('student_id', $studentId)
+            ->pluck('badge_id')
+            ->toArray();
+
+        /* ----------------------------------------------------------
+     | 3.  Load *all* achievements with their condition details
+     |     and add an `owned` attribute for easy checks in Blade
+     * -------------------------------------------------------- */
+        $achievements = Achievements::with('conditionType')        // ->conditionType relation
+            ->orderBy('achievement_id')
+            ->get()
+            ->map(function ($a) use ($ownedAchIds) {
+                $a->owned = in_array($a->achievement_id, $ownedAchIds);
+                return $a;
+            });
+
+        /* badges -------------------------------------------------- */
+        $badges = Badges::orderBy('points_required')
+            ->get()
+            ->map(function ($b) use ($ownedBadgeIds) {
+                $b->owned = in_array($b->badge_id, $ownedBadgeIds);
+                return $b;
+            });
+
+
         return view(
             'student.student-performance',
             compact(
@@ -383,8 +476,46 @@ class MainController extends Controller
                 'practice',
                 'short',
                 'long',
-                'screening'
+                'screening',
+                'achievements',
+                'badges'
             )
         );
+    }
+
+    public function leaderboardPage()
+    {
+        $studentId = session('user_id');
+
+        /* 1. Fetch the caller’s section  */
+        $me = Students::with('user')->findOrFail($studentId);
+        $sectionId = $me->section_id;
+
+        $users = Users::with('image')->findOrFail($studentId);
+
+        /* 2. Rank everyone in that section by total_points DESC  */
+        $ranked = Students::with('user')                // eager-load name + pic
+            ->where('section_id', $sectionId)
+            ->orderByDesc('total_points')
+            ->orderBy('user_id')                        // deterministic tie-break
+            ->get()
+            ->values();                                 // fresh 0-based index
+
+        /* 3. Determine my rank (1-based)                    */
+        $myRank = optional(
+            $ranked->firstWhere('user_id', $studentId)
+        )->index ?? null;
+        $myRank = $myRank !== null ? $myRank + 1 : null;
+
+        /* 4. Slice the Top-15 for display                  */
+        $top15 = $ranked->take(15);
+
+        return view('student.student-leaderboards', compact(
+            'top15',
+            'me',
+            'myRank',
+            'ranked',
+            'users'
+        ));
     }
 }

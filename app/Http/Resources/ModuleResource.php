@@ -6,12 +6,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ModuleResource extends JsonResource
 {
-    public function toArray($request)
+    public function toArray($req)
     {
         return [
-            'id'          => $this->module_id, 
-            'name'        => $this->module_name,
-            'description' => $this->module_description,
+            'module_id'   => $this->module_id,
+            'title'       => $this->title,
+            'description' => $this->description,
+            'position'    => $this->position,
+            'activities'  => ActivityResource::collection($this->whenLoaded('activities')),
+            'progress'    => $this->when(isset($this->progress), fn() => [
+                'completed' => $this->progress->completed,
+                'score'     => $this->progress->score,
+            ]),
         ];
     }
 }

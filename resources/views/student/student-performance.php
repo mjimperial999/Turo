@@ -179,21 +179,6 @@ include __DIR__ . '/../partials/head.php';
 
             <div class="content-container box-page">
 
-                <?php if (session()->has('error')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-danger alert-message" role="alert">
-                            <?= session('error') ?>
-                        </div>
-                    </div>
-                <?php elseif (session()->has('success')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-success alert-message" role="alert">
-                            <?= session('success') ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-
                 <div class="content padding heading box-gold">
                     <div class="header logo-sub">
                         <div class="logo-and-title">
@@ -247,7 +232,49 @@ include __DIR__ . '/../partials/head.php';
                 </div>
 
                 <div class="content padding">
+                    <?php foreach ($achievements as $ach): ?>
+                        <div class="achievement <?= $ach->owned ? 'owned' : 'locked' ?>">
+                            <div class="achievement-image">
+                                <img src="/achievements/<?= e($ach->achievement_image) ?>.svg" width="50em" height="auto" alt="">
+                            </div>
+                            <div class="achievement-details">
+                                <h6><?= e($ach->achievement_name) ?></h6>
+                                <small><?= e($ach->achievement_description) ?></small>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
 
+            </div>
+
+            <div class="content-container">
+
+                <div class="content padding heading box-gold">
+                    <div class="header logo-sub">
+                        <div class="logo-and-title">
+                            <div class="logo">
+                                <img class="svg" src="/icons/achievements.svg" width="50em" height="auto" />
+                            </div>
+                            <div class="text title">
+                                <h4>Badges</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content padding">
+                    <?php foreach ($badges as $b): ?>
+                        <div class="achievement <?= $b->owned ? 'owned' : 'locked' ?>">
+                            <div class="achievement-image">
+                                <img src="/achievements/<?= e($b->badge_image) ?>.svg" width="50em" height="auto" alt="">
+                            </div>
+                            <div class="achievement-details">
+                                <h6><?= e($b->badge_name) ?></h6>
+                                <small><?= e($b->badge_description) ?></small>
+                                <small>Points required: <?= $b->points_required * 100 ?></small>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
 
             </div>

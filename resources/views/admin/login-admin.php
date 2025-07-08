@@ -1,34 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Login | Turo</title>
-  <link rel="stylesheet" type="text/css" href="css/styles.css">
+<?php
+$title = "Admin Login";
+include __DIR__ . '/../partials/head.php';  ?>
+<style>
+
+</style>
 </head>
 <?php
-    $loginUrl = app()->environment('production') 
-        ? secure_url('/auth') 
-        : url('/auth');
+$loginUrl = app()->environment('production')
+  ? secure_url('/auth-admin')
+  : url('/auth-admin');
 ?>
+
 <body>
-  <div class="login-page-screen">
-    <div class="login-side-container">
-      <div class="login-side-con-box">
-        <div class="login-side-logo-con">
+
+  <div class="screen-login">
+    <div class="login admin">
+      <div class="login-container">
+        <div class="login-logo">
           <img src="icons/title-logo.svg" width="200em" height="auto">
         </div>
-        <div class="login-side-form">
-          <h4 id="login-title-font">Administrator's<br>Panel</h4>
+        <div class="login-form">
+
+          <div class="content text-center">
+            <div class="header">
+              <div class="text title">
+                <h4> Administrator's Panel</h4>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="content">
+            <hr class="divider-hr">
+          </div>
+
+          <div class="content">
             <?php if (session()->has('error')): ?>
               <div class="alert alert-danger alert-message" role="alert">
                 <?= session('error') ?>
               </div>
             <?php elseif (session()->has('success')): ?>
-                  <div class="alert alert-success alert-message" role="alert">
+              <div class="alert alert-success alert-message" role="alert">
                 <?= session('success') ?>
               </div>
             <?php endif; ?>
+          </div>
           <form class="login-form-box" action="<?= $loginUrl ?>" method="POST">
             <?= csrf_field() ?>
             <p class="input-placeholder">EMAIL</p>
@@ -42,11 +58,9 @@
           </form>
         </div>
       </div>
-    </div>
-    <div class="login-side-decoration">
 
     </div>
   </div>
-</body>
 
+</body>
 </html>

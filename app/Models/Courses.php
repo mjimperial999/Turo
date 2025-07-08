@@ -10,18 +10,16 @@ class Courses extends Model
     protected $table = 'course';
     protected $primaryKey = 'course_id';
     protected $keyType = 'string';
-    
+
     public $incrementing = false;
     public $timestamps   = false;
-    
+
 
     protected $fillable = [
-        'course_id', 
+        'course_id',
         'course_code',
         'course_name',
-        'teacher_id',
         'course_description',
-        'course_picture',
         'start_date',
         'end_date',
     ];
@@ -33,7 +31,7 @@ class Courses extends Model
 
     public function image()
     {
-        return $this->hasOne(CourseImage::class, 'course_id','course_id');
+        return $this->hasOne(CourseImage::class, 'course_id', 'course_id');
     }
 
     public function longquizzes()
@@ -41,8 +39,20 @@ class Courses extends Model
         return $this->hasMany(LongQuizzes::class, 'course_id');
     }
 
-    public function screenings()  
-    { 
-        return $this->hasMany(Screening::class,'course_id', 'course_id'); 
+    public function screenings()
+    {
+        return $this->hasMany(Screening::class, 'course_id', 'course_id');
+    }
+
+    public function teachers()
+    {
+        return $this->belongsToMany(
+            Teachers::class,
+            CourseSection::class,
+            'course_id',
+            'teacher_id',
+            'course_id',
+            'user_id'
+        );
     }
 }

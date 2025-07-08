@@ -227,7 +227,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             </div>
                         </div>
                         <div class="quiz-interface-question">
-                            <p><?= htmlspecialchars($question->question_text) ?></p>
+                            <p><?= nl2br(htmlspecialchars($question->question_text)) ?></p>
                             <?php
                             if (empty($question->image?->image)) {;
                             } else {
@@ -247,7 +247,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                 foreach ($opts as $option): ?>
                                     <div class="radio-button radio-screener">
                                         <input type="radio" id="opt<?= $option->screening_option_id ?>" name="answer" value="<?= $option->screening_option_id ?>" required>
-                                        <label for="opt<?= $option->screening_option_id ?>"><?= $option->option_text . ' - ' . $option->is_correct ?></label>
+                                        <label for="opt<?= $option->screening_option_id ?>"><?= $option->option_text ?></label>
                                     </div>
                                 <?php endforeach; ?>
                             </div>

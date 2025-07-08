@@ -8,6 +8,7 @@ class LearningResource extends Model
     protected $table      = 'learningresource';
     protected $primaryKey = 'learning_resource_id';
     public    $incrementing = false;
+    public    $timestamps = false;
     protected $keyType    = 'string';
 
       protected $fillable = [

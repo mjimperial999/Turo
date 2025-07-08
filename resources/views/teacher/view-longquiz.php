@@ -57,7 +57,7 @@ include __DIR__ . '/../partials/head.php';
                         <h6> > </h6>
                     </div>
                     <div class="text title">
-                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>"><?= $course->course_name ?></a></h6>
+                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>"><?= $course->course_name ?></a></h6>
                         <div class="line"></div>
                     </div>
                     <div class="divider">
@@ -85,24 +85,6 @@ include __DIR__ . '/../partials/head.php';
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="content-container box-page">
-
-                <?php if (session()->has('error')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-danger alert-message" role="alert">
-                            <?= session('error') ?>
-                        </div>
-                    </div>
-                <?php elseif (session()->has('success')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-success alert-message" role="alert">
-                            <?= session('success') ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
             </div>
 
             <div class="content-container long-quiz">
@@ -155,8 +137,7 @@ include __DIR__ . '/../partials/head.php';
 
                     <hr class="divider-hr">
 
-                    <p class="description"><b>INSTUCTIONS:</b> <?= $longquiz->long_quiz_instructions ?></p>
-
+                    <p class="description"><b>INSTUCTIONS:</b><br><?= nl2br(htmlspecialchars($longquiz->long_quiz_instructions)) ?></p>
 
 
                 </div>
@@ -189,7 +170,42 @@ include __DIR__ . '/../partials/head.php';
                 </div>
 
                 <div class="content padding">
-                    Hi
+                    <?php foreach ($questions as $index => $q): ?>
+                        <?php $num = $index + 1; /* 1-based counter */ ?>
+                        <div class="question-card">
+                            <h6><b>
+                                    Q<?= $num ?>. <?= htmlspecialchars($q->question_text) ?>
+                            </h6></b>
+
+                            <?php if ($q->longquizimage && $q->longquizimage->image):        // BLOB present 
+                            ?>
+                                <?php
+                                $blob     = $q->longquizimage->image;
+                                $mimeType = getMimeTypeFromBlob($blob);
+                                $imgURL   = "data:$mimeType;base64," . base64_encode($blob);
+                                ?>
+                                <img src="<?= $imgURL ?>" style="max-width:10em;margin:.4rem 0">
+                            <?php endif; ?>
+
+                            <?php foreach ($q->longquizoptions as $opt): ?>
+                                <?php $isCorrect = $opt->is_correct; ?>
+                                <div style="
+                                    padding:.35rem .6rem;
+                                    border:1px solid #ccc;
+                                    border-radius:.3rem;
+                                    margin:.2rem 0;
+                                    background:<?= $isCorrect ? '#c7e5ff' : '#fff' ?>;
+                                    color:<?= $isCorrect ? '#273341' : '#333' ?>;
+                                ">
+                                    <?= htmlspecialchars($opt->option_text) ?>
+                                    <?php if ($isCorrect): ?>
+                                        <span style="font-size:.75rem;font-weight:700;margin-left:.4rem">&#10004;</span>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <hr class="divider-hr">
+                    <?php endforeach; ?>
                 </div>
 
             </div>

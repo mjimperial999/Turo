@@ -1,8 +1,8 @@
 <?php $title = "Edit $course->course_name";
 include __DIR__ . '/../partials/head.php'; ?>
 <meta http-equiv="Cache-Control" content="no-store, must-revalidate">
-<meta http-equiv="Pragma"       content="no-cache">
-<meta http-equiv="Expires"      content="0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <style>
 
 </style>
@@ -11,6 +11,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 <body>
     <?php
     include __DIR__ . '/../partials/nav-teach.php';
+
     if (empty($course->image?->image)) {;
         $imageURL = "/images/no-image.jpeg";
     } else {
@@ -57,13 +58,9 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                 <div class="content-container box-page">
                     <div class="content">
-                        <?php if (session()->has('error')): ?>
-                            <div class="alert alert-danger alert-message padding" role="alert">
-                                <?= session('error') ?>
-                            </div>
-                        <?php elseif (session()->has('success')): ?>
-                            <div class="alert alert-success alert-message padding" role="alert">
-                                <?= session('success') ?>
+                        <?php if ($errors->any()): ?>
+                            <div class="alert alert-danger alert-message padding">
+                                <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -136,7 +133,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                     </form>
                 </div>
             </div>
-            
+
         </div>
 
         <div class="spacing side">

@@ -36,7 +36,7 @@ if (session('role_id') == 1) {
 } else {
     echo
     '<div class="lecture-flex-box">
-    <form action="/teachers-panel/course/'. $course->course_id .'/module/' . $module->module_id . '/lecture/' . $activity->activity_id . '" method="GET">
+    <form action="/teachers-panel/course/'. $course->course_id . '/section/' . $section->section_id  . '/module/' . $module->module_id . '/lecture/' . $activity->activity_id . '" method="GET">
         <button type="submit" class="lecture-box lecture">
             <div class="lecture-title">
                 <div class="logo">
@@ -55,14 +55,14 @@ if (session('role_id') == 1) {
     </form>
     <div class="lecture-crud">
                 <div class="box-button">
-                    <form action="/teachers-panel/course/'. $course->course_id .'/module/' . $module->module_id . '/lecture/' . $activity->activity_id . '/edit" method="GET">
+                    <form action="/teachers-panel/course/'. $course->course_id . '/section/' . $section->section_id . '/module/' . $module->module_id . '/lecture/' . $activity->activity_id . '/edit" method="GET">
                     <button type="submit" class="box-button-edit">
                         <img src="/icons/edit-black.svg" width="20em" height="auto" />
                     </button>
                     </form>
                 </div>
                 <div class="box-button">
-                    <form action="/teachers-panel/course/'. $course->course_id .'/module/' . $module->module_id . '/lecture/' . $activity->activity_id . '/delete" method="POST"
+                    <form action="/teachers-panel/course/'. $course->course_id . '/section/' . $section->section_id . '/module/' . $module->module_id . '/lecture/' . $activity->activity_id . '/delete" method="POST"
                     onsubmit="return confirm(' . "'Are you sure you want to delete this lecture: " . $activity->activity_name ."? '" .');">
                     '. csrf_field() .'
                     <button type="submit" class="box-button-delete">

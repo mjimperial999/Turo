@@ -24,7 +24,6 @@ class Users extends Authenticatable
         'email',
         'password_hash',
         'role_id',
-        'profile_pic',
         'agreed_to_terms',
         'requires_password_change',
     ];
@@ -32,6 +31,11 @@ class Users extends Authenticatable
     public function student()
     {
         return $this->hasMany(Students::class, 'user_id');
+    }
+
+    public function teacher()
+    {
+        return $this->hasMany(Teachers::class, 'user_id');
     }
 
     public function image()

@@ -12,10 +12,20 @@ Route::prefix('v1')->group(function () {
     // ── 🔐 Protected endpoints (require Bearer token) ─────────────
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('get-courses', [MobileModelController::class, 'getCourses']);
+        Route::get('get-current-module', [MobileModelController::class, 'getCurrentModule']);
+        Route::get('get_course_modules_for_teacher.php', [MobileModelController::class, 'indexTeacher']);
+        Route::get('get_course_modules_for_student.php', [MobileModelController::class, 'indexStudent']);
+        Route::get('get_activities_in_module.php',        [MobileModelController::class, 'activities']);
+        Route::delete('delete_module_in_course.php',       [MobileModelController::class, 'destroy']);
+        Route::post('create_module.php',                  [MobileModelController::class, 'store']);
+        Route::get('get_module.php',                      [MobileModelController::class, 'show']);
+        Route::post('update_module.php',                  [MobileModelController::class, 'update']);
+        Route::get('get-current-module',                  [MobileModelController::class, 'current']);
+
         Route::get('course', [MobileModelController::class, 'course']);
         Route::get('modules', [MobileModelController::class, 'modules']);
         Route::get('activities', [MobileModelController::class, 'activities']);
-        
+
         // add more protected routes here, e.g.
         // Route::post('modules/{module}/complete', …);
     });

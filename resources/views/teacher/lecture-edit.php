@@ -35,7 +35,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <h6> > </h6>
                         </div>
                         <div class="text title">
-                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>">
+                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>">
                                     <?= $module->module_name ?></a></h6>
                             <div class="line"></div>
                         </div>
@@ -57,15 +57,12 @@ include __DIR__ . '/../partials/head.php'; ?>
                 </div><br>
 
                 <!-- ▸ feedback / validation ----------------------------------------------->
-                <div class="content-container box-page">
+                                <div class="content-container box-page">
                     <div class="content">
                         <?php if ($errors->any()): ?>
                             <div class="alert alert-danger alert-message padding">
                                 <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
                             </div>
-                        <?php endif; ?>
-                        <?php if (session()->has('success')): ?>
-                            <div class="alert alert-success alert-message padding"><?= session('success') ?></div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -121,7 +118,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
             <div class="content-container">
                 <div class="content">
-                    <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/delete"
+                    <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/delete"
                         onsubmit="return confirm('Really delete this lecture?');">
                         <?= csrf_field(); ?>
                         <div class="form-button">

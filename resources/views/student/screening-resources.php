@@ -27,7 +27,10 @@ include __DIR__ . '/../partials/head.php';
 </head>
 
 <body>
-    <?php include __DIR__ . '/../partials/nav.php'; ?>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/flash-stack.php';
+    ?>
 
     <div class="screen">
         <div class="spacing main">

@@ -38,10 +38,12 @@ function getMimeTypeFromBlob($blob)
     <nav id="primary-navigation">
         <div class="nav__links">
             <a class="nav" href="/teachers-panel">DASHBOARD</a>
-            <a class="nav" href="/profile">PROFILE</a>
-            <a class="nav" href="#">INBOX</a>
+            <a class="nav" href="/teachers-panel/profile">PROFILE</a>
+            <a class="nav" href="/inbox">INBOX</a>
             <a class="nav" href="/logout">LOGOUT</a>
         </div>
     </nav>
 
 </div>
+
+<?php include __DIR__ . '/../partials/flash-stack.php'; ?>

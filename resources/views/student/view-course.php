@@ -77,61 +77,61 @@ include __DIR__ . '/../partials/head.php'; ?>
                 </div>
             </div>
 
-            <?php if(!$isLocked): ?>
-            <div class="content-container">
-                <div class="content padding heading box-gray">
+            <?php if (!$isLocked): ?>
+                <div class="content-container">
+                    <div class="content padding heading box-gray">
 
-                    <div class="header">
-                        <div class="text title">
-                            <h5> Modules </h5>
+                        <div class="header">
+                            <div class="text title">
+                                <h5> Modules </h5>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="content padding box-page">
+                        <div class="flex-area">
+                            <?php if ($course->modules->isEmpty()): ?>
+                                <div class="no-items">
+                                    <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
+                                    No modules available for this course.
+                                </div>
+
+                            <?php else: foreach ($course->modules as $module) {
+                                    include __DIR__ . '/../partials/module-hero.php';
+                                }
+                            endif; ?>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-container">
+                    <div class="content padding heading box-gray">
+
+                        <div class="header">
+                            <div class="text title">
+                                <h5> Long Quizzes </h5>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="content padding box-page">
+                        <div class="quiz-flex-area">
+                            <?php if ($course->longquizzes->isEmpty()): ?>
+                                <div class="no-items">
+                                    <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
+                                    No long quizzes available for this course.
+                                </div>
+
+                            <?php else: foreach ($course->longquizzes as $longquiz) {
+                                    include __DIR__ . '/../partials/time-lock-check-modules.php';
+                                    include __DIR__ . '/../partials/quiz-long-hero.php';
+                                };
+                            endif; ?>
                         </div>
                     </div>
 
                 </div>
-                <div class="content padding box-page">
-                    <div class="flex-area">
-                        <?php if ($course->modules->isEmpty()): ?>
-                            <div class="no-items">
-                                <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
-                                No modules available for this course.
-                            </div>
-
-                        <?php else: foreach ($course->modules as $module) {
-                                include __DIR__ . '/../partials/module-hero.php';
-                            }
-                        endif; ?>
-
-                    </div>
-                </div>
-            </div>
-
-            <div class="content-container">
-                <div class="content padding heading box-gray">
-
-                    <div class="header">
-                        <div class="text title">
-                            <h5> Long Quizzes </h5>
-                        </div>
-                    </div>
-
-                </div>
-                <div class="content padding box-page">
-                    <div class="quiz-flex-area">
-                        <?php if ($course->longquizzes->isEmpty()): ?>
-                            <div class="no-items">
-                                <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
-                                No long quizzes available for this course.
-                            </div>
-
-                        <?php else: foreach ($course->longquizzes as $longquiz) {
-                                include __DIR__ . '/../partials/time-lock-check-modules.php';
-                                include __DIR__ . '/../partials/quiz-long-hero.php';
-                            };
-                        endif; ?>
-                    </div>
-                </div>
-
-            </div>
             <?php endif; ?>
 
             <div class="content-container box-page">

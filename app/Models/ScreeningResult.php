@@ -5,6 +5,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class ScreeningResult extends Model
 {
+    public function student()
+    {
+        return $this->belongsTo(Students::class,'student_id','user_id');
+    }
+
     protected $table      = 'screeningresult';
     protected $primaryKey = 'result_id';
     public    $incrementing = false;

@@ -88,15 +88,6 @@ include __DIR__ . '/../partials/head.php';
                 </div>
 
                 <div class="content padding">
-                    <?php if (session()->has('error')): ?>
-                        <div class="alert alert-danger alert-message" role="alert">
-                            <?= session('error') ?>
-                        </div>
-                    <?php elseif (session()->has('success')): ?>
-                        <div class="alert alert-success alert-message" role="alert">
-                            <?= session('success') ?>
-                        </div>
-                    <?php endif; ?>
                     <div class="module-section quiz-background <?= $class ?>">
                         <div class="module-section quiz-header">
                             <div class="quiz-description">

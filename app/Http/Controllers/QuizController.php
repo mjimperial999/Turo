@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Services\StudentAnalytics;
+use App\Services\AchievementService;
 
 use App\Models\Courses;
 use App\Models\Modules;
@@ -209,6 +210,8 @@ class QuizController extends Controller
                 $courseID,
                 $moduleID   // null for course-level exams
             );
+
+            AchievementService::evaluate($studentID);
 
             return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}/summary")
                 ->with('success', 'Quiz has been submitted.');

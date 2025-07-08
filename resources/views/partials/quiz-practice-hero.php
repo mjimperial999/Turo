@@ -49,10 +49,10 @@ if (session('role_id') == 1) {
         </div>
         </div>';
     };
-} else {
+} elseif (session('role_id') == 2) {
     echo
     '<div class="quiz-flex-box">
-    <form action="/teachers-panel/course/'. $course->course_id .'/module/' . $module->module_id . '/practicequiz/' . $activity->activity_id . '" method="GET">
+    <form action="/teachers-panel/course/'. $course->course_id . '/section/' . $section->section_id .'/module/' . $module->module_id . '/practicequiz/' . $activity->activity_id . '" method="GET">
         <button type="submit" class="quiz-box practice">
             <div class="quiz-title">
                 <div class="logo">
@@ -73,14 +73,14 @@ if (session('role_id') == 1) {
     </form>
     <div class="quiz-crud">
                 <div class="box-button">
-                    <form action="/teachers-panel/course/' . $course->course_id .'/module/' . $module->module_id . '/practicequiz/' . $activity->activity_id . '/edit" method="GET">
+                    <form action="/teachers-panel/course/' . $course->course_id . '/section/' . $section->section_id .'/module/' . $module->module_id . '/practicequiz/' . $activity->activity_id . '/edit" method="GET">
                     <button type="submit" class="box-button-edit">
                         <img src="/icons/edit-black.svg" width="20em" height="auto" />
                     </button>
                     </form>
                 </div>
                 <div class="box-button delete">
-                    <form action="/teachers-panel/course/' . $course->course_id .'/module/' . $module->module_id . '/practicequiz/' . $activity->activity_id. '/delete" method="POST"
+                    <form action="/teachers-panel/course/' . $course->course_id . '/section/' . $section->section_id .'/module/' . $module->module_id . '/practicequiz/' . $activity->activity_id. '/delete" method="POST"
                     onsubmit="return confirm(' . "'Are you sure you want to delete this module: " . $activity->activity_name."? '" .');">
                     '. csrf_field() .'
                     <button type="submit" class="box-button-delete">
@@ -90,5 +90,46 @@ if (session('role_id') == 1) {
                 </div>
             </div>
     </div>';
-}
+} else {
+    echo
+    '<div class="quiz-flex-box">
+    <form action="/admin-panel/edit-content/course/'. $course->course_id .'/module/' . $module->module_id . '/practicequiz/' . $activity->activity_id . '" method="GET">
+        <button type="submit" class="quiz-box practice">
+            <div class="quiz-title">
+                <div class="logo">
+                    <img class="svg" src="/icons/practice-quiz.svg" width="42em" height="auto" />
+                </div>
+                <div class="text title">
+                    <h6>' . $activity->activity_name . '</h6>';
+                    if (!$isAvailable) {
+                    echo '<p>' . $description . '</p>';
+                }
+                echo '</div>
+            </div>
+            <div class="quiz-score">
+                <div class="text title">
+                </div>
+            </div>
+        </button>
+    </form>
+    <div class="quiz-crud">
+                <div class="box-button">
+                    <form action="/admin-panel/edit-content/course/' . $course->course_id .'/module/' . $module->module_id . '/practicequiz/' . $activity->activity_id . '/edit" method="GET">
+                    <button type="submit" class="box-button-edit">
+                        <img src="/icons/edit-black.svg" width="20em" height="auto" />
+                    </button>
+                    </form>
+                </div>
+                <div class="box-button delete">
+                    <form action="/admin-panel/edit-content/course/' . $course->course_id .'/module/' . $module->module_id . '/practicequiz/' . $activity->activity_id. '/delete" method="POST"
+                    onsubmit="return confirm(' . "'Are you sure you want to delete this module: " . $activity->activity_name."? '" .');">
+                    '. csrf_field() .'
+                    <button type="submit" class="box-button-delete">
+                        <img src="/icons/delete.svg" width="20em" height="auto" />
+                    </button>
+                    </form>
+                </div>
+            </div>
+    </div>';
+} 
 

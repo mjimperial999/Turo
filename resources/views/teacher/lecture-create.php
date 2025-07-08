@@ -13,7 +13,7 @@ include __DIR__ . '/../partials/head.php'; ?>
     <div class="screen">
         <div class="spacing main">
             <form method="POST"
-                action="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/store-lecture"
+                action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/store-lecture"
                 enctype="multipart/form-data">
                 <?= csrf_field(); ?>
 
@@ -35,7 +35,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <h6> > </h6>
                         </div>
                         <div class="text title">
-                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>">
+                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>">
                                     <?= $module->module_name ?></a></h6>
                             <div class="line"></div>
                         </div>
@@ -63,9 +63,6 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <div class="alert alert-danger alert-message padding">
                                 <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
                             </div>
-                        <?php endif; ?>
-                        <?php if (session()->has('success')): ?>
-                            <div class="alert alert-success alert-message padding"><?= session('success') ?></div>
                         <?php endif; ?>
                     </div>
                 </div>

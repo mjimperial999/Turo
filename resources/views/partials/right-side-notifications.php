@@ -22,6 +22,13 @@ use App\Models\{
 $userId    = session('user_id');
 $isTeacher = session('role_id') == 2;                 // 2 = teacher in your seed
 $base      = $isTeacher ? '/teachers-panel' : '/home-tutor';
+$studentId = \App\Models\Students::find(session('user_id'));
+if (session('role_id') == 1) {
+  $isLocked  = ($studentId->isCatchUp == 0) && session('role_id') == 1;
+} else {
+  $isLocked = false;
+}
+
 
 /* -------------------------------------------------
  | helpers
@@ -174,16 +181,23 @@ $screen = \App\Models\Screening::query()
 
 /* -------- merge: announcements already in $notifications --------*/
 $notifications = collect($notifications);
+
 $practice = collect($practice);
 $short    = collect($short);
 $long     = collect($long);
 $screen   = collect($screen);
-$notifications = $notifications
+if (!$isLocked) {
+  $notifications = $notifications
     ->concat($practice)
     ->concat($short)
     ->concat($long)
     ->concat($screen)
-    ->take(25); 
+    ->take(25);
+} else {
+  $notifications = $notifications
+    ->concat($screen)
+    ->take(25);
+}
 // announcements remain on top
 ?>
 
@@ -194,22 +208,24 @@ $notifications = $notifications
       <div id="details" style="margin-top:.5rem;font-size:13px;"></div>
     </div>
 
-    <div class="sidebar-box notifications">
-      <h4 style="margin:.2rem 0 .6rem">Notifications</h4>
-      <?php if ($notifications->isEmpty()): ?>
-        <p style="font-size:.8rem;color:#555">No pending items 🎉</p>
-      <?php else: ?>
+    <?php if (session('role_id') == 1): ?>
+      <div class="sidebar-box notifications">
+        <h4 style="margin:.2rem 0 .6rem">Notifications</h4>
+        <?php if ($notifications->isEmpty()): ?>
+          <p style="font-size:.8rem;color:#555">No pending items 🎉</p>
+        <?php else: ?>
 
-        <?php foreach ($notifications as $n): ?>
-          <div class="notif-block">
-            <a class="<?= $n['type'] ?>" href="<?= $n['url'] ?>">
-              <b class="notif-link"><?= htmlspecialchars($n['title']) ?></b>
-            </a>
-            <small><?= $n['date'] ?></small>
-          </div>
-        <?php endforeach; ?>
+          <?php foreach ($notifications as $n): ?>
+            <div class="notif-block">
+              <a class="<?= $n['type'] ?>" href="<?= $n['url'] ?>">
+                <b class="notif-link"><?= htmlspecialchars($n['title']) ?></b>
+              </a>
+              <small><?= $n['date'] ?></small>
+            </div>
+          <?php endforeach; ?>
 
-      <?php endif; ?>
-    </div>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
   </div>
 </div>

@@ -7,7 +7,7 @@ if (session('role_id') == 1) {
         <button class="lecture-box tutorial">
             <div class="lecture-title">
                 <div class="logo">
-                    <img class="svg" src="/icons/vid.svg" width="38em" height="auto" />
+                    <img class="svg" src="/icons/vid.svg" width="42em" height="auto" />
                 </div>
                 <div class="text title">
                     <h6>' . $activity->activity_name . '</h6>
@@ -23,7 +23,7 @@ if (session('role_id') == 1) {
         <div class="lecture-box tutorial">
             <div class="lecture-title">
                 <div class="logo">
-                    <img class="svg" src="/icons/vid.svg" width="38em" height="auto" />
+                    <img class="svg" src="/icons/vid.svg" width="42em" height="auto" />
                 </div>
                 <div class="text title">
                     <h6>' . $activity->activity_name . ' (LOCKED)</h6>
@@ -36,11 +36,11 @@ if (session('role_id') == 1) {
 } else {
     echo
     '<div class="lecture-flex-box">
-    <form action="/teachers-panel/course/'. $course->course_id .'/module/' . $module->module_id . '/tutorial/' . $activity->activity_id . '" method="GET">
+    <form action="/teachers-panel/course/'. $course->course_id . '/section/' . $section->section_id . '/module/' . $module->module_id . '/tutorial/' . $activity->activity_id . '" method="GET">
         <button type="submit" class="lecture-box tutorial">
             <div class="lecture-title">
                 <div class="logo">
-                    <img class="svg" src="/icons/vid.svg" width="38em" height="auto" />
+                    <img class="svg" src="/icons/vid.svg" width="42em" height="auto" />
                 </div>
                 <div class="text title">
                     <h6>' . $activity->activity_name . '</h6>';
@@ -55,14 +55,14 @@ if (session('role_id') == 1) {
     </form>
     <div class="lecture-crud">
                 <div class="box-button">
-                    <form action="/teachers-panel/course/'. $course->course_id .'/module/' . $module->module_id . '/tutorial/' . $activity->activity_id . '/edit" method="GET">
+                    <form action="/teachers-panel/course/'. $course->course_id . '/section/' . $section->section_id .'/module/' . $module->module_id . '/tutorial/' . $activity->activity_id . '/edit" method="GET">
                     <button type="submit" class="box-button-edit">
                         <img src="/icons/edit-black.svg" width="20em" height="auto" />
                     </button>
                     </form>
                 </div>
                 <div class="box-button">
-                    <form action="/teachers-panel/course/'. $course->course_id .'/module/' . $module->module_id . '/tutorial/' . $activity->activity_id . '/delete" method="POST"
+                    <form action="/teachers-panel/course/'. $course->course_id . '/section/' . $section->section_id .'/module/' . $module->module_id . '/tutorial/' . $activity->activity_id . '/delete" method="POST"
                     onsubmit="return confirm(' . "'Are you sure you want to delete this tutorial: " . $activity->activity_name ."? '" .');">
                     '. csrf_field() .'
                     <button type="submit" class="box-button-delete">

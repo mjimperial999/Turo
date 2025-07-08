@@ -9,29 +9,37 @@ use Illuminate\Support\Facades\Validator;
 
 use Carbon\Carbon;
 
-use App\Models\Users;
-use App\Models\Students;
-use App\Models\Courses;
-use App\Models\CourseImage;
-use App\Models\Modules;
-use App\Models\ModuleImage;
-use App\Models\Screening;
-use App\Models\ScreeningConcept;
-use App\Models\ScreeningTopic;
-use App\Models\ScreeningQuestion;
-use App\Models\ScreeningQuestionImage;
-use App\Models\ScreeningOption;
-use App\Models\Activities;
-use App\Models\Quizzes;
-use App\Models\Questions;
-use App\Models\QuestionImages;
-use App\Models\Options;
-use App\Models\LongQuizzes;
-use App\Models\LongQuizQuestions;
-use App\Models\LongQuizOptions;
-use App\Models\LongQuizQuestionImages;
-use App\Models\AssessmentResult;
-use App\Models\LongQuizAssessmentResult;
+use App\Models\{
+    Users,
+    Students,
+    Courses,
+    Sections,
+    CourseSection,
+    CourseImage,
+    Modules,
+    ModuleImage,
+    StudentProgress,
+    Screening,
+    ScreeningConcept,
+    ScreeningTopic,
+    ScreeningQuestion,
+    ScreeningQuestionImage,
+    ScreeningOption,
+    Activities,
+    Quizzes,
+    Questions,
+    QuestionImages,
+    Options,
+    LongQuizzes,
+    LongQuizQuestions,
+    LongQuizOptions,
+    LongQuizQuestionImages,
+    AssessmentResult,
+    LongQuizAssessmentResult,
+    ScreeningResult,
+    LearningResource,
+    UserImages
+};
 
 class TeacherController extends Controller
 {
@@ -45,6 +53,10 @@ class TeacherController extends Controller
             return redirect('/home-tutor');
         }
 
+        if (session('role_id') == 3) {
+            return redirect('/admin-panel');
+        }
+
         return null;
     }
 
@@ -52,12 +64,73 @@ class TeacherController extends Controller
     {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
 
-        $userID = session('user_id');
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
-        $courses = Courses::with('image')->get();
 
-        return view('teacher.teachers-panel', compact('courses', 'users',));
+        $courseLinks = CourseSection::with(['course.image', 'section'])
+            ->where('teacher_id', $userID)
+            ->orderBy('course_id')
+            ->orderBy('section_id')
+            ->get();
+
+        return view('teacher.teachers-panel', compact('courseLinks', 'users',));
+    }
+
+    public function profilePage(Request $request)
+    {
+        /* ----------  auth guard (already there) ---------- */
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session('user_id');
+
+        /* ----------  handle image upload  ---------- */
+        if ($request->isMethod('post')) {
+            $request->validate([
+                'profile_pic' => 'required|file|mimes:jpg,jpeg,png|max:2048',   // 2 MB
+            ]);
+
+            $blob = file_get_contents($request->file('profile_pic')->path());
+
+            UserImages::updateOrCreate(
+                ['user_id' => $userID],
+                ['image'   => $blob]
+            );
+
+            return back();
+        }
+
+        /* ----------  user + blob image for GET ---------- */
+        $users = Users::with('image')->findOrFail($userID);
+
+
+
+        return view('teacher.teacher-profile', compact('users'));
+    }
+
+    private function assertOwnsCourseSection($courseId, $sectionId): void
+    {
+        $teacherId = session('user_id');
+
+        $owns = DB::table('course_section')
+            ->where([
+                'course_id'  => $courseId,
+                'section_id' => $sectionId,
+                'teacher_id' => $teacherId
+            ])->exists();
+
+        abort_if(!$owns, 403, 'Not assigned to this section.');
+    }
+
+    private function studentsInSection($sectionId)
+    {
+        return Students::query()
+            ->select('student.*')
+            ->join('user', 'student.user_id', '=', 'user.user_id')
+            ->where('student.section_id', $sectionId)
+            ->orderBy('user.last_name')
+            ->orderBy('user.first_name')
+            ->with('user')                           // keep eager load
+            ->get();
     }
 
     // ---------------------------------------------
@@ -65,7 +138,6 @@ class TeacherController extends Controller
     // Course CRUD
     public function createCourse()
     {
-        $userID = session('user_id');
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
         $courses = Courses::with('image')->get();
@@ -87,7 +159,6 @@ class TeacherController extends Controller
             'course_code'        => $req->course_code,
             'course_name'        => $req->course_name,
             'course_description' => $req->course_description ?? '',
-            'course_picture'     => null,
             'start_date'         => null,
             'end_date'           => null,
             'teacher_id'         => session('user_id')
@@ -151,9 +222,15 @@ class TeacherController extends Controller
     }
 
 
-    public function viewCourse(Courses $course)
+    public function viewCourse(Courses $course, Sections $section)
     {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
+        $students = $this->studentsInSection($sectionID);
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -164,13 +241,111 @@ class TeacherController extends Controller
             'screenings',
         ])->get();
 
-        return view('teacher.view-course', compact('course', 'users'));
+        return view('teacher.view-course', compact('course', 'users', 'students', 'section'));
+    }
+
+    public function viewStudentCoursePerformance(
+        Courses $course,
+        Sections $section,
+        Students $student      // route-model
+    ) {
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $sectionID);
+        abort_if($student->section_id !== $sectionID, 403);
+
+        /* ----- roll-ups (helpers below) ----- */
+        $overall   = $this->overallRow($course->course_id, $student->user_id);
+        $practice  = $this->quizAverages($course->course_id, $student->user_id, 'practice');
+        $short     = $this->quizAverages($course->course_id, $student->user_id, 'short');
+        $long      = $this->longQuizAverages($course->course_id, $student->user_id);
+        $screening = $this->screeningBest($course->course_id, $student->user_id);
+
+        return view('teacher.student-performance', compact(
+            'course',
+            'section',
+            'student',
+            'overall',
+            'practice',
+            'short',
+            'long',
+            'screening',
+            'users'
+        ));
+    }
+
+    /* ========= helpers ========= */
+
+    private function overallRow($courseId, $studentId)
+    {
+        return StudentProgress::query()
+            ->selectRaw('
+            total_points,
+            RANK() OVER (
+                PARTITION BY course_id
+                ORDER BY total_points DESC
+            ) AS rank
+        ')
+            ->where([
+                ['course_id',  $courseId],
+                ['student_id', $studentId],
+            ])
+            ->first();
+    }
+
+    private function quizAverages($courseId, $studentId, $type)
+    {
+        $quizType = ['practice' => 2, 'short' => 1][$type];
+        return AssessmentResult::query()
+            ->join('activity as a', 'assessmentresult.activity_id', '=', 'a.activity_id')
+            ->join('quiz as q', 'a.activity_id', '=', 'q.activity_id')
+            ->join('module as m', 'a.module_id', '=', 'm.module_id')
+            ->selectRaw('m.module_name, a.activity_name as quiz_name,
+                     AVG(score_percentage) as avg')
+            ->where([
+                ['assessmentresult.student_id', $studentId],
+                ['assessmentresult.is_kept', 1],
+                ['q.quiz_type_id', $quizType],
+                ['m.course_id', $courseId]
+            ])
+            ->groupBy('m.module_name', 'a.activity_name')
+            ->get();
+    }
+
+    private function longQuizAverages($courseId, $studentId)
+    {
+        return LongQuizAssessmentResult::query()
+            ->join('longquiz as lq', 'long_assessmentresult.long_quiz_id', '=', 'lq.long_quiz_id')
+            ->selectRaw('lq.long_quiz_name as quiz_name, AVG(score_percentage) as avg')
+            ->where([
+                ['student_id', $studentId],
+                ['is_kept', 1],
+                ['lq.course_id', $courseId]
+            ])
+            ->groupBy('lq.long_quiz_name')
+            ->get();
+    }
+
+    private function screeningBest($courseId, $studentId)
+    {
+        return ScreeningResult::query()
+            ->join('screening as s', 's.screening_id', '=', 'screeningresult.screening_id')
+            ->selectRaw('s.screening_name, MAX(score_percentage) as best_score')
+            ->where([
+                ['screeningresult.student_id', $studentId],
+                ['s.course_id', $courseId]
+            ])
+            ->groupBy('s.screening_name')
+            ->get();
     }
 
     // ---------------------------------------------
     // ---------------------------------------------
     // Module CRUD
-    public function createModule(Courses $course)
+    public function createModule(Courses $course, $sectionId)
     {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
 
@@ -214,9 +389,18 @@ class TeacherController extends Controller
         return redirect()->back()->with('success', 'A new module has been created.');
     }
 
-    public function editModule(Courses $course, Modules $module)
-    {
-        return view('teacher.module-edit', compact('course', 'module'));
+    public function editModule(
+        Courses $course,
+        Sections $section,
+        Modules $module
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
+        return view('teacher.module-edit', compact('course', 'section', 'module'));
     }
 
     public function updateModule(Request $req, $courseID, Modules $module)
@@ -248,35 +432,50 @@ class TeacherController extends Controller
         return redirect()->back()->with('success', 'Module has been updated.');
     }
 
-    public function deleteModule($courseID, Modules $module)
+    public function deleteModule($courseID, $sectionId, Modules $module)
     {
         $module->delete();
         return back()->with('success', 'Module deleted.');
     }
 
-    public function viewModule(Courses $course, Modules $module)
-    {
+    public function viewModule(
+        Courses $course,
+        Sections $section,
+        Modules $module
+    ) {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
         $module->load('activities.quiz');
 
-        return view('teacher.view-module', compact('course', 'module', 'users'));
+        return view('teacher.view-module', compact('course', 'section', 'module', 'users'));
     }
 
     // ---------------------------------------------
     // ---------------------------------------------
     // Long Quiz CRUD
-    public function createLongQuiz(Courses $course)
-    {
+    public function createLongQuiz(
+        Courses $course,
+        Sections $section
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
-        return view('teacher.longquiz-create', compact('course', 'users'));
+        return view('teacher.longquiz-create', compact('course', 'section', 'users'));
     }
 
     /* 3-c  Store new quiz  */
-    public function storeLongQuiz(Request $req, Courses $course)
+    public function storeLongQuiz(Request $req, Courses $course, $sectionId)
     {
         /* ---------- validation ---------- */
         $rules = [
@@ -368,15 +567,24 @@ class TeacherController extends Controller
     }
 
     /* 3-d  Edit form */
-    public function editLongQuiz(Courses $course, LongQuizzes $longquiz)
-    {
+    public function editLongQuiz(
+        Courses $course,
+        Sections $section,
+        LongQuizzes $longquiz
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $longquiz->load('longquizquestions.longquizoptions');
-        return view('teacher.longquiz-edit', compact('course', 'longquiz', 'users'));
+        return view('teacher.longquiz-edit', compact('course', 'section', 'longquiz', 'users'));
     }
 
     /* 3-e  Update */
-    public function updateLongQuiz(Request $req, Courses $course, LongQuizzes $longquiz)
+    public function updateLongQuiz(Request $req, Courses $course, $sectionId, LongQuizzes $longquiz)
     {
         /* same validation rules as above */
         $validator = Validator::make($req->all(), [
@@ -485,44 +693,68 @@ class TeacherController extends Controller
     }
 
     /* 3-f  Destroy  –  cascades via FK or manual */
-    public function deleteLongQuiz(Courses $course, LongQuizzes $longquiz)
+    public function deleteLongQuiz(Courses $course, $sectionId, LongQuizzes $longquiz)
     {
         $longquiz->delete();   // FK ON DELETE CASCADE wipes related Q/Opt/Img
         return back()->with('success', 'Long quiz deleted.');
     }
 
-    public function viewLongQuiz(Courses $course, $longQuizID)
-    {
+    public function viewLongQuiz(
+        Courses $course,
+        Sections $section,
+        $longQuizID
+    ) {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $longquiz = LongQuizzes::findOrFail($longQuizID);
+        $longquiz = LongQuizzes::with([
+            'longquizquestions.longquizoptions',
+            'longquizquestions.longquizimage'
+        ])
+            ->where('course_id', $course->course_id)
+            ->findOrFail($longQuizID);
+
+        $questions = $longquiz->longquizquestions;
 
         $bestResults = LongQuizAssessmentResult::with(['student.user'])
-            ->where('long_quiz_id',  $longquiz->long_quiz_id)
-            ->where('is_kept',       1)              // flag you already store
-            ->orderByDesc('score_percentage')        // highest first
+            ->where([
+                ['long_quiz_id', $longquiz->long_quiz_id],
+                ['is_kept', 1],
+            ])
+            ->whereHas('student', fn($q) => $q->where('section_id', $sectionID))
+            ->orderByDesc('score_percentage')
             ->get();
 
-        return view('teacher.view-longquiz', compact('course', 'longquiz', 'users', 'bestResults'));
+        return view('teacher.view-longquiz', compact('course', 'section', 'longquiz', 'users', 'bestResults', 'questions'));
     }
 
     // ---------------------------------------------
     // ---------------------------------------------
     // Lecture CRUD
-    public function createLecture(Courses $course, Modules $module)
-    {
+    public function createLecture(
+        Courses $course,
+        Sections $section,
+        Modules $module
+    ) {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        return view('teacher.lecture-create', compact('course', 'module', 'users'));
+        return view('teacher.lecture-create', compact('course', 'section', 'module', 'users'));
     }
 
-    public function storeLecture(Request $req, Courses $course, Modules $module)
+    public function storeLecture(Request $req, Courses $course, $sectionId, Modules $module)
     {
         $req->validate([
             'activity_name'           => 'required|string|max:255',
@@ -559,14 +791,24 @@ class TeacherController extends Controller
         return redirect()->back()->with('success', 'A new lecture has been created.');
     }
 
-    public function editLecture(Courses $course, Modules $module, Activities $activity)
-    {
+    public function editLecture(
+        Courses $course,
+        Sections $section,
+        Modules $module,
+        Activities $activity
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('lecture');
-        return view('teacher.lecture-edit', compact('course', 'module', 'activity', 'users'));
+        return view('teacher.lecture-edit', compact('course', 'section', 'module', 'activity', 'users'));
     }
 
-    public function updateLecture(Request $req, Courses $course, Modules $module, Activities $activity)
+    public function updateLecture(Request $req, Courses $course, $sectionId, Modules $module, Activities $activity)
     {
         $req->validate([
             'activity_name'           => 'required|string|max:255',
@@ -598,40 +840,59 @@ class TeacherController extends Controller
         return redirect()->back()->with('success', 'Lecture material has been updated.');
     }
 
-    public function deleteLecture(Courses $course, Modules $module, Activities $activity)
+    public function deleteLecture(Courses $course, $sectionId, Modules $module, Activities $activity)
     {
         $activity->delete();
         return back()->with('success', 'Lecture deleted');
     }
 
-    public function viewLecture(Courses $course, Modules $module, Activities $activity)
-    {
+    public function viewLecture(
+        Courses $course,
+        Sections $section,
+        Modules $module,
+        Activities $activity
+    ) {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
         $activity->load('lecture');
 
-        return view('teacher.view-lecture', compact('course', 'module', 'activity', 'users'));
+        return view('teacher.view-lecture', compact('course', 'section', 'module', 'activity', 'users'));
     }
 
     // ---------------------------------------------
     // ---------------------------------------------
     // Tutorial Video CRUD
-    public function createTutorial(Courses $course, Modules $module)
-    {
+    public function createTutorial(
+        Courses $course,
+        Sections $section,
+        Modules $module
+    ) {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
 
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
-        return view('teacher.tutorial-create', compact('course', 'module', 'users'));
+        return view('teacher.tutorial-create', compact('course', 'section', 'module', 'users'));
     }
 
     /* ────────────────────────────────────────────────────────────────
    3-b  Store new record
    ───────────────────────────────────────────────────────────────*/
-    public function storeTutorial(Request $req, Courses $course, Modules $module)
-    {
+    public function storeTutorial(
+        Request $req,
+        Courses $course,
+        $sectionId,
+        Modules $module
+    ) {
         $req->validate([
             'activity_name'        => 'required|string|max:255',
             'activity_description' => 'required|string|max:255',
@@ -662,17 +923,27 @@ class TeacherController extends Controller
     /* ────────────────────────────────────────────────────────────────
    3-c  Edit form
    ───────────────────────────────────────────────────────────────*/
-    public function editTutorial(Courses $course, Modules $module, Activities $activity)
-    {
+    public function editTutorial(
+        Courses $course,
+        Sections $section,
+        Modules $module,
+        Activities $activity
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('tutorial');
-        return view('teacher.tutorial-edit', compact('course', 'module', 'activity', 'users'));
+        return view('teacher.tutorial-edit', compact('course', 'section', 'module', 'activity', 'users'));
     }
 
     /* ────────────────────────────────────────────────────────────────
    3-d  Update
    ───────────────────────────────────────────────────────────────*/
-    public function updateTutorial(Request $req, Courses $course, Modules $module, Activities $activity)
+    public function updateTutorial(Request $req, Courses $course, $sectionId, Modules $module, Activities $activity)
     {
         $req->validate([
             'activity_name'        => 'required|string|max:255',
@@ -701,7 +972,7 @@ class TeacherController extends Controller
     /* ────────────────────────────────────────────────────────────────
    3-e  Delete
    ───────────────────────────────────────────────────────────────*/
-    public function deleteTutorial(Courses $course, Modules $module, Activities $activity)
+    public function deleteTutorial(Courses $course, $sectionId, Modules $module, Activities $activity)
     {
         $activity->delete();
         return back()->with('success', 'Tutorial video deleted.');
@@ -710,24 +981,43 @@ class TeacherController extends Controller
     /* ────────────────────────────────────────────────────────────────
    3-f  View (teacher or student)
    ───────────────────────────────────────────────────────────────*/
-    public function viewTutorial(Courses $course, Modules $module, Activities $activity)
-    {
+    public function viewTutorial(
+        Courses $course,
+        Sections $section,
+        Modules $module,
+        Activities $activity
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('tutorial');
-        return view('teacher.view-tutorial', compact('course', 'module', 'activity', 'users'));
+        return view('teacher.view-tutorial', compact('course', 'section', 'module', 'activity', 'users'));
     }
 
     // ---------------------------------------------
     // ---------------------------------------------
     // Short Quiz CRUD
-    public function createShortQuiz(Courses $course, Modules $module)
-    {
+    public function createShortQuiz(
+        Courses $course,
+        Sections $section,
+        Modules $module
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
-        return view('teacher.shortquiz-create', compact('course', 'module', 'users'));
+        return view('teacher.shortquiz-create', compact('course', 'section', 'module', 'users'));
     }
 
     /* 2 ─────────────── Store */
-    public function storeShortQuiz(Request $req, Courses $course, Modules $module)
+    public function storeShortQuiz(Request $req, Courses $course, $sectionId, Modules $module)
     {
         /* ▸ a) validate ------------------------------------------------------- */
         $rules = [
@@ -826,15 +1116,25 @@ class TeacherController extends Controller
     }
 
     /* 3 ─────────────── Edit form */
-    public function editShortQuiz(Courses $course, Modules $module, Activities $activity)
-    {
+    public function editShortQuiz(
+        Courses $course,
+        Sections $section,
+        Modules $module,
+        Activities $activity
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('quiz', 'quiz.questions.options', 'quiz.questions.questionimage');
-        return view('teacher.shortquiz-edit', compact('course', 'module', 'activity', 'users'));
+        return view('teacher.shortquiz-edit', compact('course', 'section', 'module', 'activity', 'users'));
     }
 
     /* 4 ─────────────── Update */
-    public function updateShortQuiz(Request $req, Courses $course, Modules $module, Activities $activity)
+    public function updateShortQuiz(Request $req, Courses $course, $sectionId, Modules $module, Activities $activity)
     {
         /* same validation as store … */
         $rules = [
@@ -941,39 +1241,60 @@ class TeacherController extends Controller
     }
 
     /* 5 ─────────────── Destroy */
-    public function deleteShortQuiz(Courses $course, Modules $module, Activities $activity)
+    public function deleteShortQuiz(Courses $course, Sections $section, Modules $module, Activities $activity)
     {
         $activity->delete();   // cascades to quiz / questions / options via FK
         return back()->with('success', 'Short-quiz deleted.');
     }
 
     /* 6 ─────────────── View (read-only) */
-    public function viewShortQuiz(Courses $course, Modules $module, Activities $activity)
+    public function viewShortQuiz(Courses $course, Sections $section, Modules $module, Activities $activity)
     {
+
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('quiz.questions.options', 'quiz.questions.questionimage');
-
-        $bestResults = AssessmentResult::with(['student.user'])
-            ->where('activity_id',  $activity->quiz->activity_id)
-            ->where('is_kept',       1)              // flag you already store
-            ->orderByDesc('score_percentage')        // highest first
+        $questions = Questions::where('activity_id', $activity->activity_id)
+            ->with(['options' => fn($q) => $q->orderBy('option_id')])   // keep original order
+            ->orderBy('question_id')
             ->get();
 
-        return view('teacher.view-shortquiz', compact('course', 'module', 'activity', 'users', 'bestResults'));
+        $bestResults = AssessmentResult::with(['student.user'])
+            ->where([
+                ['activity_id',  $activity->quiz->activity_id],
+                ['is_kept', 1],
+            ])
+            ->whereHas('student', fn($q) => $q->where('section_id', $sectionID))
+            ->orderByDesc('score_percentage')
+            ->get();
+
+        return view('teacher.view-shortquiz', compact('course', 'section', 'module', 'activity', 'bestResults', 'questions', 'users'));
     }
 
 
     // ---------------------------------------------
     // ---------------------------------------------
     // Practice Quiz CRUD
-    public function createPracticeQuiz(Courses $course, Modules $module)
-    {
+    public function createPracticeQuiz(
+        Courses $course,
+        Sections $section,
+        Modules $module
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
-        return view('teacher.practicequiz-create', compact('course', 'module', 'users'));
+        return view('teacher.practicequiz-create', compact('course', 'section', 'module', 'users'));
     }
 
     /* 2 ─────────────── Store */
-    public function storePracticeQuiz(Request $req, Courses $course, Modules $module)
+    public function storePracticeQuiz(Request $req, $sectionId, Courses $course, Modules $module)
     {
         /* a) validation — identical to short-quiz but without attempts field */
         $rules = [
@@ -1066,15 +1387,25 @@ class TeacherController extends Controller
     }
 
     /* 3 ─────────────── Edit form */
-    public function editPracticeQuiz(Courses $course, Modules $module, Activities $activity)
-    {
+    public function editPracticeQuiz(
+        Courses $course,
+        Sections $section,
+        Modules $module,
+        Activities $activity
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('quiz', 'quiz.questions.options', 'quiz.questions.questionimage');
-        return view('teacher.practicequiz-edit', compact('course', 'module', 'activity', 'users'));
+        return view('teacher.practicequiz-edit', compact('course', 'section', 'module', 'activity', 'users'));
     }
 
     /* 4 ─────────────── Update */
-    public function updatePracticeQuiz(Request $req, Courses $course, Modules $module, Activities $activity)
+    public function updatePracticeQuiz(Request $req, Courses $course, $sectionId, Modules $module, Activities $activity)
     {
         /* identical rules as store, still no attempts field */
         $rules = [
@@ -1174,38 +1505,63 @@ class TeacherController extends Controller
     }
 
     /* 5 ─────────────── Destroy */
-    public function deletePracticeQuiz(Courses $course, Modules $module, Activities $activity)
+    public function deletePracticeQuiz(Courses $course, $sectionId, Modules $module, Activities $activity)
     {
         $activity->delete();  // cascades to quiz / questions / options via FK
         return back()->with('success', 'Practice-quiz deleted.');
     }
 
     /* 6 ─────────────── View (read-only) */
-    public function viewPracticeQuiz(Courses $course, Modules $module, Activities $activity)
-    {
+    public function viewPracticeQuiz(
+        Courses $course,
+        Sections $section,
+        Modules $module,
+        Activities $activity
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('quiz.questions.options', 'quiz.questions.questionimage');
-        
-        $bestResults = AssessmentResult::with(['student.user'])
-            ->where('activity_id',  $activity->quiz->activity_id)
-            ->where('is_kept',       1)              // flag you already store
-            ->orderByDesc('score_percentage')        // highest first
+        $questions = Questions::where('activity_id', $activity->activity_id)
+            ->with(['options' => fn($q) => $q->orderBy('option_id')])   // keep original order
+            ->orderBy('question_id')
             ->get();
 
-        return view('teacher.view-practicequiz',compact('course', 'module', 'activity', 'users','bestResults'));
+        $bestResults = AssessmentResult::with(['student.user'])
+            ->where([
+                ['activity_id',  $activity->quiz->activity_id],
+                ['is_kept', 1],
+            ])
+            ->whereHas('student', fn($q) => $q->where('section_id', $sectionID))
+            ->orderByDesc('score_percentage')
+            ->get();
+
+        return view('teacher.view-practicequiz', compact('course', 'section', 'module', 'activity', 'bestResults', 'questions', 'users'));
     }
 
     // ---------------------------------------------
     // ---------------------------------------------
     // Screening Exam CRUD
-    public function createScreening(Courses $course)
-    {
+    public function createScreening(
+        Courses $course,
+        Sections $section
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
-        return view('teacher.screening-create', compact('course', 'users'));
+        return view('teacher.screening-create', compact('course', 'section', 'users'));
     }
 
     /* 2 ── Store new screening */
-    public function storeScreening(Request $req, Courses $course)
+    public function storeScreening(Request $req, Courses $course, $sectionId)
     {
         /* a)  validation ---------------------------------------------------- */
         $rules = [
@@ -1335,7 +1691,7 @@ class TeacherController extends Controller
     }
 
     /* 3 ── Edit form  */
-    public function editScreening(Courses $course, Screening $screening)
+    public function editScreening(Courses $course, $sectionId, Screening $screening)
     {
         $users = Users::with('image')->findOrFail(session('user_id'));
         $screening->load('concepts.topics.questions.options', 'concepts.topics.questions.image');
@@ -1492,18 +1848,52 @@ class TeacherController extends Controller
     }
 
     /* 5 ── Delete */
-    public function deleteScreening(Courses $course, Screening $screening)
+    public function deleteScreening(Courses $course, $sectionId, Screening $screening)
     {
         $screening->delete();   // FK cascade removes all children
         return back()->with('success', 'Screening exam deleted.');
     }
 
-    /* 6 ── View (read-only) */
-    public function viewScreening(Courses $course, Screening $screening)
+
+    public function viewScreening(Courses $course, Sections $section, Screening $screening)
     {
-        $users = Users::with('image')->findOrFail(session('user_id'));
-        $screening->load('concepts.topics.questions.options', 'concepts.topics.questions.image');
-        return view('teacher.view-screening', compact('course', 'screening', 'users'));
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
+        // teacher profile pic, etc.
+        $users = Users::with('image')
+            ->findOrFail(session('user_id'));
+
+        /* pull everything in **one** eager-load so we never touch
+       the DB inside the view                                         */
+        $screening->load([
+            'concepts.topics.questions.options',   // MCQ options
+            'concepts.topics.questions.image'      // optional blob per Q
+        ]);
+
+        /* ── flatten all questions to one collection
+          (useful if you still need $questions somewhere else)       */
+        $questions = $screening->concepts
+            ->pluck('topics')          // collection of topics per concept
+            ->flatten()
+            ->pluck('questions')       // collection of questions per topic
+            ->flatten();
+
+        $bestResults = ScreeningResult::with(['student.user'])
+            ->where([
+                ['screening_id',  $screening->screening_id],
+                ['is_kept', 1],
+            ])
+            ->whereHas('student', fn($q) => $q->where('section_id', $sectionID))
+            ->orderByDesc('score_percentage')
+            ->get();
+
+        return view(
+            'teacher.view-screening',
+            compact('course', 'section', 'screening', 'users', 'bestResults', 'questions')
+        );
     }
 
     /* Helper – reuse the validation array in update() */
@@ -1529,5 +1919,69 @@ class TeacherController extends Controller
             'concepts.*.topics.*.questions.*.options.*' => 'required|string',
             'concepts.*.topics.*.questions.*.image'    => 'nullable|image|max:2048',
         ];
+    }
+
+    public function editScreeningResource(
+        Request $req,
+        Courses $course,
+        Sections $section,
+        Screening $screening
+    ) {
+        // pull concepts + topics + any existing resources
+        $screening->load([
+            'concepts.topics',
+            'concepts.resources',            // ← relation defined below
+            'concepts.topics.resources'
+        ]);
+
+        return view('teacher.screening-resource', compact('course', 'screening'));
+    }
+
+    /** POST same URL  (no validation rules = optional upload/URL) */
+    public function updateScreeningResource(Request $req, $courseID, $sectionId, Screening $screening)
+    {
+        DB::transaction(function () use ($req) {
+
+            /* ----------  loop over all concept rows ---------- */
+            foreach ($req->input('concepts', []) as $cID => $cData) {
+
+                $video  = trim($cData['video_url'] ?? '');
+                $pdf    = $req->file("concepts.$cID.pdf_file");
+
+                if ($video || $pdf) {
+                    LearningResource::updateOrCreate(
+                        ['screening_concept_id' => $cID, 'screening_topic_id' => null],
+                        [
+                            'learning_resource_id' => Str::uuid(),
+                            'title'       => $cData['title'] ?? 'Concept Resource',
+                            'video_url'   => $video ?: null,
+                            'pdf_blob'    => $pdf ? file_get_contents($pdf->path()) : DB::raw('pdf_blob'), // keep old blob if none uploaded
+                        ]
+                    );
+                }
+
+                /* ----------  topic rows under this concept ---------- */
+                foreach ($cData['topics'] ?? [] as $tID => $tData) {
+
+                    $videoT = trim($tData['video_url'] ?? '');
+                    $pdfT   = $req->file("concepts.$cID.topics.$tID.pdf_file");
+
+                    if ($videoT || $pdfT) {
+                        LearningResource::updateOrCreate(
+                            ['screening_topic_id' => $tID],
+                            [
+                                'learning_resource_id' => Str::uuid(),
+                                'screening_concept_id' => $cID,
+                                'title'       => $tData['title'] ?? 'Topic Resource',
+                                'video_url'   => $videoT ?: null,
+                                'pdf_blob'    => $pdfT ? file_get_contents($pdfT->path()) : DB::raw('pdf_blob'),
+                            ]
+                        );
+                    }
+                }
+            }
+        });
+
+        return back()->with('success', 'Resources saved.');
     }
 }

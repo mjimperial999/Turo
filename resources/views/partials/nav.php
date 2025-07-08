@@ -4,6 +4,16 @@ function getMimeTypeFromBlob($blob)
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     return $finfo->buffer($blob);
 }
+
+$studentId = \App\Models\Students::find(session('user_id'));
+$isCatchUp = false;
+if (session('role_id') == 1){
+  $isCatchUp = ($studentId->isCatchUp == 1);
+  $isLocked  = ($studentId->isCatchUp == 0) && session('role_id') == 1;
+} else {
+  $isCatchUp = false;
+  $isLocked = false;
+}
 ?>
 
 <div class="main-header">
@@ -26,6 +36,11 @@ function getMimeTypeFromBlob($blob)
             <span style="color: white; font-family: Alexandria, sans-serif;">
                 Welcome, <?= session('user_name') ?>
             </span>
+            <?php if ($isCatchUp): ?>
+                <span style="color: white; font-family: Alexandria, sans-serif;">
+                    [Catch-Up Mode]
+                </span>  
+            <?php endif; ?>  
         <?php endif; ?>
     </div>
     <button class="nav-toggle mobile-display-only"
@@ -39,10 +54,11 @@ function getMimeTypeFromBlob($blob)
             <a class="nav" href="/home-tutor">COURSES</a>
             <a class="nav" href="/profile">PROFILE</a>
             <a class="nav" href="/performance">PERFORMANCE</a>
-            <a class="nav" href="#">LEADERBOARDS</a>
-            <a class="nav" href="#">CALENDAR</a>
-            <a class="nav" href="#">INBOX</a>
+            <a class="nav" href="/leaderboards">LEADERBOARDS</a>
+            <a class="nav" href="/inbox">INBOX</a>
             <a class="nav" href="/logout">LOGOUT</a>
         </div>
     </nav>
 </div>
+
+<?php include __DIR__ . '/../partials/flash-stack.php'; ?>

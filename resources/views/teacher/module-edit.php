@@ -11,6 +11,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 <body>
     <?php
     include __DIR__ . '/../partials/nav-teach.php';
+
     $blobData = $module->moduleimage->image ?? null;
     if (!$blobData) {
         $backgroundImage = "/uploads/course/math.jpg";
@@ -34,7 +35,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <h6> > </h6>
                         </div>
                         <div class="text title">
-                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>"><?= $course->course_name ?></a></h6>
+                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>"><?= $course->course_name ?></a></h6>
                             <div class="line"></div>
                         </div>
                         <div class="divider">
@@ -64,13 +65,9 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                 <div class="content-container box-page">
                     <div class="content">
-                        <?php if (session()->has('error')): ?>
-                            <div class="alert alert-danger alert-message padding" role="alert">
-                                <?= session('error') ?>
-                            </div>
-                        <?php elseif (session()->has('success')): ?>
-                            <div class="alert alert-success alert-message padding" role="alert">
-                                <?= session('success') ?>
+                        <?php if ($errors->any()): ?>
+                            <div class="alert alert-danger alert-message padding">
+                                <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -126,7 +123,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
             <div class="content-container">
                 <div class="content">
-                    <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/delete"
+                    <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/delete"
                         onsubmit="return confirm('Really delete this module?');">
                         <?= csrf_field(); ?>
                         <div class="form-button">

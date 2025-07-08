@@ -43,7 +43,8 @@ include __DIR__ . '/../partials/head.php';  ?>
 
 <body>
     <?php
-    include __DIR__ . '/../partials/nav-teach.php'; ?>
+    include __DIR__ . '/../partials/nav-teach.php';
+    ?>
 
 
     <div class="screen">
@@ -58,7 +59,7 @@ include __DIR__ . '/../partials/head.php';  ?>
                         <h6> > </h6>
                     </div>
                     <div class="text title">
-                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>"><?= $course->course_name ?></a></h6>
+                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>"><?= $course->course_name ?></a></h6>
                         <div class="line"></div>
                     </div>
                     <div class="divider">
@@ -69,24 +70,6 @@ include __DIR__ . '/../partials/head.php';  ?>
                         <div class="line active"></div>
                     </div>
                 </div>
-            </div>
-
-            <div class="content-container box-page">
-
-                <?php if (session()->has('error')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-danger alert-message" role="alert">
-                            <?= session('error') ?>
-                        </div>
-                    </div>
-                <?php elseif (session()->has('success')): ?>
-                    <div class="content padding">
-                        <div class="alert alert-success alert-message" role="alert">
-                            <?= session('success') ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
             </div>
 
             <div class="content-container box-gray">
@@ -117,7 +100,7 @@ include __DIR__ . '/../partials/head.php';  ?>
 
                     <div class="crud-buttons">
                         <div class="crud-header">
-                            <form action="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/create-lecture" method="GET">
+                            <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/create-lecture" method="GET">
                                 <button type="submit" class="crud-button-add">
                                     Add Lecture (PDF) <img src="/icons/new-black.svg" width="25em" height="25em" />
                                 </button>
@@ -125,7 +108,7 @@ include __DIR__ . '/../partials/head.php';  ?>
                         </div>
 
                         <div class="crud-header">
-                            <form action="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/create-tutorial" method="GET">
+                            <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/create-tutorial" method="GET">
                                 <button type="submit" class="crud-button-add">
                                     Add Video Tutorial <img src="/icons/new-black.svg" width="25em" height="25em" />
                                 </button>
@@ -137,15 +120,20 @@ include __DIR__ . '/../partials/head.php';  ?>
                 </div>
 
                 <div class="content padding activity-list">
+                    
                     <div class="lecture-flex-area">
-                        <?php foreach ($module->activities->where('activity_type', 'LECTURE') as $activity) {
+                        <?php
+                        // ① pull only the two activity types we care about
+                        $acts = $module->activities
+                            ->whereIn('activity_type', ['LECTURE', 'TUTORIAL'])
+                            // ② sort by name, then by type so “lecture” ⇢ “tutorial”
+                            ->sortBy(fn($a) => [$a->activity_name, $a->activity_type]);
+
+                        foreach ($acts as $activity) {
                             include __DIR__ . '/../partials/time-lock-check.php';
-                            include __DIR__ . '/../partials/lecture-hero.php';
-                        }; ?>
-                        <?php foreach ($module->activities->where('activity_type', 'TUTORIAL') as $activity) {
-                            include __DIR__ . '/../partials/time-lock-check.php';
-                            include __DIR__ . '/../partials/tutorial-hero.php';
-                        }; ?>
+                            include __DIR__ . '/../partials/activity-hero.php';
+                        }
+                        ?>
                     </div>
                 </div>
             </div>
@@ -168,7 +156,7 @@ include __DIR__ . '/../partials/head.php';  ?>
                     <div class="crud-buttons">
 
                         <div class="crud-header">
-                            <form action="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/create-practicequiz" method="GET">
+                            <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/create-practicequiz" method="GET">
                                 <button type="submit" class="crud-button-add">
                                     Add Practice Quiz <img src="/icons/new-black.svg" width="25em" height="25em" />
                                 </button>
@@ -209,7 +197,7 @@ include __DIR__ . '/../partials/head.php';  ?>
                     <div class="crud-buttons">
 
                         <div class="crud-header">
-                            <form action="/teachers-panel/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/create-shortquiz" method="GET">
+                            <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/create-shortquiz" method="GET">
                                 <button type="submit" class="crud-button-add">
                                     Add Short Quiz <img src="/icons/new-black.svg" width="25em" height="25em" />
                                 </button>

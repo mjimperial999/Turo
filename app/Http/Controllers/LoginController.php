@@ -28,18 +28,20 @@ class LoginController extends Controller
                 Session::save();
 
                 return redirect()->intended('/home-tutor');
-            }
-            elseif ($user->role_id == 2){
+            } elseif ($user->role_id == 2) {
                 Session::put('user_id', $user->user_id);
                 Session::put('user_name', $user->first_name . ' ' . $user->last_name);
                 Session::put('role_id', $user->role_id);
                 Session::save();
 
                 return redirect()->intended('/teachers-panel');
-            }             
+            }
         }
-
-        return redirect('/login')->with('error', 'Invalid credentials');
+        if ($user->role_id != 3) {
+            return redirect('/login')->with('error', 'Invalid credentials');
+        } else {
+            return redirect('/admin-login')->with('error', 'Invalid credentials');
+        }
     }
 
     public function logout()

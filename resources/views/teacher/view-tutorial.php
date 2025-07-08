@@ -7,28 +7,30 @@ include __DIR__ . '/../partials/head.php';
 </head>
 
 <body>
-    <?php include __DIR__ . '/../partials/nav-teach.php'; ?>
+    <?php
+    include __DIR__ . '/../partials/nav-teach.php';
+    ?>
 
     <div class="screen">
         <div class="spacing main">
             <div class="content-container box-page">
                 <div class="mini-navigation">
                     <div class="text title">
-                        <h6><a href="/teacher-panelr">Courses</a></h6>
+                        <h6><a href="/teachers-panel">Courses</a></h6>
                         <div class="line"></div>
                     </div>
                     <div class="divider">
                         <h6> > </h6>
                     </div>
                     <div class="text title">
-                        <h6><a href="/teacher-panel/course/<?= $course->course_id ?>"><?= $course->course_name ?></a></h6>
+                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>"><?= $course->course_name ?></a></h6>
                         <div class="line"></div>
                     </div>
                     <div class="divider">
                         <h6> > </h6>
                     </div>
                     <div class="text title">
-                        <h6><a href="/teacher-panelr/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/"><?= $module->module_name ?></a></h6>
+                        <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/module/<?= $module->module_id ?>/"><?= $module->module_name ?></a></h6>
                         <div class="line"></div>
                     </div>
                     <div class="divider">

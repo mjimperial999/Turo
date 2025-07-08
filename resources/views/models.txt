@@ -1,4 +1,55 @@
 <?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AchievementConditionType extends Model
+{
+    protected $table      = 'achievementconditiontype';
+    protected $primaryKey = 'condition_type_id';
+    public    $incrementing = true;
+    public    $timestamps  = false;
+
+    /* one-to-many ← Achievements */
+    public function achievements()
+    {
+        return $this->hasMany(Achievements::class, 'condition_type_id');
+    }
+}
+<?php
+/*  app/Models/Achievements.php  */
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Achievements extends Model
+{
+    protected $table      = 'achievements';
+    protected $primaryKey = 'achievement_id';
+    public    $incrementing = false;
+    public    $timestamps  = false;
+    protected $keyType     = 'string';
+
+    protected $fillable = [
+        'achievement_id', 'achievement_name', 'achievement_description',
+        'achievement_image', 'condition_type_id', 'condition_value', 'is_unlocked'
+    ];
+
+    public function conditionType()
+    {
+        return $this->belongsTo(
+            AchievementConditionType::class,
+            'condition_type_id',
+            'condition_type_id'
+        );
+    }
+
+    public function unlockedBy()
+    {
+        return $this->hasMany(StudentAchievements::class, 'achievement_id');
+    }
+}
+<?php
 
 namespace App\Models;
 
@@ -20,6 +71,7 @@ class Activities extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'activity_id',
         'module_id',
         'activity_type',
         'activity_name',
@@ -48,7 +100,6 @@ class Activities extends Model
     return $this->hasMany(AssessmentResult::class, 'activity_id', 'activity_id');
     }
 }
-
 <?php
 
 namespace App\Models;
@@ -65,11 +116,11 @@ class Admin extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'user_id',
         'user_name',
         'password_hash',
     ];
 }
-
 <?php
 
 namespace App\Models;
@@ -78,6 +129,21 @@ use Illuminate\Database\Eloquent\Model;
 
 class AssessmentResult extends Model
 {
+    public function student()
+    {
+        return $this->belongsTo(Students::class, 'student_id', 'user_id');
+    }
+
+    public function activity()
+    {
+        return $this->belongsTo(Activities::class,'activity_id','activity_id');
+    }
+
+    public function quiz()
+    {
+        return $this->belongsTo(Quizzes::class,'activity_id','activity_id');
+    }
+
     protected $table = 'assessmentresult';
     protected $primaryKey = 'result_id';
     public $incrementing = false;
@@ -96,8 +162,112 @@ class AssessmentResult extends Model
         'earned_points',
         'is_kept',
     ];
-}
 
+    public function scopeKept($q)
+    {
+        return $q->where('is_kept', 1);
+    }
+}
+<?php
+/*  app/Models/Badges.php  */
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Badges extends Model
+{
+    protected $table      = 'badges';
+    protected $primaryKey = 'badge_id';
+    public    $incrementing = false;
+    public    $timestamps  = false;
+    protected $keyType     = 'string';
+
+    protected $fillable = [
+        'badge_id','badge_name','badge_description',
+        'badge_image','points_required'
+    ];
+
+    public function unlockedBy()
+    {
+        return $this->hasMany(StudentBadges::class, 'badge_id');
+    }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
+
+class CalendarEvent extends Model
+{
+    /* ===== table / pk ===== */
+    protected $table      = 'calendarevent';   // dump shows this exact name
+    protected $primaryKey = 'event_id';
+    public    $incrementing = false;           // varchar IDs
+    public    $timestamps   = false;           // table has no created_at / updated_at
+
+    protected $keyType = 'string';
+
+    /* ===== mass-assignable ===== */
+    protected $fillable = [
+        'event_id',
+        'title',
+        'description',
+        'date',
+        'event_type_id',
+        'is_urgent',
+        'location',
+    ];
+
+    /* ===== casts ===== */
+    protected $casts = [
+        'date'      => 'datetime',
+        'is_urgent' => 'boolean',
+    ];
+
+    /* ===== RELATIONS (optional) ===== */
+    public function type()        // ⇢ eventtype table
+    {
+        return $this->belongsTo(EventType::class, 'event_type_id', 'event_type_id');
+    }
+
+    /* convenience: true if the event is still in the future */
+    public function getIsUpcomingAttribute(): bool
+    {
+        return $this->date->isFuture();
+    }
+
+    /* nice formatted date for notifications */
+    public function getNiceDateAttribute(): string
+    {
+        return $this->date->format('M j, Y g:i A');
+    }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CourseImage extends Model
+{
+
+    protected $table = 'course_image'; // Name of The Table
+    protected $primaryKey = 'course_image_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    protected $fillable = [
+        'course_image_id',
+        'course_id',
+        'image',
+    ];
+
+    public function course()
+    {
+        return $this->belongsTo(Courses::class, 'course_id', 'course_id');
+    }
+}
 <?php
 
 namespace App\Models;
@@ -106,16 +276,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Courses extends Model
 {
-    protected $table = 'course'; // Name of The Table
-    protected $primaryKey = 'course_id'; // Name of The Primary Key
-    public $timestamps = false;
+
+    protected $table = 'course';
+    protected $primaryKey = 'course_id';
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+    public $timestamps   = false;
+
 
     protected $fillable = [
+        'course_id',
         'course_code',
         'course_name',
-        'teacher_id',
         'course_description',
-        'course_picture',
         'start_date',
         'end_date',
     ];
@@ -125,12 +299,191 @@ class Courses extends Model
         return $this->hasMany(Modules::class, 'course_id');
     }
 
+    public function image()
+    {
+        return $this->hasOne(CourseImage::class, 'course_id', 'course_id');
+    }
+
     public function longquizzes()
     {
         return $this->hasMany(LongQuizzes::class, 'course_id');
     }
-}
 
+    public function screenings()
+    {
+        return $this->hasMany(Screening::class, 'course_id', 'course_id');
+    }
+
+    public function teachers()
+    {
+        return $this->belongsToMany(
+            Teachers::class,
+            CourseSection::class,
+            'course_id',
+            'teacher_id',
+            'course_id',
+            'user_id'
+        );
+    }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CourseSection extends Model
+{
+    protected $table       = 'course_section';
+    public    $incrementing = false;
+    protected $keyType     = 'string';
+    public    $timestamps  = false;
+
+    protected $fillable = [
+        'course_id',
+        'section_id',
+        'teacher_id'
+    ];
+
+    public function course ()
+    {
+        return $this->belongsTo(Courses::class , 'course_id' , 'course_id');
+    }
+
+    public function section()
+    {
+        return $this->belongsTo(Sections::class, 'section_id', 'section_id');
+    }
+
+    public function teacher()
+    {
+        return $this->belongsTo(Teachers::class,'teacher_id','user_id');
+    }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class EventType extends Model
+{
+    /* ───── table / key ───────────────────────────── */
+    protected $table      = 'eventtype';        // ← exact table name in dump
+    protected $primaryKey = 'event_type_id';    // ← PK column
+    public    $incrementing = false;            // small INT but we’ll set it
+    public    $timestamps   = false;            // table has no created_at / updated_at
+    protected $keyType    = 'int';              // INT PK
+
+    /* ───── mass-assignable ───────────────────────── */
+    protected $fillable = [
+        'event_type_id',      // 1, 2, 3 … (from the SQL dump)
+        'event_type_name',    // “ANNOUNCEMENT”, “LONG_QUIZ”, …
+    ];
+
+    /* ───── relations ─────────────────────────────── */
+    /** Every calendar event that uses this type */
+    public function events()
+    {
+        return $this->hasMany(
+            CalendarEvent::class,
+            'event_type_id',       // FK on calendarevent
+            'event_type_id'        // this model’s key
+        );
+    }
+}
+<?php
+// app/Models/Inbox.php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+
+class Inbox extends Model
+{
+    protected $table      = 'inbox';
+    protected $primaryKey = 'inbox_id';
+    public    $incrementing = false;
+    protected $keyType    = 'string';
+    public    $timestamps = false;
+
+    protected $fillable   = [
+        'inbox_id',
+        'unread_count',
+        'timestamp'
+    ];
+
+    public function participants()
+    {
+        return $this->belongsToMany(
+            Users::class,
+            'inboxparticipant',
+            'inbox_id',
+            'participant_id',
+            'inbox_id',
+            'user_id'
+        );
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class, 'inbox_id', 'inbox_id')
+            ->orderBy('timestamp');
+    }
+}
+<?php
+// app/Models/InboxParticipant.php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class InboxParticipant extends Model
+{
+    protected $table    = 'inboxparticipant';
+    public    $incrementing = false;
+    public    $timestamps   = false;
+    protected $primaryKey = null;                     // composite PK
+
+    protected $fillable = [
+        'inbox_id',
+        'participant_id'
+    ];
+}
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class LearningResource extends Model
+{
+    protected $table      = 'learningresource';
+    protected $primaryKey = 'learning_resource_id';
+    public    $incrementing = false;
+    public    $timestamps = false;
+    protected $keyType    = 'string';
+
+      protected $fillable = [
+        'learning_resource_id',
+        'screening_concept_id',
+        'screening_topic_id',
+        'title',
+        'video_url',
+        'pdf_blob',      
+        'description'
+    ];
+
+    public function concept()
+    {
+        return $this->belongsTo(ScreeningConcept::class,
+                                'screening_concept_id', 'screening_concept_id');
+    }
+
+    public function topic()
+    {
+        return $this->belongsTo(ScreeningTopic::class,
+                                'screening_topic_id', 'screening_topic_id');
+    }
+}
 <?php
 
 namespace App\Models;
@@ -144,8 +497,8 @@ class Lectures extends Model
         return $this->belongsTo(Activities::class, 'activity_id', 'activity_id');
     }
 
-    protected $table = 'lecture'; // Name of The Table
-    protected $primaryKey = 'activity_id'; // Name of The Primary Key
+    protected $table = 'lecture';
+    protected $primaryKey = 'activity_id';
     public $timestamps = false;
 
     public $incrementing = false;
@@ -154,11 +507,11 @@ class Lectures extends Model
     protected $fillable = [
         'content_type_id',
         'activity_id',
-        'text_body',
+        'file_url',
+        'file_mime_type',
         'file_name',
     ];
 }
-
 <?php
 
 namespace App\Models;
@@ -167,6 +520,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class LongQuizAssessmentResult extends Model
 {
+    public function student()
+    {
+        return $this->belongsTo(Students::class,'student_id','user_id');
+    }
+
+    public function longquiz()
+    {
+        return $this->belongsTo(LongQuizzes::class,'long_quiz_id','long_quiz_id');
+    }
+
     protected $table = 'long_assessmentresult';
     protected $primaryKey = 'result_id';
     public $incrementing = false;
@@ -185,7 +548,6 @@ class LongQuizAssessmentResult extends Model
         'is_kept',
     ];
 }
-
 <?php
 
 namespace App\Models;
@@ -207,12 +569,12 @@ class LongQuizOptions extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'long_quiz_option_id',
         'long_quiz_question_id',
         'option_text',
         'is_correct',
     ];
 }
-
 <?php
 
 namespace App\Models;
@@ -230,11 +592,11 @@ class LongQuizQuestionImages extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'lq_image_id',
         'long_quiz_question_id',
         'image',
     ];
 }
-
 <?php
 
 namespace App\Models;
@@ -245,7 +607,7 @@ class LongQuizQuestions extends Model
 {
     public function longquiz()
     {
-        return $this->belongsTo(Quizzes::class, 'long_quiz_id');
+        return $this->belongsTo(LongQuizzes::class,'long_quiz_id','long_quiz_id'); 
     }
 
     protected $table = 'longquiz_question'; // Name of The Table
@@ -256,6 +618,8 @@ class LongQuizQuestions extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'long_quiz_question_id',
+        'long_quiz_id',
         'question_text',
         'question_image',
         'question_type_id',
@@ -264,15 +628,14 @@ class LongQuizQuestions extends Model
 
     public function longquizoptions()
     {
-        return $this->hasMany(LongQuizOptions::class, 'long_quiz_question_id');
+        return $this->hasMany(LongQuizOptions::class,'long_quiz_question_id','long_quiz_question_id');
     }
 
     public function longquizimage()
     {
-        return $this->hasOne(LongQuizQuestionImages::class, 'long_quiz_question_id');
+        return $this->hasOne(LongQuizQuestionImages::class,'long_quiz_question_id','long_quiz_question_id');
     }
 }
-
 <?php
 
 namespace App\Models;
@@ -294,6 +657,7 @@ class LongQuizzes extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'long_quiz_id',
         'course_id',
         'long_quiz_name',
         'long_quiz_instructions',
@@ -308,10 +672,86 @@ class LongQuizzes extends Model
 
     public function longquizquestions()
     {
-        return $this->hasMany(LongQuizQuestions::class, 'long_quiz_id');
+        return $this->hasMany(LongQuizQuestions::class, 'long_quiz_id', 'long_quiz_id');
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(LongQuizAssessmentResult::class, 'long_quiz_id', 'long_quiz_id');
+    }
+
+    public function keptResult()
+    {
+        return $this->hasOne(LongQuizAssessmentResult::class,'long_quiz_id','long_quiz_id')         
+            ->where('is_kept', 1);
     }
 }
+<?php
+// app/Models/Message.php
+namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
+
+class Message extends Model
+{
+    protected $table      = 'message';
+    protected $primaryKey = 'message_id';
+    public    $incrementing = false;
+    protected $keyType    = 'string';
+    public    $timestamps = false;
+
+    protected $fillable   = [
+        'message_id',
+        'inbox_id',
+        'sender_id',
+        'subject',
+        'body',
+        'timestamp'
+    ];
+
+    /* ---- relations ---- */
+    public function inbox()
+    {
+        return $this->belongsTo(Inbox::class);
+    }
+
+    public function sender()
+    {
+        return $this->belongsTo(Users::class, 'sender_id', 'user_id');
+    }
+
+    public function userStates()
+    {
+        return $this->hasMany(MessageUserState::class, 'message_id', 'message_id');
+    }
+}
+<?php
+// app/Models/MessageUserState.php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class MessageUserState extends Model
+{
+    protected $table    = 'messageuserstate';
+    public    $incrementing = false;
+    public    $timestamps   = false;
+    protected $primaryKey = null;                     // composite PK
+
+    protected $fillable = [
+        'message_id',
+        'user_id',
+        'is_read',
+        'is_deleted'
+    ];
+
+    /* ---- relations ---- */
+    public function message()
+    {   return $this->belongsTo(Message::class); }
+
+    public function user()
+    {   return $this->belongsTo(Users::class, 'user_id', 'user_id'); }
+}
 <?php
 
 namespace App\Models;
@@ -321,7 +761,7 @@ use Illuminate\Database\Eloquent\Model;
 class ModuleImage extends Model
 {
     public function module() {
-        return $this->belongsTo(Courses::class, 'module_id');
+        return $this->belongsTo(Modules::class, 'module_id');
     }
 
     protected $table = 'module_image'; // Name of The Table
@@ -329,11 +769,56 @@ class ModuleImage extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'image_id',
         'module_id',
         'image',
     ];
 }
+<?php
 
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ModuleProgress extends Model
+{
+    public function student()
+    {
+        return $this->belongsTo(Students::class,'student_id','user_id');
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Courses::class,'course_id','course_id');
+    }
+
+    public function module()
+    {
+        return $this->belongsTo(Modules::class,'module_id','module_id');
+    }
+
+    protected $table = 'moduleprogress';
+    protected $primaryKey = 'module_id';
+    public $incrementing = false;
+    public $timestamps  = false;
+
+    protected $keyType = 'string';
+
+
+    protected $fillable = [
+        'student_id',
+        'course_id',
+        'module_id',
+        'progress',
+        'is_completed',
+        'average_score',
+    ];
+
+    public function scopeCompleted($q)
+    {
+        return $q->where('is_completed', 1);
+    }
+}
 <?php
 
 namespace App\Models;
@@ -344,17 +829,17 @@ class Modules extends Model
 {
     public function course() {
         return $this->belongsTo(Courses::class, 'course_id');
-        // 'course_id' is the foreign key in the 'module' table
     }
 
-    protected $table = 'module'; // Name of The Table
-    protected $primaryKey = 'module_id'; // Name of The Primary Key
+    protected $table = 'module'; 
+    protected $primaryKey = 'module_id';
     public $timestamps = false;
 
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'module_id',
         'course_id',
         'module_name',
         'module_description',
@@ -363,17 +848,16 @@ class Modules extends Model
 
     public function activities()
     {
-        return $this->hasMany(Activities::class, 'module_id');
-        // 'module_id' is the foreign key in the 'activity' table
+        return $this->hasMany(Activities::class, 'module_id', 'module_id');
     }
 
     public function moduleimage()
     {
         return $this->hasOne(ModuleImage::class, 'module_id', 'module_id');
-        // 'module_id' is the foreign key in the 'moduleimage' table
     }
-}
 
+    
+}
 <?php
 
 namespace App\Models;
@@ -395,12 +879,12 @@ class Options extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'option_id',
         'question_id',
         'option_text',
         'is_correct',
     ];
 }
-
 <?php
 
 namespace App\Models;
@@ -418,11 +902,11 @@ class QuestionImages extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'q_image_id',
         'question_id',
         'image',
     ];
 }
-
 <?php
 
 namespace App\Models;
@@ -444,6 +928,8 @@ class Questions extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'question_id',
+        'question_text',
         'question_type_id',
         'score',
         'activity_id',
@@ -459,7 +945,6 @@ class Questions extends Model
         return $this->hasOne(QuestionImages::class, 'question_id');
     }
 }
-
 <?php
 
 namespace App\Models;
@@ -481,6 +966,7 @@ class Quizzes extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'activity_id',
         'number_of_attempts',
         'quiz_type_id',
         'time_limit',
@@ -493,8 +979,463 @@ class Quizzes extends Model
     {
         return $this->hasMany(Questions::class, 'activity_id');
     }
-}
 
+    public function keptResult($userID = null)
+    {
+        return $this->hasOne(AssessmentResult::class,'activity_id','activity_id')         
+            ->where('is_kept', 1);
+    }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Screening extends Model
+{
+    protected $table      = 'screening';
+    protected $primaryKey = 'screening_id';
+    public    $incrementing = false;
+    protected $keyType    = 'string';
+    public $timestamps   = false; 
+
+    protected $fillable = [
+        'screening_id',
+        'course_id',
+        'screening_name',
+        'screening_instructions',
+        'time_limit',
+        'number_of_questions'
+    ];
+
+    public function concepts()
+    {
+        return $this->hasMany(ScreeningConcept::class, 'screening_id', 'screening_id');
+    }
+
+    public function image()
+    {
+        return $this->hasOne(ScreeningImage::class, 'screening_id', 'screening_id');
+    }
+
+    public function results()
+    {
+        return $this->hasMany(ScreeningResult::class, 'screening_id', 'screening_id');
+    }
+
+    public function keptResult($userID = null)
+    {
+        return $this->hasOne(
+            ScreeningResult::class,
+            'screening_id',
+            'screening_id'
+        )
+            ->where('is_kept', 1)
+            ->when($userID, fn($q) => $q->where('student_id', $userID));
+    }
+}
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ScreeningConcept extends Model
+{
+    protected $table      = 'screeningconcept';
+    protected $primaryKey = 'screening_concept_id';
+    public    $incrementing = false;
+    protected $keyType    = 'string';
+    public $timestamps   = false; 
+
+    protected $fillable = [
+        'screening_concept_id', 
+        'screening_id',
+        'concept_name',
+        'passing_score',
+    ];
+
+    public function screening()
+    {
+        return $this->belongsTo(Screening::class,
+                                'screening_id', 'screening_id');
+    }
+
+    public function topics()
+    {
+        return $this->hasMany(ScreeningTopic::class,
+                              'screening_concept_id', 'screening_concept_id');
+    }
+
+    public function resources()
+    {
+        return $this->hasMany(LearningResource::class,
+                              'screening_concept_id', 'screening_concept_id');
+    }
+}
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ScreeningImage extends Model
+{
+    protected $table      = 'screening_image';
+    protected $primaryKey = 'screening_img_id';
+    public    $incrementing = true;
+    public $timestamps   = false; 
+
+    protected $fillable = [
+        'screening_img_id',
+        'screening_id',
+        'image'
+    ];
+
+    public function screening()
+    {
+        return $this->belongsTo(Screening::class,
+                                'screening_id', 'screening_id');
+    }
+}
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ScreeningOption extends Model
+{
+    protected $table      = 'screeningoption';
+    protected $primaryKey = 'screening_option_id';
+    public    $incrementing = false;
+    protected $keyType    = 'string';
+    public $timestamps   = false; 
+
+    protected $fillable = [
+        'screening_option_id',
+        'screening_question_id',
+        'option_text',
+        'is_correct',
+    ];
+
+    public function question()
+    {
+        return $this->belongsTo(ScreeningQuestion::class,
+                                'screening_question_id', 'screening_question_id');
+    }
+}
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ScreeningQuestion extends Model
+{
+    protected $table      = 'screeningquestion';
+    protected $primaryKey = 'screening_question_id';
+    public    $incrementing = false;
+    protected $keyType    = 'string';
+    public $timestamps   = false; 
+
+    protected $fillable = [
+        'screening_question_id',
+        'screening_topic_id',
+        'question_text',
+        'question_type_id',
+        'score',
+    ];
+
+    public function topic()
+    {
+        return $this->belongsTo(ScreeningTopic::class,
+                                'screening_topic_id', 'screening_topic_id');
+    }
+
+    public function options()
+    {
+        return $this->hasMany(ScreeningOption::class,
+                              'screening_question_id', 'screening_question_id');
+    }
+
+    public function image()
+    {
+        return $this->hasOne(ScreeningQuestionImage::class,
+                             'screening_question_id', 'screening_question_id');
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(ScreeningResultAnswer::class,
+                              'screening_question_id', 'screening_question_id');
+    }
+}
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ScreeningQuestionImage extends Model
+{
+    protected $table      = 'screeningquestion_image';
+    protected $primaryKey = 'screening_question_image_id';
+    public    $incrementing = true;
+    public $timestamps   = false; 
+
+    protected $fillable = [
+        'screening_question_image_id',
+        'screening_question_id',
+        'image'
+    ];
+
+    public function question()
+    {
+        return $this->belongsTo(ScreeningQuestion::class,
+                                'screening_question_id', 'screening_question_id');
+    }
+}
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ScreeningResult extends Model
+{
+    public function student()
+    {
+        return $this->belongsTo(Students::class,'student_id','user_id');
+    }
+
+    protected $table      = 'screeningresult';
+    protected $primaryKey = 'result_id';
+    public    $incrementing = false;
+    protected $keyType    = 'string';
+    public $timestamps   = false; 
+
+    protected $dates = ['date_taken'];
+
+    protected $fillable = [
+        'result_id',
+        'screening_id',
+        'student_id',
+        'tier_id',
+        'score_percentage',
+        'earned_points',
+        'attempt_number',
+        'date_taken',
+        'is_kept',
+    ];
+
+    public function screening()
+    {
+        return $this->belongsTo(Screening::class,
+                                'screening_id', 'screening_id');
+    }
+
+    public function tier()
+    {
+        return $this->belongsTo(ScreeningTier::class,
+                                'tier_id', 'tier_id');
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(ScreeningResultAnswer::class,
+                              'result_id', 'result_id');
+    }
+}
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ScreeningResultAnswer extends Model
+{
+    protected $table      = 'screeningresult_answers';
+    public    $incrementing = false;
+    public    $timestamps   = false;
+
+    protected $fillable = [
+        'result_id',
+        'screening_question_id',
+        'screening_option_id',
+        'is_correct',
+    ];
+
+    public function result()
+    {
+        return $this->belongsTo(ScreeningResult::class,
+                                'result_id', 'result_id');
+    }
+
+    public function question()
+    {
+        return $this->belongsTo(ScreeningQuestion::class,
+                                'screening_question_id', 'screening_question_id');
+    }
+
+    public function option()
+    {
+        return $this->belongsTo(ScreeningOption::class,
+                                'screening_option_id', 'screening_option_id');
+    }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ScreeningTier extends Model
+{
+    protected $table      = 'screeningtier'; 
+    protected $primaryKey = 'tier_id';
+    public    $incrementing = true;
+    protected $keyType    = 'int';
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'tier_id',
+        'tier_name'];
+
+    public function results() { return $this->hasMany(ScreeningResult::class, 'tier_id'); }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ScreeningTopic extends Model
+{
+    protected $table      = 'screeningtopic';
+    protected $primaryKey = 'screening_topic_id';
+    public    $incrementing = false;
+    protected $keyType    = 'string';
+    public $timestamps = false;
+    protected $fillable = [
+        'screening_topic_id',
+        'screening_concept_id',
+        'topic_name'
+    ];
+
+    public function concept()
+    {
+        return $this->belongsTo(
+            ScreeningConcept::class,
+            'screening_concept_id',
+            'screening_concept_id'
+        );
+    }
+
+    public function questions()
+    {
+        return $this->hasMany(
+            ScreeningQuestion::class,
+            'screening_topic_id',
+            'screening_topic_id'
+        );
+    }
+
+    public function resources()
+    {
+        return $this->hasMany(
+            LearningResource::class,
+            'screening_topic_id',
+            'screening_topic_id'
+        );
+    }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Sections extends Model
+{
+    protected $table      = 'section';
+    protected $primaryKey = 'section_id';
+    public    $incrementing = false;
+    public    $timestamps   = false;
+    protected $keyType      = 'string';
+
+    protected $fillable = [
+        'section_id',
+        'section_name'
+    ];
+
+    public function students()
+    {
+        return $this->hasMany(Students::class, 'section_id', 'section_id');
+    }
+
+    public function courses()
+    {
+        return $this->belongsToMany(
+            Courses::class,
+            CourseSection::class,    // pivot model
+            'section_id',
+            'course_id',
+            'section_id',
+            'course_id'
+        )->withPivot('teacher_id');
+    }
+
+    public function courseLinks()
+    {
+        return $this->hasMany(CourseSection::class, 'course_id');
+    }
+}
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class StudentAchievements extends Model
+{
+    protected $table      = 'student_achievements';
+    public    $timestamps = false;
+    protected $fillable   = [
+        'student_id',
+        'achievement_id',
+        'unlocked_at'
+    ];
+
+    public function achievement()
+    {
+        return $this->belongsTo(Achievements::class, 'achievement_id');
+    }
+    public function student()
+    {
+        return $this->belongsTo(Students::class, 'student_id','user_id');
+    }
+}
+<?php
+/*  app/Models/StudentBadge.php  */
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class StudentBadges extends Model
+{
+    protected $table      = 'student_badges';
+    public    $timestamps = false;
+    protected $fillable   = [
+        'student_id',
+        'badge_id',
+        'unlocked_at'
+    ];
+
+    /* relationships */
+    public function badge()
+    {
+        return $this->belongsTo(Badges::class, 'badge_id');
+    }
+    public function student()
+    {
+        return $this->belongsTo(Students::class, 'student_id','user_id');
+    }
+}
 <?php
 
 namespace App\Models;
@@ -503,6 +1444,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class StudentProgress extends Model
 {
+    public function student(){
+        return $this->belongsTo(Students::class,'student_id','user_id');
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Courses::class,'course_id','course_id');
+    }
+
     protected $table = 'studentprogress'; // Name of The Table
     protected $primaryKey = 'student_id'; // Name of The Primary Key
     public $timestamps = false;
@@ -511,38 +1461,114 @@ class StudentProgress extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'student_id',
         'course_id',
         'total_points',
         'average_score',
         'score_percentage',
+        'short_quiz_avg',
+        'long_quiz_avg',
     ];
-}
 
+    public function moduleProgresses()
+    {
+        return $this->hasMany(ModuleProgress::class, 'student_id', 'student_id')
+                    ->where('course_id', $this->course_id);
+    }
+}
 <?php
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Students extends Model
 {
-    public function user() {
+    public function user()
+    {
         return $this->belongsTo(Users::class, 'user_id');
     }
 
-    protected $table = 'student'; // Name of The Table
-    protected $primaryKey = 'user_id'; // Name of The Primary Key
+    public function section()
+    {
+        return $this->belongsTo(Sections::class, 'section_id', 'section_id');
+    }
+
+    protected $table = 'student';
+    protected $primaryKey = 'user_id';
     public $timestamps = false;
 
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
+        'user_id',
+        'section',
         'isCatchUp',
         'total_points',
     ];
-}
 
+    public function progress()
+    {
+        return $this->hasMany(StudentProgress::class, 'student_id', 'user_id');
+    }
+
+    public function moduleProgresses()
+    {
+        return $this->hasMany(ModuleProgress::class, 'student_id', 'user_id');
+    }
+
+    public function scopeFilter($q, $term = null)
+    {
+        if (!$term) return;
+        $like = "%$term%";
+        $q->where(function ($x) use ($like) {
+            $x->whereHas('user', fn($u) => $u->where(DB::raw("concat(last_name,' ',first_name)"), 'like', $like))
+                ->orWhere('user_id', 'like', $like)
+                ->orWhere('section_id', 'like', $like);
+        });
+    }
+}
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Teachers extends Model
+{
+    public function user()
+    {
+        return $this->belongsTo(Users::class, 'user_id');
+    }
+
+    protected $table      = 'teacher';
+    protected $primaryKey = 'user_id';
+    public $incrementing = false;
+    public $timestamps = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'user_id',
+    ];
+
+    public function courses()
+    {
+        return $this->belongsToMany(
+            Courses::class,
+            'course_section',
+            'teacher_id',
+            'course_id' 
+        );
+    }
+
+    public function courseSections()
+    {
+        return $this->hasMany(CourseSection::class, 'teacher_id', 'user_id')
+            ->with(['course', 'section']);
+    }
+}
 <?php
 
 namespace App\Models;
@@ -564,11 +1590,11 @@ class Tutorials extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'activity_id',
         'content_type_id',
         'video_url'
     ];
 }
-
 <?php
 
 namespace App\Models;
@@ -586,33 +1612,37 @@ class UserImages extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'user_image_id',
         'user_id',
         'image',
     ];
 }
-
 <?php
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Users extends Model
+class Users extends Authenticatable    
 {
-    protected $table = 'user'; // Name of The Table
-    protected $primaryKey = 'user_id'; // Name of The Primary Key
+    use HasApiTokens, Notifiable; 
+
+    protected $table = 'user';
+    protected $primaryKey = 'user_id';
     public $timestamps = false;
 
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
+        'user_id',
         'first_name',
         'last_name',
         'email',
         'password_hash',
         'role_id',
-        'profile_pic',
         'agreed_to_terms',
         'requires_password_change',
     ];
@@ -620,6 +1650,11 @@ class Users extends Model
     public function student()
     {
         return $this->hasMany(Students::class, 'user_id');
+    }
+
+    public function teacher()
+    {
+        return $this->hasMany(Teachers::class, 'user_id');
     }
 
     public function image()

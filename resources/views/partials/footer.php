@@ -3,12 +3,10 @@
 </footer>
 </body>
 <script>
+
+    /* ─── navigation bar ───────*/
     const navMobile = document.getElementById('primary-navigation');
-
     const toggle = document.querySelector('.nav-toggle');
-
-
-
     toggle.addEventListener('click', () => {
         const isOpen = navMobile.getAttribute('data-visible') === 'true';
         navMobile.setAttribute('data-visible', String(!isOpen));
@@ -16,7 +14,20 @@
     });
 
 
-    /* ─── click-to-show details inside calendar ───────*/
+    /* ─── flash popups ───────*/
+    document.addEventListener('DOMContentLoaded', () => {
+        const stack = document.getElementById('flash-stack');
+        if (!stack) return;
+
+        // remove each toast after its fade-out so DOM stays clean
+        stack.querySelectorAll('.alert').forEach(t => {
+            t.addEventListener('animationend', e => {
+                if (e.animationName === 'fadeOut') t.remove();
+            });
+        });
+    });
+
+    /* ─── click calendar tile to display activities ───────*/
     document.querySelectorAll('.calendar td').forEach(td => {
         td.addEventListener('click', () => {
             const copy = td.cloneNode(true);

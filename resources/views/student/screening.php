@@ -25,7 +25,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 <body>
     <?php
     include __DIR__ . '/../partials/nav.php';
-    include __DIR__ . '/../partials/time-lock-check-screening.php';
+    include __DIR__ . '/../partials/flash-stack.php';
 
     $studentId = session('user_id');
 
@@ -108,16 +108,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
             <div class="content-container screening-exam">
                 <div class="content padding">
-                    <?php if (session()->has('error')): ?>
-                        <div class="alert alert-danger alert-message" role="alert">
-                            <?= session('error') ?>
-                        </div>
-                    <?php elseif (session()->has('success')): ?>
-                        <div class="alert alert-success alert-message" role="alert">
-                            <?= session('success') ?>
-                        </div>
-                    <?php endif; ?>
-                    <div class="module-section quiz-background padding">
+                    <div class="module-section quiz-background">
                         <div class="module-section quiz-header">
                             <div class="quiz-description">
                                 <div class="quiz-categories-top">
@@ -127,16 +118,10 @@ include __DIR__ . '/../partials/head.php'; ?>
                                             <p class="description"><b>TIME LIMIT: </b><?= $fTimeLimit ?> min/s</p>
                                         </div>
                                     </div>
-                                    <div class="quiz-categories">
-                                        <div class="quiz-categories-desc">
-                                            <p class="description"><b>OPENS: </b><?= $formattedUnlockDate ?></p>
-                                            <p class="description"><b>DUE: </b><?= $formattedDeadline ?></p>
-                                        </div>
-                                    </div>
                                     <br>
                                 </div>
                                 <hr class="divider-hr">
-                                <p class="description">Instructions: <?= $screening->screening_instructions ?></p>
+                                <p class="description">Instructions:<br> <?= nl2br(htmlspecialchars($screening->screening_instructions)) ?></p><br>
                             </div>
                             <div class="quiz-graphics">
                                 <div class="percentage-container">

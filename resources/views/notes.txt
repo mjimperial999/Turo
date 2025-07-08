@@ -398,3 +398,65 @@ class TeacherController extends Controller
         return view('teacher.view-module', compact('course', 'module', 'users'));
     }
 }
+
+
+
+We are now focusing on admin operations.
+Inside the student-list page, all students will be listed alongside their section.
+
+Image - Student Last Name, Student Fist Name - Student ID - Section - isCatchUp status - Button for their individual page [/student-list/student-info/{student_id}]
+
+for image you can use this:
+<?php
+    if (empty($users->image?->image)) {;
+        $imageURL = "/icons/no-img.jpg";
+    } else {
+        $blobData = $users->image?->image;
+        $mimeType = getMimeTypeFromBlob($blobData);
+        $base64Image = base64_encode($blobData);
+        $imageURL = "data:$mimeType;base64,$base64Image";
+    }
+    ?>
+    <div class="navibar-user mobile-display-disappear">
+        <div class="navibar-img" style="background-image: url('<?= $imageURL ?>'); width: 2.5em; height: 2.5em; background-size: cover; background-position: center; border-radius: 50%; cursor: pointer;">
+        </div>
+
+the nav-admin.php partial already has getMimeTypeFromBlob() function and it looks like this:
+function getMimeTypeFromBlob($blob)
+{
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    return $finfo->buffer($blob);
+}
+
+
+This is the routes for admin. Currently we are inside '/admin-panel/student-list'
+Route::get('/admin-login', [AdminController::class, 'showLoginPage']);
+
+Route::get('/admin-panel', [AdminController::class, 'adminPanel']);
+
+Route::get('/admin-logout', [AdminController::class, 'logout']);
+
+Route::prefix('/admin-panel')->group(function () {
+
+    Route::get('/student-list', [AdminController::class, 'studentList']);
+
+    Route::get('/teacher-list', [AdminController::class, 'teacherList']);
+
+    Route::get('/edit-content', [AdminController::class, 'editContentPage']);
+
+});
+
+
+As for the teacher-list page, this will display all the teachers, and under it - all the courses they teach.
+No need for a search bar.
+
+For the button that leads to the teacher's info, this is where you can view and edit a teacher. Create a page for this function.
+
+A teacher can teach multiple courses, that depends on the course_section table to see what courses can the teacher handle.
+The admin can edit what courses can the teacher handle. The teacher can have multiple courses. I have removed teacher_id in course table because the course_section table now handles it.
+
+A teacher can handle a section (group of students). They can also handle multiple sections, like courses.
+
+Sections are about a group of certain students. In schools here in PH, they use sections to group students into 2, one for morning session, other for afternoon session. You can look it up for more context.
+
+The students have their id for section in student table so that for students who have the same course but different section could have a different teacher (or can be the same.) The section just is there for scheduling purposes. This is so that I dont have to duplicate courses, as courses content remain the same even for different sections.

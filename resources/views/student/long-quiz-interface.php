@@ -228,7 +228,7 @@ include __DIR__ . '/../partials/head.php';
                             </div>
                         </div>
                         <div class="quiz-interface-question">
-                            <p><?= $question->question_text ?></p>
+                            <p><?= nl2br(htmlspecialchars($question->question_text)) ?></p>
                             <?php
                             if (empty($question->longquizimage?->image)) {;
                             } else {
