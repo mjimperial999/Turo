@@ -177,6 +177,7 @@ class MobileModelController extends Controller
             activity.deadline_date,
             q.quiz_type_id,
             q.time_limit,
+            q.number_of_attempts,
             q.number_of_questions,
             q.overall_points,
             q.has_answers_shown
