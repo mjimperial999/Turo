@@ -7,15 +7,21 @@ use Illuminate\Http\Request;
 use App\Services\StudentAnalytics;
 use App\Services\AchievementService;
 
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
+
 use App\Models\Courses;
 use App\Models\Modules;
 use App\Models\Activities;
 use App\Models\AssessmentResult;
+use App\Models\AssessmentResultAnswer;
 use App\Models\Questions;
 use App\Models\Options;
 use App\Models\LongQuizAssessmentResult;
 use App\Models\StudentProgress;
-use Illuminate\Support\Facades\Session;
+
+
+
 use Carbon\Carbon;
 
 
@@ -184,21 +190,69 @@ class QuizController extends Controller
 
             $prevAttempts = AssessmentResult::where('student_id', $studentID)->where('activity_id', $activityID)->count();
 
-            AssessmentResult::create([
-                'result_id' => uniqid(),
-                'student_id' => $studentID,
-                'module_id' => Activities::find($activityID)->module_id,
-                'activity_id' => $activityID,
-                'score_percentage' => $scorePercentage,
-                'date_taken' => Carbon::now('Asia/Manila'),
-                'attempt_number' => $prevAttempts + 1,
-                'tier_level_id' => 1,
-                'earned_points' => $earnedPoints,
-                'is_kept' => 0,
-            ]);
+            if ($nextIndex >= count($questionIDs)) {
+
+                $correct = 0;
+
+                /** 1️⃣  create parent “attempt” row (same as before) */
+                $result = AssessmentResult::create([
+                    'result_id'        => Str::uuid()->toString(),
+                    'student_id'       => $studentID,
+                    'module_id'        => $moduleID,
+                    'activity_id'      => $activityID,
+                    'score_percentage' => $scorePercentage,
+                    'earned_points'    => $earnedPoints,
+                    'date_taken'       => now('Asia/Manila')->toDateTimeString(),
+                    'attempt_number'   => $prevAttempts + 1,
+                    'tier_level_id'    => 1,
+                    'is_kept'          => 0,
+                ]);
+
+                /** 2️⃣  write each selected answer */
+                foreach ($answers as $i => $selectedOptionID) {
+
+                    $questionID = $questionIDs[$i] ?? null;
+                    if (!$questionID) continue;
+
+                    $correctOptionID = Options::where('question_id', $questionID)
+                        ->where('is_correct', 1)
+                        ->value('option_id');
+
+                    $isCorrect = $selectedOptionID == $correctOptionID ? 1 : 0;
+                    $correct  += $isCorrect;
+
+                    AssessmentResultAnswer::create([
+                        'result_id'   => $result->result_id,
+                        'question_id' => $questionID,
+                        'option_id'   => $selectedOptionID,
+                        'is_correct'  => $isCorrect,
+                    ]);
+                }
+
+                /** 3️⃣  update score & kept-flag exactly as you did */
+                $result->update([
+                    'score_percentage' => round(($correct / count($questionIDs)) * 100),
+                    'earned_points'    => $correct,
+                ]);
+
+                AssessmentResult::where('student_id', $studentID)
+                    ->where('activity_id', $activityID)
+                    ->update(['is_kept' => 0]);
+
+                AssessmentResult::where('student_id', $studentID)
+                    ->where('activity_id', $activityID)
+                    ->orderByDesc('score_percentage')
+                    ->orderBy('date_taken')
+                    ->first()
+                    ->update(['is_kept' => 1]);
+
+                /* … session-cleanup + redirect unchanged … */
+            }
 
             AssessmentResult::where('student_id', $studentID)->where('activity_id', $activityID)->update(['is_kept' => 0]);
             AssessmentResult::where('student_id', $studentID)->where('activity_id', $activityID)->orderByDesc('score_percentage')->first()->update(['is_kept' => 1]);
+
+
 
             Session::forget("quiz_{$activityID}_questions");
             Session::forget("quiz_{$activityID}_answers");

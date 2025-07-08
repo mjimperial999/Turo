@@ -14,7 +14,6 @@ class AssessmentResultResource extends JsonResource
             'score_percentage' => (double) $this->score_percentage,
             'date_taken'       => $this->date_taken,              // already Y-m-d H:i:s
             'attempt_number'   => (int)    $this->attempt_number,
-            'tier_name'        => optional($this->tier)->tier_name,
             'earned_points'    => (int)    $this->earned_points,
             'answers'          => AnswerResource::collection($this->answers),
             'is_kept'          => (int)    $this->is_kept,

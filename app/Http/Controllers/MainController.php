@@ -256,8 +256,25 @@ class MainController extends Controller
 
         $assessment = AssessmentResult::where('student_id', $userID)
             ->where('activity_id', $activityID)
-            ->orderBy('date_taken', 'desc')
-            ->first();
+            ->orderByDesc('date_taken')
+            ->with([
+                'answers.option',                     // chosen option
+                'answers.question.options'            // ALL options for the Q
+            ])
+            ->first();           // null-safe in case no attempt yet
+
+        /* -------------------------------------------
+   transform to a flat array the view can loop
+   -------------------------------------------*/
+        $answeredQuestions = collect();
+
+        if ($assessment) {
+            foreach ($assessment->answers as $ans) {
+                $q = $ans->question;                 // Question model
+                $q->selected_option_id = $ans->option_id;
+                $answeredQuestions->push($q);        // keep full question object
+            }
+        }
 
         $attempts = AssessmentResult::where('student_id', $userID)
             ->where('activity_id', $activityID)
@@ -268,7 +285,7 @@ class MainController extends Controller
             ->orderBy('date_taken', 'asc')
             ->get();
 
-        return view('student.activity-quiz-summary', compact('course', 'module', 'activity', 'assessment', 'attempts', 'assessDisplay', 'users'));
+        return view('student.activity-quiz-summary', compact('course', 'module', 'activity', 'assessment', 'attempts', 'answeredQuestions',  'assessDisplay', 'users'));
     }
 
     public function longquizPage($courseID, $longQuizID)

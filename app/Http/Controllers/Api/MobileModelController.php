@@ -290,16 +290,16 @@ class MobileModelController extends Controller
         ]);
 
         /* pull every attempt (latest first) + their answers */
-        $results = AssessmentResult::where([
+        $best = AssessmentResult::where([
             'student_id'  => $r->student_id,
             'activity_id' => $r->activity_id,
+            'is_kept'     => 1,
         ])
-            ->with(['answers'])          // eager-load student answers
-            ->orderByDesc('attempt_number')
-            ->get();
+            ->with('answers')          // eager-load submitted answers
+            ->first();
 
         return response()->json([
-            'data' => AssessmentResultResource::collection($results)
+            'data' => $best ? new AssessmentResultResource($best) : null
         ]);
     }
 
