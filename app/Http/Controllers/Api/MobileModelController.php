@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\ResourceCollection;
 
 use App\Http\Resources\{
     ModuleResource,
@@ -57,15 +58,29 @@ class MobileModelController extends Controller
         return new ModuleCollectionResource($mods);
     }
 
-    /* ---------- GET get_course_modules_for_student.php ---------- */
+    /* ---------- GET get-course_modules-for-student ---------- */
     public function indexStudent(Request $r)
     {
-        $mods = Modules::where('course_id', $r->course_id)
-            ->with(['progress' => fn($q) => $q->where('student_id', $r->student_id)])
-            ->orderBy('position')
+        $student = Students::findOrFail($r->student_id);
+
+        // 2) fetch modules + progress + image in **one** query
+        $modules = Modules::query()
+            ->where('module.course_id', $r->course_id)     // ← qualified
+            ->leftJoin('moduleprogress as mp', function ($q) use ($r) {
+                $q->on('mp.module_id', '=', 'module.module_id')
+                    ->where('mp.student_id', '=', $r->student_id);
+            })
+            ->leftJoin('module_image as mi', 'mi.module_id', '=', 'module.module_id')
+            ->selectRaw('
+        module.*,
+        mp.progress as progress_value,
+        mi.image    as picture_blob
+    ')
             ->get();
 
-        return new ModuleCollectionResource($mods, true);     // flag = student
+        return response()->json([
+            'data' => ModuleCollectionResource::collection($modules)
+        ]);
     }
 
     /* ---------- GET get_activities_in_module.php ---------- */
@@ -112,29 +127,5 @@ class MobileModelController extends Controller
         Modules::where('module_id', $r->module_id)->delete();
 
         return response()->noContent();            // 204 No Content
-    }
-
-    /* ---------- GET get-current-module ---------- */
-    public function current(Request $r)
-    {
-        /* 1. student row (need isCatchUp flag) */
-        $student = Students::findOrFail($r->student_id);
-
-        /* 2. whatever logic your scope uses to pick “current module” */
-        $module = $student->currentModule($r->course_id)
-            ->load('moduleimage');                  // eager-load picture blob
-
-        /* 3. progress % for this (student, course, module) triple */
-        $progress = ModuleProgress::where([
-            'student_id' => $student->user_id,
-            'course_id'  => $r->course_id,
-            'module_id'  => $module->module_id,
-        ])->value('progress') ?? 0;
-
-        /* 4. attach dynamic attributes so the Resource can read them */
-        $module->progress_value = $progress;
-        $module->isCatchUp      = $student->isCatchUp;
-
-        return new ModuleStudentResource($module);
     }
 }

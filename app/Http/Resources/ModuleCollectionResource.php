@@ -1,31 +1,21 @@
 <?php
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use Illuminate\Http\Resources\Json\JsonResource; 
 
-class ModuleCollectionResource extends ResourceCollection
+class ModuleCollectionResource extends JsonResource   
 {
-    /** true ⇒ include per-student progress fields */
-    protected bool $forStudent;
-
-    public function __construct($resource, bool $forStudent = false)
-    {
-        parent::__construct($resource);
-        $this->forStudent = $forStudent;
-    }
-
-    public function toArray($request)
+    
+    public function toArray($req)
     {
         return [
-            'data' => $this->collection->map(fn ($m) => [
-                'module_id'   => $m->module_id,
-                'title'       => $m->title,
-                'description' => $m->description,
-                'position'    => $m->position,
-                'progress'    => $this->forStudent
-                    ? optional($m->progress)->only(['completed','score'])
-                    : null,
-            ]),
+            'module_id'          => $this->module_id,
+            'module_name'        => $this->module_name,
+            'module_picture'     => $this->picture_blob
+                                      ? base64_encode($this->picture_blob)
+                                      : null,
+            'module_description' => $this->module_description,
+            'progress'           => (double) ($this->progress_value ?? 0),
         ];
     }
 }
