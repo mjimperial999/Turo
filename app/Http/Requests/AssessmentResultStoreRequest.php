@@ -15,7 +15,7 @@ class AssessmentResultStoreRequest extends FormRequest
             'answers'         => 'required|array|min:1',
             'answers.*.question_id' => 'required|exists:question,question_id',
             'answers.*.option_id'   => 'required|exists:option,option_id',
-            'answers.*.is_correct'  => 'required|boolean',
+            'answers.*.is_correct'  => 'required|integer',
         ];
     }
 }
