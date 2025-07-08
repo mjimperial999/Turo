@@ -268,7 +268,7 @@ class MobileModelController extends Controller
             /* store every answer */
             foreach ($r->input('answers') as $ans) {
                 AssessmentResultAnswer::create([
-                    'assessmentresult_id' => $result->assessmentresult_id,
+                    'assessmentresult_id' => $result->result_id,
                     'question_id'         => $ans['question_id'],
                     'option_id'           => $ans['option_id'],
                     'is_correct'          => $ans['is_correct'],

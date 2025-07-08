@@ -29,7 +29,7 @@ class AssessmentResultAnswer extends Model
         return $this->belongsTo(
             AssessmentResult::class,
             'result_id',
-            'assessmentresult_id'
+            'result_id'
         );
     }
 
