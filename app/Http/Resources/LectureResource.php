@@ -11,7 +11,9 @@ class LectureResource extends JsonResource
         return [
             'activity_name'        => $this->activity_name,
             'activity_description' => $this->activity_description,
-            'video_url'             => $this->video_url
+            'file_url'             => $this->file_blob
+                ? base64_encode($this->file_blob)
+                : null,
         ];
     }
 }

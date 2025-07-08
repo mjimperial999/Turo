@@ -143,12 +143,12 @@ class MobileModelController extends Controller
 
         $lecture = Activities::query()
             ->where('activity.activity_id', $r->activity_id)
-            ->leftJoin('lecture as l', 'l.activity_id', '=', 'activity.activity_id')
+            ->leftJoin('tutorial as t', 't.activity_id', '=', 'activity.activity_id')
             ->selectRaw('
             activity.activity_id,
             activity.activity_name,
             activity.activity_description,
-            l.video_url    as video_url
+            t.video_url    as video_url
         ')
             ->firstOrFail();
 
