@@ -241,6 +241,7 @@ class MobileModelController extends Controller
             $result = AssessmentResult::create([
                 'result_id' => (string) Str::uuid(),
                 'student_id'          => $r->student_id,
+                'module_id'           => $r->module_id, 
                 'activity_id'         => $r->activity_id,
                 'attempt_number'      => $attemptNumber,
                 'score_percentage'    => $r->score_percentage,
