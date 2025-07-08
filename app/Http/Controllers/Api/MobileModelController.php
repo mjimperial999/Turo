@@ -10,6 +10,7 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 use App\Http\Resources\{
     ModuleResource,
     CoursesResource,
+    AssessmentScoreResource,
     ModuleCollectionResource,
     ModuleStudentResource,
     ActivityCollectionResource,
@@ -25,6 +26,7 @@ use App\Models\{
     Courses,
     Modules,
     Activities,
+    AssessmentResult,
     Students,
     Users,
     ModuleProgress
@@ -32,10 +34,6 @@ use App\Models\{
 
 class MobileModelController extends Controller
 {
-    public function modules()
-    {
-        return ModuleResource::collection(Modules::all());
-    }
 
     public function getCourses()
     {
@@ -83,13 +81,43 @@ class MobileModelController extends Controller
         ]);
     }
 
-    /* ---------- GET get_activities_in_module.php ---------- */
+    /* ---------- GET get-activities-in-module.php ---------- */
     public function activities(Request $r)
     {
-        $acts = Activities::where('module_id', $r->module_id)
-            ->orderBy('position')->get();
+        $activities = Activities::query()
+            ->where('module_id', $r->module_id)
+            ->leftJoin('quiz as q', 'q.activity_id', '=', 'activity.activity_id')  // numeric id lives here
+            ->selectRaw('
+            activity.*,
+            q.quiz_type_id    as quiz_type_id          -- 1 = SHORT, 2 = PRACTICE
+        ')
+            ->get();
 
-        return new ActivityCollectionResource($acts);
+        return response()->json([
+            'activities' => ActivityCollectionResource::collection($activities)
+        ]);
+    }
+
+    public function scoresForStudentAndQuiz(Request $r)
+    {
+        /* 1. basic validation */
+        $r->validate([
+            'student_id'  => 'required|exists:student,user_id',
+            'activity_id' => 'required|exists:activity,activity_id',
+        ]);
+
+        /* 2. query attempts for that (student, activity) combo */
+        $scores = AssessmentResult::where([
+            ['student_id',  $r->student_id],
+            ['activity_id', $r->activity_id],
+        ])
+            ->orderBy('date_taken')                      // earliest → latest
+            ->get();
+
+        /* 3. return JSON in the shape the app expects */
+        return response()->json([
+            'scores' => AssessmentScoreResource::collection($scores)
+        ]);
     }
 
     /* ---------- POST create_module.php ---------- */
@@ -101,31 +129,4 @@ class MobileModelController extends Controller
             ->response()->setStatusCode(201);   // Created
     }
 
-    /* ---------- GET get_module.php ---------- */
-    public function show(Request $r)
-    {
-        $mod = Modules::where([
-            'course_id' => $r->course_id,
-            'module_id' => $r->module_id
-        ])->firstOrFail();
-
-        return new ModuleResource($mod);
-    }
-
-    /* ---------- POST update_module.php ----------
-    public function update(ModuleUpdateRequest $req)
-    {
-        $mod = Modules::findOrFail($req->module_id)
-            ->update($req->validated());
-
-        return new ResultResource($mod);
-    } */
-
-    /* ---------- DELETE delete_module_in_course.php ---------- */
-    public function destroy(Request $r)
-    {
-        Modules::where('module_id', $r->module_id)->delete();
-
-        return response()->noContent();            // 204 No Content
-    }
 }
