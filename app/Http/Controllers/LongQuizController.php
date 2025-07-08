@@ -7,13 +7,16 @@ use Illuminate\Http\Request;
 use App\Services\StudentAnalytics;
 use App\Services\AchievementService;
 
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
+
 use App\Models\LongQuizzes;
-use App\Models\AssessmentResult;
 use App\Models\LongQuizAssessmentResult;
+use App\Models\LongQuizAssessmentResultAnswer;
 use App\Models\LongQuizQuestions;
 use App\Models\LongQuizOptions;
 use App\Models\StudentProgress;
-use Illuminate\Support\Facades\Session;
+
 use Carbon\Carbon;
 
 class LongQuizController extends Controller
@@ -171,17 +174,64 @@ class LongQuizController extends Controller
 
             $prevAttempts = LongQuizAssessmentResult::where('course_id', $courseID)->where('student_id', $studentID)->where('long_quiz_id', $longQuizID)->count();
 
-            LongQuizAssessmentResult::create([
-                'result_id' => uniqid(),
-                'student_id' => $studentID,
-                'course_id' => $courseID,
-                'long_quiz_id' => $longQuizID,
-                'score_percentage' => $scorePercentage,
-                'date_taken' => Carbon::now('Asia/Manila'),
-                'attempt_number' => $prevAttempts + 1,
-                'earned_points' => $earnedPoints,
-                'is_kept' => 0,
-            ]);
+            if ($nextIndex >= count($questionIDs)) {
+
+                $correct = 0;
+
+                /** 1️⃣  create parent “attempt” row (same as before) */
+                $result = LongQuizAssessmentResult::create([
+                    'result_id'        => Str::uuid()->toString(),
+                    'student_id'       => $studentID,
+                    'course_id'        => $courseID,
+                    'long_quiz_id'     => $longQuizID,
+                    'score_percentage' => $scorePercentage,
+                    'earned_points'    => $earnedPoints,
+                    'date_taken'       => now('Asia/Manila')->toDateTimeString(),
+                    'attempt_number'   => $prevAttempts + 1,
+                    'tier_level_id'    => 1,
+                    'is_kept'          => 0,
+                ]);
+
+                /** 2️⃣  write each selected answer */
+                foreach ($answers as $i => $selectedOptionID) {
+
+                    $questionID = $questionIDs[$i] ?? null;
+                    if (!$questionID) continue;
+
+                    $correctOptionID = LongQuizOptions::where('long_quiz_question_id', $questionID)
+                        ->where('is_correct', 1)
+                        ->value('long_quiz_option_id');
+
+                    $isCorrect = $selectedOptionID == $correctOptionID ? 1 : 0;
+                    $correct  += $isCorrect;
+
+                    LongQuizAssessmentResultAnswer::create([
+                        'result_id'         => $result->result_id,          // keep this in scope
+                        'long_quiz_question_id'  => $questionID,
+                        'long_quiz_option_id'    => $selectedOptionID,
+                        'is_correct'        => $isCorrect,
+                    ]);
+                }
+
+                /** 3️⃣  update score & kept-flag exactly as you did */
+                $result->update([
+                    'score_percentage' => round(($correct / count($questionIDs)) * 100),
+                    'earned_points'    => $correct,
+                ]);
+
+                LongQuizAssessmentResult::where('student_id', $studentID)
+                    ->where('course_id', $courseID)
+                    ->update(['is_kept' => 0]);
+
+                LongQuizAssessmentResult::where('student_id', $studentID)
+                    ->where('course_id', $courseID)
+                    ->orderByDesc('score_percentage')
+                    ->orderBy('date_taken')
+                    ->first()
+                    ->update(['is_kept' => 1]);
+
+                /* … session-cleanup + redirect unchanged … */
+            }
 
             LongQuizAssessmentResult::where('student_id', $studentID)->where('long_quiz_id', $longQuizID)->update(['is_kept' => 0]);
             LongQuizAssessmentResult::where('student_id', $studentID)->where('long_quiz_id', $longQuizID)->orderByDesc('score_percentage')->first()->update(['is_kept' => 1]);

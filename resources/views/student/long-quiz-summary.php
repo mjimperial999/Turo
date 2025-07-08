@@ -207,6 +207,72 @@ include __DIR__ . '/../partials/head.php';
                     </div>
                 </div>
             </div>
+
+            <div class="content-container box-page">
+
+                <?php if ($answeredQuestions->isNotEmpty()): ?>
+                    <div class="content padding longquiz">
+                        <p class="description"><b>YOUR ANSWERS</b></p>
+
+                        <?php foreach ($answeredQuestions as $index => $q): ?>
+                            <?php $num = $index + 1; ?>
+                            <div class="question-card">
+                                <h6><b>Q<?= $num ?>. <?= htmlspecialchars($q->question_text) ?></b></h6>
+
+                                <?php /* ── optional image ── */ ?>
+                                <?php if ($q->longquizimage && $q->longquizimage->image):  ?>
+                                    <?php
+                                    $blob = $q->longquizimage->image;
+                                    $mime = getMimeTypeFromBlob($blob);
+                                    $img  = "data:$mime;base64," . base64_encode($blob);
+                                    ?>
+                                    <img src="<?= $img ?>" style="max-width:10em;margin:.4rem 0">
+                                <?php endif; ?>
+
+                                <?php foreach ($q->longquizoptions as $opt):
+                                    $chosen = $q->selected_option_id === $opt->option_id;
+                                    $isCorrect = $opt->is_correct == 1;
+
+                                    /* colour rules */
+                                    $bg = '#fff';
+                                    $txt = '#333';
+                                    if ($chosen && $isCorrect) {
+                                        $bg = '#d4f7d4';
+                                        $txt = '#205420';
+                                    }     // green
+                                    elseif ($chosen && !$isCorrect) {
+                                        $bg = '#ffe4e4';
+                                        $txt = '#9e1a1a';
+                                    }   // red
+                                    elseif ($isCorrect) {
+                                        $bg = '#e8e8e8';
+                                        $txt = '#273341';
+                                    }     // grey
+                                ?>
+                                    <div style="
+                        padding:.35rem .6rem;
+                        border:1px solid #ccc;
+                        border-radius:.3rem;
+                        margin:.2rem 0;
+                        background:<?= $bg ?>;
+                        color:<?= $txt ?>;
+                    ">
+                                        <?= htmlspecialchars($opt->option_text) ?>
+                                        <?php if ($chosen): ?>
+                                            <span style="font-size:.75rem;font-weight:700;margin-left:.4rem">
+                                                <?= $isCorrect ? '&#10004;' : '&#10008;' ?>
+                                            </span>
+                                        <?php elseif ($isCorrect): ?>
+                                            <span style="font-size:.75rem;font-weight:700;margin-left:.4rem">&#10004;</span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <hr class="divider-hr">
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
 
 

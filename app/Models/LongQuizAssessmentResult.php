@@ -33,4 +33,9 @@ class LongQuizAssessmentResult extends Model
         'earned_points',
         'is_kept',
     ];
+
+    public function answers()
+    {
+        return $this->hasMany(LongQuizAssessmentResultAnswer::class,'result_id','result_id');
+    }
 }

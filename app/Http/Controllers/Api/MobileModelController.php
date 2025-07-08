@@ -299,7 +299,7 @@ class MobileModelController extends Controller
             ->first();
 
         return response()->json([
-            'data' => $best ? new AssessmentResultResource($best) : null
+            'data' => is_array($best) && array_is_list($best) ? $best : [$best]
         ]);
     }
 

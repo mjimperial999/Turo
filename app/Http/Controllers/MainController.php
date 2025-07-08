@@ -333,9 +333,26 @@ class MainController extends Controller
         $users = Users::with('image')->findOrFail($userID);
 
         $assessment = LongQuizAssessmentResult::where('student_id', $userID)
-            ->where('long_quiz_id', $longQuizID)
-            ->orderBy('date_taken', 'desc')
-            ->first();
+            ->where('course_id', $courseID)
+            ->orderByDesc('date_taken')
+            ->with([
+                'answers.longquizoption',                     // chosen option
+                'answers.longquizquestion.longquizoptions'            // ALL options for the Q
+            ])
+            ->first();           // null-safe in case no attempt yet
+
+        /* -------------------------------------------
+   transform to a flat array the view can loop
+   -------------------------------------------*/
+        $answeredQuestions = collect();
+
+        if ($assessment) {
+            foreach ($assessment->answers as $ans) {
+                $q = $ans->longquizquestion;                 // Question model
+                $q->selected_option_id = $ans->option_id;
+                $answeredQuestions->push($q);        // keep full question object
+            }
+        }
 
         $attempts = LongQuizAssessmentResult::where('student_id', $userID)
             ->where('long_quiz_id', $longQuizID)
@@ -346,7 +363,7 @@ class MainController extends Controller
             ->orderBy('date_taken', 'asc')
             ->get();
 
-        return view('student.long-quiz-summary', compact('course', 'longquiz', 'assessment', 'attempts', 'assessDisplay', 'users'));
+        return view('student.long-quiz-summary', compact('course', 'longquiz', 'assessment', 'attempts', 'answeredQuestions', 'assessDisplay', 'users'));
     }
 
     public function performancePage()
