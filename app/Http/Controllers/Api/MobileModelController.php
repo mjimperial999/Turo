@@ -94,7 +94,7 @@ class MobileModelController extends Controller
             ->get();
 
         return response()->json([
-            'activities' => ActivityCollectionResource::collection($activities)
+            'data' => ActivityCollectionResource::collection($activities)
         ]);
     }
 
