@@ -244,6 +244,7 @@ class MobileModelController extends Controller
                 'module_id'           => $r->module_id, 
                 'activity_id'         => $r->activity_id,
                 'attempt_number'      => $attemptNumber,
+                'tier_level_id'      => 1,
                 'score_percentage'    => $r->score_percentage,
                 'earned_points'       => $r->earned_points,
                 'date_taken'          => $now,
