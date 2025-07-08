@@ -7,6 +7,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
+use Carbon\Carbon;
+
 use App\Http\Resources\{
     ModuleResource,
     CoursesResource,
@@ -17,19 +22,24 @@ use App\Http\Resources\{
     LectureResource,
     ResultResource,
     QuizResource,
+    QuizContentResource,
     TutorialResource
 };
 
 use App\Http\Requests\{
     ModuleStoreRequest,
-    ModuleUpdateRequest
+    ModuleUpdateRequest,
+    AssessmentResultStoreRequest
 };
 
 use App\Models\{
     Courses,
     Modules,
     Activities,
+    Questions,
+    Options,
     AssessmentResult,
+    AssessmentResultAnswer,
     Students,
     Users,
     ModuleProgress
@@ -165,9 +175,9 @@ class MobileModelController extends Controller
         ]);
 
         $quiz = Activities::query()
-        ->join('module      as m', 'm.module_id',  '=', 'activity.module_id')
-        ->join('quiz        as q', 'q.activity_id','=', 'activity.activity_id')
-        ->selectRaw('
+            ->join('module      as m', 'm.module_id',  '=', 'activity.module_id')
+            ->join('quiz        as q', 'q.activity_id', '=', 'activity.activity_id')
+            ->selectRaw('
             activity.activity_id,
             m.module_name,
             activity.activity_type,
@@ -182,12 +192,91 @@ class MobileModelController extends Controller
             q.overall_points,
             q.has_answers_shown
         ')
-        ->where('activity.activity_id', $r->activity_id)
-        ->firstOrFail();
+            ->where('activity.activity_id', $r->activity_id)
+            ->firstOrFail();
 
         return response()->json(
             new QuizResource($quiz)
         );
+    }
+
+    public function showQuizContent(Request $r)
+    {
+        $r->validate([
+            'activity_id' => 'required|exists:activity,activity_id',
+        ]);
+
+        $questions = Questions::query()
+            ->where('activity_id', $r->activity_id)
+            ->leftJoin('quiz_question_image as qi', 'qi.question_id', '=', 'question.question_id')
+            ->selectRaw('
+            question.*,
+            qi.image as question_blob
+        ')
+            ->get()
+            ->each(function ($q) {
+                $q->options = Options::where('question_id', $q->question_id)->get();
+            });
+
+        return response()->json(
+            [
+                'questions' => QuizContentResource::collection($questions)
+            ]
+        );
+    }
+
+    public function saveAssessmentResult(AssessmentResultStoreRequest $r)
+    {
+        $now = Carbon::now()->timestamp;
+
+        DB::transaction(function () use ($r, $now) {
+
+            /* attempt # = existing rows +1 */
+            $attemptNumber = AssessmentResult::where([
+                'student_id'  => $r->student_id,
+                'activity_id' => $r->activity_id,
+            ])->count() + 1;
+
+            /* create parent row */
+            $result = AssessmentResult::create([
+                'assessmentresult_id' => (string) Str::uuid(),
+                'student_id'          => $r->student_id,
+                'activity_id'         => $r->activity_id,
+                'attempt_number'      => $attemptNumber,
+                'score_percentage'    => $r->score_percentage,
+                'earned_points'       => $r->earned_points,
+                'date_taken'          => $now,
+                'is_kept'             => 0,          // change later if you keep best
+            ]);
+
+            AssessmentResult::where([
+                ['student_id',  $r->student_id],
+                ['activity_id', $r->activity_id],
+            ])->update(['is_kept' => 0]);
+
+            $best = AssessmentResult::where([
+                ['student_id',  $r->student_id],
+                ['activity_id', $r->activity_id],
+            ])
+                ->orderByDesc('score_percentage')
+                ->orderBy('date_taken')          // earliest wins when scores tie
+                ->first();
+
+            /* 3️⃣  flag that one as kept */
+            $best?->update(['is_kept' => 1]);
+
+            /* store every answer */
+            foreach ($r->input('answers') as $ans) {
+                AssessmentResultAnswer::create([
+                    'assessmentresult_id' => $result->assessmentresult_id,
+                    'question_id'         => $ans['question_id'],
+                    'option_id'           => $ans['option_id'],
+                    'is_correct'          => $ans['is_correct'],
+                ]);
+            }
+        });
+
+        return response()->json(['message' => 'Result saved'], 201);
     }
 
     /* ---------- POST create_module.php ---------- */
