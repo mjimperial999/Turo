@@ -155,13 +155,7 @@ class MainController extends Controller
         $users = Users::with('image')->findOrFail($userID);
 
         $courses = Courses::with([
-            'modules' => function ($q) {
-                /*  grab the first number that appears in “Module X – …”,
-            cast it to INT, then use it for ordering            */
-                $q->orderByRaw(
-                    "CAST( REGEXP_REPLACE(module_name, '[^0-9]', '') AS UNSIGNED )"
-                );
-            },
+            'modules.moduleimage',
             'longquizzes.keptResult' => fn($q) => $q->where('student_id', $userID),
             'screenings.keptResult'  => fn($q) => $q->where('student_id', $userID),
         ])->get();

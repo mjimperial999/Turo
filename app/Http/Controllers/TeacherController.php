@@ -1698,17 +1698,26 @@ class TeacherController extends Controller
     }
 
     /* 3 ── Edit form  */
-    public function editScreening(Courses $course, $sectionId, Screening $screening)
+    public function editScreening(Courses $course,
+    Sections $section,
+    Screening $screening)
     {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $screening->load('concepts.topics.questions.options', 'concepts.topics.questions.image');
-        return view('teacher.screening-edit', compact('course', 'screening', 'users'));
+        return view('teacher.screening-edit', compact('course', 'section', 'screening', 'users'));
     }
 
     /* 4 ── Update  */
     public function updateScreening(
         Request $req,
         Courses  $course,
+        Sections $section,
         Screening $screening
     ) {
         /* a) validate – identical rules ------------------------------------ */
@@ -1855,7 +1864,7 @@ class TeacherController extends Controller
     }
 
     /* 5 ── Delete */
-    public function deleteScreening(Courses $course, $sectionId, Screening $screening)
+    public function deleteScreening(Courses $course, Sections $section, Screening $screening)
     {
         $screening->delete();   // FK cascade removes all children
         return back()->with('success', 'Screening exam deleted.');
@@ -1934,6 +1943,13 @@ class TeacherController extends Controller
         Sections $section,
         Screening $screening
     ) {
+
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+        
         // pull concepts + topics + any existing resources
         $screening->load([
             'concepts.topics',
@@ -1941,7 +1957,7 @@ class TeacherController extends Controller
             'concepts.topics.resources'
         ]);
 
-        return view('teacher.screening-resource', compact('course', 'screening'));
+        return view('teacher.screening-resource', compact('course', 'section', 'screening'));
     }
 
     /** POST same URL  (no validation rules = optional upload/URL) */

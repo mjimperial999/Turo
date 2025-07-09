@@ -96,9 +96,13 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     No modules available for this course.
                                 </div>
 
-                            <?php else: foreach ($course->modules as $module) {
+                            <?php else: foreach (
+                                    $course->modules->sortBy(
+                                        fn($m) => (int) preg_replace('/\D/', '', $m->module_name) ?: 9999
+                                    ) as $module
+                                ):
                                     include __DIR__ . '/../partials/module-hero.php';
-                                }
+                                endforeach;
                             endif; ?>
 
                         </div>
@@ -123,11 +127,16 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     No long quizzes available for this course.
                                 </div>
 
-                            <?php else: foreach ($course->longquizzes as $longquiz) {
-                                    include __DIR__ . '/../partials/time-lock-check-modules.php';
-                                    include __DIR__ . '/../partials/quiz-long-hero.php';
-                                };
-                            endif; ?>
+                            <?php else: foreach (
+                                $course->longquizzes->sortBy(
+                                    fn($m) => (int) preg_replace('/\D/', '', $m->long_quiz_name) ?: 9999
+                                ) as $longquiz
+                            ):
+                                include __DIR__ . '/../partials/time-lock-check-modules.php';
+                                include __DIR__ . '/../partials/quiz-long-hero.php';
+
+                            endforeach;
+                        endif; ?>
                         </div>
                     </div>
 
@@ -151,8 +160,12 @@ include __DIR__ . '/../partials/head.php'; ?>
                                 <img class="svg" src="/icons/nothing.svg" width="50em" height="auto" />
                                 No screening exams available for this course.
                             </div>
-                        <?php else: foreach ($course->screenings as $screening) {
 
+                        <?php else: foreach (
+                                $course->screenings->sortBy(
+                                    fn($m) => (int) preg_replace('/\D/', '', $m->screening_name) ?: 9999
+                                ) as $screening
+                            ):
                                 $blobData = $screening->image->image ?? null;
 
                                 if (!$blobData) {
@@ -164,7 +177,8 @@ include __DIR__ . '/../partials/head.php'; ?>
                                 }
 
                                 include __DIR__ . '/../partials/screening-hero.php';
-                            };
+
+                            endforeach;
                         endif; ?>
 
                     </div>
