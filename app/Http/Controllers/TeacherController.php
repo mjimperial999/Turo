@@ -236,7 +236,13 @@ class TeacherController extends Controller
         $users = Users::with('image')->findOrFail($userID);
 
         $courses = Courses::with([
-            'modules.moduleimage',
+            'modules' => function ($q) {
+                /*  grab the first number that appears in “Module X – …”,
+            cast it to INT, then use it for ordering            */
+                $q->orderByRaw(
+                    "CAST( REGEXP_REPLACE(module_name, '[^0-9]', '') AS UNSIGNED )"
+                );
+            },
             'longquizzes',
             'screenings',
         ])->get();
