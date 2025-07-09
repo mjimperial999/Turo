@@ -25,6 +25,10 @@ class LoginController extends Controller
                 Session::put('user_id', $user->user_id);
                 Session::put('user_name', $user->first_name . ' ' . $user->last_name);
                 Session::put('role_id', $user->role_id);
+                session([
+                    'user_id' => $user->user_id,
+                    'email'   => $user->email,
+                ]);
                 Session::save();
 
                 if ($user->role_id == 1 && $user->requires_password_change == 1) {

@@ -345,9 +345,13 @@ class TeacherController extends Controller
     // ---------------------------------------------
     // ---------------------------------------------
     // Module CRUD
-    public function createModule(Courses $course, $sectionId)
+    public function createModule(Courses $course, Sections $section)
     {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -355,10 +359,10 @@ class TeacherController extends Controller
             'modules.moduleimage',
         ])->get();
 
-        return view('teacher.module-create', compact('course', 'users'));
+        return view('teacher.module-create', compact('course', 'users', 'section'));
     }
 
-    public function storeModule(Request $req, Courses $course)
+    public function storeModule(Request $req, Courses $course, $sectionId)
     {
         $req->validate([
             'module_name'        => 'required|string|max:255',
@@ -403,7 +407,7 @@ class TeacherController extends Controller
         return view('teacher.module-edit', compact('course', 'section', 'module'));
     }
 
-    public function updateModule(Request $req, $courseID, Modules $module)
+    public function updateModule(Request $req, $courseID, $sectionId, Modules $module)
     {
         $req->validate([
             'module_name'        => 'required|string|max:255',
@@ -411,9 +415,6 @@ class TeacherController extends Controller
         ]);
 
         $module->update($req->only('module_name', 'module_description'));
-
-        $blob = file_get_contents($req->file('image')->getRealPath());
-        $mime = $req->file('image')->getMimeType();
 
         if ($req->hasFile('image')) {
             $blob = file_get_contents($req->file('image')->getRealPath());

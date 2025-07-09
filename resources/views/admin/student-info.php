@@ -58,6 +58,15 @@ include __DIR__ . '/../partials/head.php';
     .cred-wrap label {
         font-weight: 600
     }
+
+    .std-img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-size: cover;
+        background-position: center;
+        margin-right: .4rem
+    }
 </style>
 </head>
 
@@ -117,10 +126,33 @@ include __DIR__ . '/../partials/head.php';
 
                     <div class="cred-wrap">
                         <label>Password:</label>
-                        <input type="password" id="pwd" value="<?= htmlspecialchars($student->user->password_hash) ?>" readonly>
-                        <p style="font-size: 0.75rem; color: #888;">
-                            (Plain-text password is **not** stored; you can only reset it.)
-                        </p>
+                        <?php if ($student->user->requires_password_change == 1): ?>
+                            <?php
+                            function slugName(string $name): string
+                            {
+                                $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+                                return preg_replace('/[^A-Za-z0-9]/', '', $ascii);
+                            }
+                            $last = $student->user->last_name;
+                            $first = $student->user->first_name;
+
+                            $last  = slugName($last);
+                            $first = slugName($first);
+                            $pwd   = $last . $first
+                            ?>
+                            <input type="password" id="pwd" value="<?= htmlspecialchars($pwd) ?>" readonly>
+                            <p style="font-size: 0.75rem; color: #888;">
+                                (Password was unchanged. This will change once the student resets the password.)
+                            </p>
+
+                        <?php else: ?>
+                            <input type="password" id="pwd" value="<?= htmlspecialchars($student->user->password_hash) ?>" readonly>
+                            <p style="font-size: 0.75rem; color: #888;">
+                                (Plain-text password is <i>not stored</i>; students can only reset it. This is for safety purposes.)
+                            </p>
+
+                        <?php endif; ?>
+
                         <button class="btn btn-sm" onclick="togglePwd()">Show / Hide</button>
                     </div>
                 </div>

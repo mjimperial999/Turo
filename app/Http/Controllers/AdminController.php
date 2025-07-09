@@ -81,7 +81,7 @@ class AdminController extends Controller
             if ($admin->role_id == 3) {
                 Session::put('user_id', $admin->user_id);
                 Session::put('user_name', $admin->first_name . ' ' . $admin->last_name);
-                Session::put('role_id', $admin->role_id);    
+                Session::put('role_id', $admin->role_id);
                 Session::save();
 
                 return redirect()->intended('/admin-panel');
@@ -120,13 +120,24 @@ class AdminController extends Controller
         return $year . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
     }
 
+    private function slugName(string $name): string
+    {
+        // 1. convert to plain ASCII (drops accents like ñ → n)
+        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+
+        // 2. remove anything that is not A–Z / a–z / 0–9
+        return preg_replace('/[^A-Za-z0-9]/', '', $ascii);
+    }
+
     /** Create both Users + Students rows inside one transaction. */
     private function createStudentRow(array $data): void
     {
         DB::transaction(function () use ($data) {
 
             $id  = $this->nextStudentId();
-            $pwd = Hash::make($data['last_name'] . $data['first_name']);   // DoeJohn
+            $last  = $this->slugName($data['last_name']);
+            $first = $this->slugName($data['first_name']);
+            $pwd   = Hash::make($last . $first);
 
             Users::create([
                 'user_id'                => $id,
@@ -652,7 +663,7 @@ class AdminController extends Controller
     // Module CRUD
     public function createModule(Courses $course)
     {
-        
+
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -699,11 +710,11 @@ class AdminController extends Controller
 
         Modules $module
     ) {
-        
 
-        
 
-        
+
+
+
 
         return view('admin_crud.module-edit', compact('course', 'module'));
     }
@@ -748,11 +759,11 @@ class AdminController extends Controller
 
         Modules $module
     ) {
-        
 
-        
 
-        
+
+
+
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -768,7 +779,7 @@ class AdminController extends Controller
     public function createLongQuiz(
         Courses $course
     ) {
-        
+
 
         $users = Users::with('image')->findOrFail(session('user_id'));
         return view('admin_crud.longquiz-create', compact('course', 'users'));
@@ -1020,7 +1031,7 @@ class AdminController extends Controller
         Courses $course,
         Modules $module
     ) {
-   
+
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
@@ -1070,7 +1081,7 @@ class AdminController extends Controller
         Modules $module,
         Activities $activity
     ) {
-        
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('lecture');
         return view('admin_crud.lecture-edit', compact('course', 'module', 'activity', 'users'));
@@ -1119,7 +1130,7 @@ class AdminController extends Controller
         Modules $module,
         Activities $activity
     ) {
-        
+
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
@@ -1135,7 +1146,7 @@ class AdminController extends Controller
         Courses $course,
         Modules $module
     ) {
-        
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         return view('admin_crud.tutorial-create', compact('course', 'module', 'users'));
     }
@@ -1146,7 +1157,7 @@ class AdminController extends Controller
     public function storeTutorial(
         Request $req,
         Courses $course,
-    
+
         Modules $module
     ) {
         $req->validate([
@@ -1184,7 +1195,7 @@ class AdminController extends Controller
         Modules $module,
         Activities $activity
     ) {
-    
+
 
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('tutorial');
@@ -1238,11 +1249,11 @@ class AdminController extends Controller
         Modules $module,
         Activities $activity
     ) {
-        
 
-        
 
-        
+
+
+
 
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('tutorial');
@@ -1257,11 +1268,11 @@ class AdminController extends Controller
 
         Modules $module
     ) {
-        
 
-        
 
-        
+
+
+
 
         $users = Users::with('image')->findOrFail(session('user_id'));
         return view('admin_crud.shortquiz-create', compact('course', 'module', 'users'));
@@ -1373,11 +1384,11 @@ class AdminController extends Controller
         Modules $module,
         Activities $activity
     ) {
-        
 
-        
 
-        
+
+
+
 
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('quiz', 'quiz.questions.options', 'quiz.questions.questionimage');
@@ -1522,11 +1533,11 @@ class AdminController extends Controller
 
         Modules $module
     ) {
-        
 
-        
 
-        
+
+
+
 
         $users = Users::with('image')->findOrFail(session('user_id'));
         return view('admin_crud.practicequiz-create', compact('course', 'module', 'users'));
@@ -1632,11 +1643,11 @@ class AdminController extends Controller
         Modules $module,
         Activities $activity
     ) {
-        
 
-        
 
-        
+
+
+
 
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('quiz', 'quiz.questions.options', 'quiz.questions.questionimage');
@@ -1756,7 +1767,7 @@ class AdminController extends Controller
         Modules $module,
         Activities $activity
     ) {
-        
+
 
         $users = Users::with('image')->findOrFail(session('user_id'));
         $activity->load('quiz.questions.options', 'quiz.questions.questionimage');
@@ -1774,7 +1785,7 @@ class AdminController extends Controller
     public function createScreening(
         Courses $course
     ) {
-    
+
         $users = Users::with('image')->findOrFail(session('user_id'));
         return view('admin_crud.screening-create', compact('course', 'users'));
     }
@@ -2076,9 +2087,9 @@ class AdminController extends Controller
 
     public function viewScreening(Courses $course, Screening $screening)
     {
-        
+
         $users = Users::with('image')->findOrFail(session('user_id'));
-                                        
+
         $screening->load([
             'concepts.topics.questions.options',
             'concepts.topics.questions.image'
@@ -2184,5 +2195,4 @@ class AdminController extends Controller
 
         return back()->with('success', 'Resources saved.');
     }
-
 }

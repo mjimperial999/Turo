@@ -22,6 +22,15 @@ include __DIR__ . '/../partials/head.php'; ?>
         top: 0;
         background: #fff
     }
+
+    .std-img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-size: cover;
+        background-position: center;
+        margin-right: .4rem
+    }
 </style>
 
 </head>
@@ -92,11 +101,13 @@ include __DIR__ . '/../partials/head.php'; ?>
                                 ?>
                                     <tr>
                                         <td><input type="checkbox" name="students[]" value="<?= $st->user_id ?>"></td>
-                                        <td><img src="<?= $img ?>" style="width:30px;height:30px;border-radius:50%"></td>
+                                        <td>
+                                            <div class="std-img" style="background-image:url('<?= $img ?>')"></div>
+                                        </td>
                                         <td><?= e($u->last_name) ?></td>
                                         <td><?= e($u->first_name) ?></td>
                                         <td><?= e($st->user_id) ?></td>
-                                        <td><?= $st->section->section_name ?: '—' ?></td>
+                                        <td><?= $st->section?->section_name ?? '—' ?></td>
                                     </tr>
                                 <?php endforeach ?>
                             </tbody>

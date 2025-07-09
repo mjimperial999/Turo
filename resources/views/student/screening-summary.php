@@ -304,7 +304,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     <p> You have used all three attempts.<br>
                                         You will now enter the personalised catch-up program.</p>
                                 </div>
-                                <a class="btn edit" href="/home-tutor">Begin Catch-up Program</a>
+                                <a class="btn screening-resources" href="/home-tutor">Begin Catch-up Program</a>
                             </div>
 
                         </div>

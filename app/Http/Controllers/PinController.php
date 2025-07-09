@@ -20,7 +20,7 @@ class PinController extends Controller
         $user = Users::where('email', $r->email)->firstOrFail();
 
         // only students & only if pw change still required
-        abort_unless($user->role_id == 1 && $user->requires_password_change, 403);
+        abort_unless($user->role_id == 1 && $user->requires_password_change == 1, 403);
 
         $pin = UserPin::issueFor($user->user_id);
 
@@ -41,7 +41,7 @@ class PinController extends Controller
         $r->validate(['pin' => 'required|digits:6']);
 
         $userId = session('user_id');               // already logged in
-        $row    = UserPin::find($userId);
+        $row = UserPin::find($userId);
 
         if (!$row || $row->pin_code !== $r->pin || now('Asia/Manila')->gt($row->expires_at)) {
             return back()->with('error','Invalid or expired PIN');

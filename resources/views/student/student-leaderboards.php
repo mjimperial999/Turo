@@ -175,7 +175,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             </div>
                             <div class="text title">
                                 <h4> Leaderboards </h4>
-                                <h6> <?= e($me->section->section_name) ?> </h6>
+                                <h6> <?= e($me->section?->section_name) ?? null ?> </h6>
                             </div>
                         </div>
                     </div>
