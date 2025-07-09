@@ -27,6 +27,14 @@ class LoginController extends Controller
                 Session::put('role_id', $user->role_id);
                 Session::save();
 
+                if ($user->role_id == 1 && $user->requires_password_change == 1) {
+                    return redirect('/pin');
+                }
+
+                if ($user->role_id == 1 && $user->agreed_to_terms == 0) {
+                    return redirect('/terms');
+                }
+
                 return redirect()->intended('/home-tutor');
             } elseif ($user->role_id == 2) {
                 Session::put('user_id', $user->user_id);

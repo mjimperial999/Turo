@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
+    PinController,
+    TermsController,
     MainController,
     QuizController,
     LongQuizController,
@@ -15,9 +17,6 @@ use App\Http\Controllers\{
 
 // GENERAL
 Route::get('/', [MainController::class, 'landingRedirect']);
-Route::get('/test', function () {
-    return view('navbar-test');
-});
 
 Route::get('/health', function () {
     return response()->json(['status' => 'OK']);
@@ -26,6 +25,18 @@ Route::get('/health', function () {
 Route::get('/login', [LoginController::class, 'showLoginPage']);
 Route::post('/auth', [LoginController::class, 'login']);
 Route::get('/logout', [LoginController::class, 'logout']);
+
+Route::get ('/pin',                 [PinController::class,'show'])->name('pin.form');
+Route::post('/pin/send',            [PinController::class,'send'])->name('pin.send');
+Route::post('/pin/verify',          [PinController::class,'verify'])->name('pin.verify');
+
+Route::get ('/replace-password',    [PinController::class,'passwordForm'])->name('pw.form');
+Route::post('/replace-password',    [PinController::class,'passwordSave'])->name('pw.save');
+
+/* ---------- terms (after login) ---- */
+Route::get ('/terms',               [TermsController::class,'show'])->name('terms.form');
+Route::post('/terms/accept',        [TermsController::class,'accept'])->name('terms.accept');
+
 
 // ADMIN 
 Route::get('/admin-login', [AdminController::class, 'showLoginPage']);
