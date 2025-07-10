@@ -68,18 +68,25 @@ class MobileModelController extends Controller
 
         // 2) fetch modules + progress + image in **one** query
         $modules = Modules::query()
-            ->where('module.course_id', $r->course_id)     // ← qualified
-            ->leftJoin('moduleprogress as mp', function ($q) use ($r) {
-                $q->on('mp.module_id', '=', 'module.module_id')
-                    ->where('mp.student_id', '=', $r->student_id);
-            })
-            ->leftJoin('module_image as mi', 'mi.module_id', '=', 'module.module_id')
-            ->selectRaw('
-        module.*,
-        mp.progress as progress_value,
-        mi.image    as picture_blob
-    ')
-            ->get();
+        ->where('module.course_id', $r->course_id)
+
+        // ← natural-ish sort: “Module 2 …”   before  “Module 10 …”
+        ->orderByRaw("
+            CAST( REGEXP_REPLACE(module.module_name, '[^0-9]', '') AS UNSIGNED ),
+            module.module_name
+        ")
+
+        ->leftJoin('moduleprogress as mp', function ($q) use ($r) {
+            $q->on('mp.module_id', '=', 'module.module_id')
+               ->where('mp.student_id', '=', $r->student_id);
+        })
+        ->leftJoin('module_image as mi', 'mi.module_id', '=', 'module.module_id')
+        ->selectRaw('
+            module.*,
+            mp.progress as progress_value,
+            mi.image    as picture_blob
+        ')
+        ->get();
 
         return response()->json([
             'data' => ModuleCollectionResource::collection($modules)

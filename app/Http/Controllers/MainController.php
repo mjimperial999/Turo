@@ -155,7 +155,15 @@ class MainController extends Controller
         $users = Users::with('image')->findOrFail($userID);
 
         $courses = Courses::with([
-            'modules.moduleimage',
+            'modules' => function ($q) use ($userID) {
+                $q->with([
+                    'moduleimage',
+                    'studentprogress' => fn($p) => $p->where('student_id', $userID)
+                ])
+                    ->orderByRaw("
+                CAST(REGEXP_REPLACE(module_name, '[^0-9]', '') AS UNSIGNED)
+            ");
+            },
             'longquizzes.keptResult' => fn($q) => $q->where('student_id', $userID),
             'screenings.keptResult'  => fn($q) => $q->where('student_id', $userID),
         ])->get();

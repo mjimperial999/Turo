@@ -35,5 +35,12 @@ class Modules extends Model
         return $this->hasOne(ModuleImage::class, 'module_id', 'module_id');
     }
 
-    
+    public function studentprogress()
+    {
+        return $this->hasMany(
+            ModuleProgress::class,      // table: moduleprogress
+            'module_id',                // FK in moduleprogress
+            'module_id'                 // PK in module
+        );
+    }
 }

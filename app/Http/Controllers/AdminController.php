@@ -240,18 +240,20 @@ class AdminController extends Controller
         /* 1.  every course row with total_points + rank inside that course */
         $courses = StudentProgress::query()
             ->selectRaw('
-            studentprogress.course_id,
-            course.course_name,
-            studentprogress.total_points,
-            RANK() OVER (
-                PARTITION BY studentprogress.course_id
-                ORDER BY studentprogress.total_points DESC
-            ) AS rank
-        ')
+        studentprogress.course_id,
+        course.course_name,
+        studentprogress.total_points,
+        (
+            SELECT COUNT(*) + 1
+            FROM studentprogress AS sp2
+            WHERE sp2.course_id = studentprogress.course_id
+              AND sp2.total_points > studentprogress.total_points
+        ) AS rank
+    ')
             ->join('course', 'course.course_id', '=', 'studentprogress.course_id')
             ->where('student_id', $student->user_id)
             ->get()
-            ->keyBy('course_id');                      // ↳ quick look-ups later
+            ->keyBy('course_id');                    // ↳ quick look-ups later
 
         /* 2.  attach per-course aggregates (reuse one helper) */
         foreach ($courses as $c) {
