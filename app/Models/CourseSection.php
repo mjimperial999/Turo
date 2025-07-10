@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class CourseSection extends Model
 {
-    protected $table       = 'course_section';
-    public    $incrementing = false;
-    protected $keyType     = 'string';
-    public    $timestamps  = false;
+
+    protected $table = 'course_section';
+    protected $primaryKey = 'id';
+    public $incrementing  = true;
+    protected $keyType    = 'int';
 
     protected $fillable = [
         'course_id',

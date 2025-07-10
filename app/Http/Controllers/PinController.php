@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -20,19 +21,68 @@ class PinController extends Controller
         $user = Users::where('email', $r->email)->firstOrFail();
 
         // only students & only if pw change still required
-        abort_unless($user->role_id == 1 && $user->requires_password_change == 1, 403);
+        abort_unless(($user->role_id == 1 || $user->role_id == 2) && $user->requires_password_change == 1, 403);
 
         $pin = UserPin::issueFor($user->user_id);
 
-        /* very tiny mailer (uses Laravel's default SMTP settings) */
-        Mail::raw(
-            "Your Turo password-reset PIN is: $pin   (valid for 10 minutes)",
+        Mail::html(
+            /** ────── message body ────── */
+            <<<HTML
+    <div style="font-family:Arial,Helvetica,sans-serif;
+                color:#1f1f1f;
+                max-width:480px;
+                margin:0 auto">
+        <h2 style="margin-top:0;
+                   color:#673ab7;
+                   letter-spacing:.5px">
+            Password&nbsp;Reset&nbsp;PIN
+        </h2>
+
+        <p style="font-size:15px;line-height:1.45em">
+            Hello&nbsp;<strong>{$user->first_name}</strong>,
+        </p>
+
+        <p style="font-size:15px;line-height:1.45em">
+            You—or someone using your e-mail—requested to reset the password
+            on your Turo account.
+            Please use the one-time PIN below within&nbsp;<strong>10 minutes</strong>.
+        </p>
+
+        <div style="text-align:center;
+                    margin:28px 0 24px">
+            <span style="display:inline-block;
+                         background:#f5f5f5;
+                         border:1px solid #d2d2d2;
+                         border-radius:6px;
+                         font-size:26px;
+                         letter-spacing:6px;
+                         font-weight:700;
+                         color:#000;
+                         padding:14px 18px">
+                {$pin}
+            </span>
+        </div>
+
+        <p style="font-size:14px;line-height:1.4em">
+            Didn’t ask for this? Just ignore this message—your password
+            remains unchanged.
+        </p>
+
+        <p style="margin-top:32px;font-size:14px;
+                  color:#606060">
+            — The Turo Team
+        </p>
+
+        <hr style="border:none;border-top:1px solid #e2e2e2;margin:32px 0">
+    </div>
+    HTML,
+            /** ────── callback ────── */
             fn($m) => $m->from('turoapplication40@gmail.com', 'Turo App')
-                        ->to($user->email)
-                        ->subject('Turo password-reset PIN')
+                ->to($user->email)
+                ->subject('Your Turo one-time PIN')
         );
 
-        return back()->with('success', 'A PIN has been sent to your e-mail');
+        return back()->with('success', 'A PIN has been sent to your e-mail: ' . $user->email);
     }
 
     /* -------- verify the pin --------------- */
@@ -44,7 +94,7 @@ class PinController extends Controller
         $row = UserPin::find($userId);
 
         if (!$row || $row->pin_code !== $r->pin || now('Asia/Manila')->gt($row->expires_at)) {
-            return back()->with('error','Invalid or expired PIN');
+            return back()->with('error', 'Invalid or expired PIN');
         }
 
         // mark session so we can show the password form
@@ -71,11 +121,11 @@ class PinController extends Controller
         $user = Users::findOrFail(session('user_id'));
         $user->update([
             'password_hash'          => Hash::make($r->password),
-            'requires_password_change'=> 0
+            'requires_password_change' => 0
         ]);
 
         // cleanup
-        UserPin::where('user_id',$user->user_id)->delete();
+        UserPin::where('user_id', $user->user_id)->delete();
         session()->forget('pin_ok');
 
         return redirect('/terms');                 // now ask for consent

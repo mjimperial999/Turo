@@ -53,7 +53,7 @@ $loginUrl = app()->environment('production')
             <p class="input-placeholder">PASSWORD</p>
             <input type="password" id="password" name="password" required />
 
-            <a id="forgot-password" href="#">Forgot Password?</a>
+            <a id="forgot-password" href="">Forgot Password?</a>
             <button id="login-submit" type="submit">Sign In</button>
           </form>
         </div>
