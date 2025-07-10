@@ -651,11 +651,30 @@ class AdminController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $courses = Courses::with([
-            'modules.moduleimage',
-            'longquizzes',
-            'screenings',
-        ])->get();
+        $course->load([
+            /* ───────── Modules ───────── */
+            'modules' => function ($q) {
+                $q->with('moduleimage')
+                    ->orderByRaw("
+              CAST( REGEXP_SUBSTR(module_name, '[0-9]+' ) AS UNSIGNED )
+          ");
+            },
+
+            /* ───────── Long Quizzes ───── */
+            'longquizzes' => function ($q) {
+                $q->orderByRaw("
+              CAST( REGEXP_SUBSTR(long_quiz_name, '[0-9]+' ) AS UNSIGNED )
+          ");
+            },
+
+            /* ───────── Screening Exams ─ */
+            'screenings' => function ($q) {
+                $q->orderByRaw("
+              CAST( REGEXP_SUBSTR(screening_name, '[0-9]+' ) AS UNSIGNED )
+          ");
+            },
+        ]);
+
 
         return view('admin_crud.view-course', compact('course', 'users'));
     }
@@ -758,19 +777,23 @@ class AdminController extends Controller
 
     public function viewModule(
         Courses $course,
-
         Modules $module
     ) {
-
-
-
-
-
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $module->load('activities.quiz');
+        $module->load([
+            'activities' => function ($q) {
+                /* sort by the **first** number that appears in activity_name
+           e.g. “Activity 12 – …” comes after “Activity 2 – …”            */
+                $q->orderByRaw("
+            CAST( REGEXP_SUBSTR(activity_name, '[0-9]+' ) AS UNSIGNED )
+        ");
+            },
+            'activities.quiz'
+        ]);
+
 
         return view('admin_crud.view-module', compact('course', 'module', 'users'));
     }

@@ -122,18 +122,16 @@ include __DIR__ . '/../partials/head.php';  ?>
                 <div class="content padding activity-list">
                     
                     <div class="lecture-flex-area">
-                        <?php
-                        // ① pull only the two activity types we care about
-                        $acts = $module->activities
-                            ->whereIn('activity_type', ['LECTURE', 'TUTORIAL'])
-                            // ② sort by name, then by type so “lecture” ⇢ “tutorial”
-                            ->sortBy(fn($a) => [$a->activity_name, $a->activity_type]);
-
-                        foreach ($acts as $activity) {
-                            include __DIR__ . '/../partials/time-lock-check.php';
-                            include __DIR__ . '/../partials/activity-hero.php';
-                        }
-                        ?>
+                        <?php foreach ($module->activities as $activity) {
+                            if ($activity->activity_type == 'LECTURE') {
+                                include __DIR__ . '/../partials/time-lock-check.php';
+                                include __DIR__ . '/../partials/activity-hero.php';
+                            } 
+                            if ($activity->activity_type == 'TUTORIAL') {
+                                include __DIR__ . '/../partials/time-lock-check.php';
+                                include __DIR__ . '/../partials/activity-hero.php';
+                            }
+                        }; ?>
                     </div>
                 </div>
             </div>

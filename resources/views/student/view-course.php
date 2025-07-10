@@ -96,11 +96,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     No modules available for this course.
                                 </div>
 
-                            <?php else: foreach (
-                                    $course->modules->sortBy(
-                                        fn($m) => (int) preg_replace('/\D/', '', $m->module_name) ?: 9999
-                                    ) as $module
-                                ):
+                            <?php else: foreach ($course->modules as $module):
                                     include __DIR__ . '/../partials/module-hero.php';
                                 endforeach;
                             endif; ?>
@@ -127,14 +123,9 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     No long quizzes available for this course.
                                 </div>
 
-                            <?php else: foreach (
-                                $course->longquizzes->sortBy(
-                                    fn($m) => (int) preg_replace('/\D/', '', $m->long_quiz_name) ?: 9999
-                                ) as $longquiz
-                            ):
+                            <?php else: foreach ($course->longquizzes as $longquiz):
                                 include __DIR__ . '/../partials/time-lock-check-modules.php';
                                 include __DIR__ . '/../partials/quiz-long-hero.php';
-
                             endforeach;
                         endif; ?>
                         </div>
@@ -161,11 +152,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                 No screening exams available for this course.
                             </div>
 
-                        <?php else: foreach (
-                                $course->screenings->sortBy(
-                                    fn($m) => (int) preg_replace('/\D/', '', $m->screening_name) ?: 9999
-                                ) as $screening
-                            ):
+                        <?php else: foreach ($course->screenings as $screening):
                                 $blobData = $screening->image->image ?? null;
 
                                 if (!$blobData) {
@@ -186,19 +173,6 @@ include __DIR__ . '/../partials/head.php'; ?>
 
             </div>
 
-
-
-            <?php /*
-                <div class="home-tutor-courses-header">
-                    <h5>Modules</h5>
-                    <div class="return-prev-cont">
-                        <?= '<a class="activity-link" href="/home-tutor">
-                        <div class="return-prev">Back to Courses</div>
-                                </a>' ?>
-                    </div>
-                </div>
-                <hr>
-                */ ?>
 
         </div>
 

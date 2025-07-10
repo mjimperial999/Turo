@@ -76,7 +76,7 @@ if (session('role_id') == 1) {
                     </form>
                 </div>
                 <div class="box-button">
-                    <form action="/teachers-panel/course/' . $course->course_id . '/section/'. $section->section_id .'/longquiz/' . '/delete" method="POST"
+                    <form action="/teachers-panel/course/' . $course->course_id . '/section/'. $section->section_id .'/longquiz/' . $longquiz->long_quiz_id . '/delete" method="POST"
                     onsubmit="return confirm(' . "'Are you sure you want to delete this module: " . $longquiz->long_quiz_name ."? '" .');">
                     '. csrf_field() .'
                     <button type="submit" class="box-button-delete">
@@ -114,7 +114,7 @@ if (session('role_id') == 1) {
                     </form>
                 </div>
                 <div class="box-button">
-                    <form action="/admin-panel/edit-content/course/' . $course->course_id .'/longquiz/' . '/delete" method="POST"
+                    <form action="/admin-panel/edit-content/course/' . $course->course_id .'/longquiz/' . $longquiz->long_quiz_id . '/delete" method="POST"
                     onsubmit="return confirm(' . "'Are you sure you want to delete this module: " . $longquiz->long_quiz_name ."? '" .');">
                     '. csrf_field() .'
                     <button type="submit" class="box-button-delete">

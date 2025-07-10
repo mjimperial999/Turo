@@ -103,14 +103,26 @@ include __DIR__ . '/../partials/head.php';  ?>
 
                 <div class="content padding activity-list">
                     <div class="lecture-flex-area">
-                        <?php foreach ($module->activities?->where('activity_type', 'LECTURE') as $activity) {
+                        <?php foreach ($module->activities as $activity) {
+                            if ($activity->activity_type == 'LECTURE') {
+                                include __DIR__ . '/../partials/time-lock-check.php';
+                                include __DIR__ . '/../partials/activity-hero.php';
+                            } 
+                            if ($activity->activity_type == 'TUTORIAL') {
+                                include __DIR__ . '/../partials/time-lock-check.php';
+                                include __DIR__ . '/../partials/activity-hero.php';
+                            }
+                        }; ?>
+
+
+                        <?php /* foreach ($module->activities?->where('activity_type', 'LECTURE') as $activity) {
                             include __DIR__ . '/../partials/time-lock-check.php';
                             include __DIR__ . '/../partials/lecture-hero.php';
                         }; ?>
                         <?php foreach ($module->activities?->where('activity_type', 'TUTORIAL') as $activity) {
                             include __DIR__ . '/../partials/time-lock-check.php';
                             include __DIR__ . '/../partials/tutorial-hero.php';
-                        }; ?>
+                        }; */ ?>
                     </div>
                 </div>
             </div>

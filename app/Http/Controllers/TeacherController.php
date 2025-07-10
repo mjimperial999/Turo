@@ -235,17 +235,30 @@ class TeacherController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $courses = Courses::with([
+        $course->load([
+            /* ───────── Modules ───────── */
             'modules' => function ($q) {
-                /*  grab the first number that appears in “Module X – …”,
-            cast it to INT, then use it for ordering            */
-                $q->orderByRaw(
-                    "CAST( REGEXP_REPLACE(module_name, '[^0-9]', '') AS UNSIGNED )"
-                );
+                $q->with('moduleimage')
+                    ->orderByRaw("
+              CAST( REGEXP_SUBSTR(module_name, '[0-9]+' ) AS UNSIGNED )
+          ");
             },
-            'longquizzes',
-            'screenings',
-        ])->get();
+
+            /* ───────── Long Quizzes ───── */
+            'longquizzes' => function ($q) {
+                $q->orderByRaw("
+              CAST( REGEXP_SUBSTR(long_quiz_name, '[0-9]+' ) AS UNSIGNED )
+          ");
+            },
+
+            /* ───────── Screening Exams ─ */
+            'screenings' => function ($q) {
+                $q->orderByRaw("
+              CAST( REGEXP_SUBSTR(screening_name, '[0-9]+' ) AS UNSIGNED )
+          ");
+            },
+        ]);
+
 
         return view('teacher.view-course', compact('course', 'users', 'students', 'section'));
     }
@@ -459,7 +472,15 @@ class TeacherController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $module->load('activities.quiz');
+        $module->load([
+            'activities' => function ($q) {
+                $q->orderByRaw("
+            CAST( REGEXP_SUBSTR(activity_name, '[0-9]+' ) AS UNSIGNED )
+        ");
+            },
+            'activities.quiz'
+        ]);
+
 
         return view('teacher.view-module', compact('course', 'section', 'module', 'users'));
     }
@@ -569,8 +590,7 @@ class TeacherController extends Controller
             }
         });
 
-        return redirect("/teachers-panel/course/{$course->course_id}")
-            ->with('success', 'Long-quiz created.');
+        return back()->with('success', 'Long-quiz created.');
     }
 
     /* 3-d  Edit form */
@@ -1698,10 +1718,11 @@ class TeacherController extends Controller
     }
 
     /* 3 ── Edit form  */
-    public function editScreening(Courses $course,
-    Sections $section,
-    Screening $screening)
-    {
+    public function editScreening(
+        Courses $course,
+        Sections $section,
+        Screening $screening
+    ) {
         if ($redirect = $this->checkTeacherAccess()) return $redirect;
 
         $sectionID = $section->section_id;
@@ -1949,7 +1970,7 @@ class TeacherController extends Controller
         $sectionID = $section->section_id;
 
         $this->assertOwnsCourseSection($course->course_id, $section->section_id);
-        
+
         // pull concepts + topics + any existing resources
         $screening->load([
             'concepts.topics',

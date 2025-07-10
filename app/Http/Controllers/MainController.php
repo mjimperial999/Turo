@@ -146,29 +146,53 @@ class MainController extends Controller
     }
 
 
-    public function moduleList(Courses $course)
+    public function moduleList(Courses $course)   // ← route-model still a single row
     {
-        if ($redirect = $this->checkStudentAccess()) return $redirect;
+        /* ---------- basic guards & user -------- */
+        if ($redirect = $this->checkStudentAccess()) {
+            return $redirect;
+        }
 
+        $userID = session('user_id');
+        $users  = Users::with('image')->findOrFail($userID);
 
-        $userID = session()->get('user_id');
-        $users = Users::with('image')->findOrFail($userID);
+        /* ---------- eager-load everything we need on *this* course row ---------- */
+        $course->load([
 
-        $courses = Courses::with([
+            /* ───────── MODULES ───────── */
             'modules' => function ($q) use ($userID) {
                 $q->with([
                     'moduleimage',
-                    'studentprogress' => fn($p) => $p->where('student_id', $userID)
+                    'studentprogress' => fn($p) => $p->where('student_id', $userID),
                 ])
                     ->orderByRaw("
-                CAST(REGEXP_REPLACE(module_name, '[^0-9]', '') AS UNSIGNED)
-            ");
+                    CAST( REGEXP_SUBSTR(module_name , '[0-9]+') AS UNSIGNED )
+              ");
             },
-            'longquizzes.keptResult' => fn($q) => $q->where('student_id', $userID),
-            'screenings.keptResult'  => fn($q) => $q->where('student_id', $userID),
-        ])->get();
 
-        return view('student.view-course', compact('course', 'courses', 'users'));
+            /* ───────── LONG QUIZZES ──── */
+            'longquizzes' => function ($q) use ($userID) {
+                $q->with([
+                    'keptResult' => fn($r) => $r->where('student_id', $userID),
+                ])
+                    ->orderByRaw("
+                    CAST( REGEXP_SUBSTR(long_quiz_name , '[0-9]+') AS UNSIGNED )
+              ");
+            },
+
+            /* ───────── SCREENING EXAMS ─ */
+            'screenings' => function ($q) use ($userID) {
+                $q->with([
+                    'keptResult' => fn($r) => $r->where('student_id', $userID),
+                ])
+                    ->orderByRaw("
+                    CAST( REGEXP_SUBSTR(screening_name , '[0-9]+') AS UNSIGNED )
+              ");
+            },
+        ]);
+
+        /* ---------- pass to the view ---------- */
+        return view('student.view-course', compact('course', 'users'));
     }
 
     public function activityList(Courses $course, Modules $module)
@@ -182,7 +206,16 @@ class MainController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $module->load('activities.quiz');
+        $module->load([
+            'activities' => function ($q) {
+                /* sort by the **first** number that appears in activity_name
+           e.g. “Activity 12 – …” comes after “Activity 2 – …”            */
+                $q->orderByRaw("
+            CAST( REGEXP_SUBSTR(activity_name, '[0-9]+' ) AS UNSIGNED )
+        ");
+            },
+            'activities.quiz'
+        ]);
 
         return view('student.view-module', compact('course', 'module', 'users'));
     }
