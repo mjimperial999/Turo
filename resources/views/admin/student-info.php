@@ -154,6 +154,17 @@ include __DIR__ . '/../partials/head.php';
                         <?php endif; ?>
 
                         <button class="btn btn-sm" onclick="togglePwd()">Show / Hide</button>
+
+                        <div class="cred-wrap">
+                            <label>In Catch-Up Classes:
+                            <?php if ($student->isCatchUp == 1): ?>
+                                <span style="color: #f6ba06ff;"> Yes </span>
+                            <?php else: ?>
+                                <span style="color: #d4f48cff;"> No </span>
+                            <?php endif; ?>
+                            </label>
+                        </div>
+
                     </div>
                 </div>
             </div>

@@ -91,6 +91,12 @@ class AdminController extends Controller
         return redirect('/admin-login')->with('error', 'Invalid credentials');
     }
 
+    private function seq(string $title): int
+    {
+        preg_match('/\d+/', $title, $m);
+        return empty($m) ? 0 : (int) $m[0];
+    }
+
     public function studentList(Request $req)
     {
         if ($redirect = $this->checkAdminAccess()) return $redirect;
@@ -651,30 +657,17 @@ class AdminController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $course->load([
-            /* ───────── Modules ───────── */
-            'modules' => function ($q) {
-                $q->with('moduleimage')
-                    ->orderByRaw("
-              CAST( REGEXP_SUBSTR(module_name, '[0-9]+' ) AS UNSIGNED )
-          ");
-            },
+                $course->modules     = $course->modules
+            ->sortBy(fn($m)  => $this->seq($m->module_name))
+            ->values();
 
-            /* ───────── Long Quizzes ───── */
-            'longquizzes' => function ($q) {
-                $q->orderByRaw("
-              CAST( REGEXP_SUBSTR(long_quiz_name, '[0-9]+' ) AS UNSIGNED )
-          ");
-            },
+        $course->longquizzes = $course->longquizzes
+            ->sortBy(fn($lq) => $this->seq($lq->long_quiz_name))
+            ->values();
 
-            /* ───────── Screening Exams ─ */
-            'screenings' => function ($q) {
-                $q->orderByRaw("
-              CAST( REGEXP_SUBSTR(screening_name, '[0-9]+' ) AS UNSIGNED )
-          ");
-            },
-        ]);
-
+        $course->screenings  = $course->screenings
+            ->sortBy(fn($s)  => $this->seq($s->screening_name))
+            ->values();
 
         return view('admin_crud.view-course', compact('course', 'users'));
     }
@@ -783,16 +776,12 @@ class AdminController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $module->load([
-            'activities' => function ($q) {
-                /* sort by the **first** number that appears in activity_name
-           e.g. “Activity 12 – …” comes after “Activity 2 – …”            */
-                $q->orderByRaw("
-            CAST( REGEXP_SUBSTR(activity_name, '[0-9]+' ) AS UNSIGNED )
-        ");
-            },
-            'activities.quiz'
-        ]);
+        $module->load(['activities.quiz']);
+
+        /* ── sort activities by numeric order in title ──────────── */
+        $module->activities = $module->activities
+            ->sortBy(fn($a) => $this->seq($a->activity_name))
+            ->values();
 
 
         return view('admin_crud.view-module', compact('course', 'module', 'users'));

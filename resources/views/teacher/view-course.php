@@ -41,6 +41,28 @@ include __DIR__ . '/../partials/head.php'; ?>
         transform: translate(0, -0.15rem);
         transition: all 0.3s ease 0s;
     }
+
+    table.std {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .9rem
+    }
+
+    table.std th,
+    table.std td {
+        border: 1px solid #ddd;
+        padding: 0.05rem 0.5rem;
+        text-align: left
+    }
+
+    .std-img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-size: cover;
+        background-position: center;
+        margin-right: .4rem
+    }
 </style>
 </head>
 
@@ -218,24 +240,37 @@ include __DIR__ . '/../partials/head.php'; ?>
                 </div>
 
                 <div class="content padding">
-                    <table class="striped">
+                    <table class="std">
                         <thead>
                             <tr>
                                 <th>Name</th>
                                 <th>Points</th>
-                                <th>Actions</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($students as $s): ?>
+                            <?php foreach ($students as $s):
+                                $u  = $s->user;
+                                if (empty($u->image?->image)) {
+                                    $avatar = "/icons/no-img.jpg";
+                                } else {
+                                    $blob = $u->image->image;
+                                    $avatar = "data:" . getMimeTypeFromBlob($blob) . ';base64,' . base64_encode($blob);
+                                } ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($s->user->last_name . ', ' . $s->user->first_name) ?></td>
+                                    <td>
+                                        <div style="display:flex;align-items:center">
+                                            <div class="std-img" style="background-image:url('<?= $avatar ?>')"></div>
+                                            <?= htmlspecialchars($s->user->last_name . ', ' . $s->user->first_name) ?>
+                                        </div>
+                                    </td>
                                     <td><?= number_format($s->total_points) ?></td>
                                     <td>
-                                        <a class="link"
-                                            href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/student/<?= $s->user_id ?>/performance">
-                                            View&nbsp;Performance
-                                        </a>
+                                        <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/student/<?= $s->user_id ?>/performance" method="GET">
+                                            <button class="edit">
+                                                View Performance
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

@@ -33,13 +33,22 @@ include __DIR__ . '/../partials/head.php'; ?>
     .table-box tr:nth-child(even) {
         background: #fffaf7
     }
+
+    .img {
+        width: 4rem;
+        height: 4rem;
+        border-radius: 25%;
+        background-size: cover;
+        background-position: center;
+        margin-right: .4rem
+    }
 </style>
 </head>
 
 <body>
     <?php
-        include __DIR__ . '/../partials/nav-teach.php'; 
-        
+    include __DIR__ . '/../partials/nav-teach.php';
+
     if (empty($student->user->image?->image)) {;
         $imageURL = "/icons/no-img.jpg";
     } else {
@@ -86,9 +95,12 @@ include __DIR__ . '/../partials/head.php'; ?>
             <!-- header ------------------------------------------------------------- -->
             <div class="content-container box-page">
                 <div class="content padding heading box-gray">
-                    <div class="header">
-                        <div class="text title">
-                            <h4><?= $student->user->last_name ?>, <?= $student->user->first_name ?></h4>
+                    <div class="header logo">
+                        <div class="logo-and-title">
+                            <div class="img" style="background-image:url('<?= $imageURL ?>')"></div>
+                            <div class="text title">
+                                <h4><?= $student->user->last_name ?>, <?= $student->user->first_name ?></h4>
+                            </div>
                         </div>
                         <hr class="divider-hr">
                         <div class="subtitle">

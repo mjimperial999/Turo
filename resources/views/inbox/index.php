@@ -97,6 +97,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                         <span class="msg-from">
                                             <?= $unread ? '* ' : ''; ?><b><?= $label . htmlspecialchars($name) ?></b>
                                         </span>
+                                        <small class="msg-time"><b><?= $latest->subject ?? '(no subject)' ?></b></small>
                                         <small class="msg-time"><?= $stamp ?></small>
                                         <small class="msg-prev">"<?= htmlspecialchars($truncate($latest->body)) ?>"</small>
                                     </a>

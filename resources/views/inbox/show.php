@@ -105,6 +105,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                         <span class="msg-from">
                                             <?= $unread ? '* ' : ''; ?><b><?= $label . htmlspecialchars($name) ?></b>
                                         </span>
+                                        <small class="msg-time"><b><?= $latest->subject ?? '(no subject)' ?></b></small>
                                         <small class="msg-time"><?= $stamp ?></small>
                                         <small class="msg-prev">"<?= htmlspecialchars($truncate($latest->body)) ?>"</small>
                                     </a>
@@ -194,13 +195,22 @@ include __DIR__ . '/../partials/head.php'; ?>
                                             <div class="msg-timewrap">
                                                 <?= htmlspecialchars($elapsed) ?><time><?= $stamp ?></time>
                                             </div>
-
-                                            <form action="<?= route('message.toggleRead', $m); ?>" method="POST">
-                                                <?= csrf_field(); ?><input type="hidden" name="_method" value="PATCH">
-                                                <button class="btn btn-primary">
-                                                    <?= $state && $state->is_read ? 'Mark Unread' : 'Mark Read' ?>
-                                                </button>
-                                            </form>
+                                            <?php if ($m->sender_id === session('user_id')): ?>
+                                                <form action="<?= route('message.destroy', ['message' => $m->message_id]) ?>"
+                                                    method="POST"
+                                                    style="display:inline"
+                                                    onsubmit="return confirm('Delete this message?');">
+                                                    <?= csrf_field(); ?>
+                                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <form action="<?= route('message.toggleRead', $m); ?>" method="POST">
+                                                    <?= csrf_field(); ?><input type="hidden" name="_method" value="PATCH">
+                                                    <button class="btn btn-primary">
+                                                        <?= $state && $state->is_read ? 'Mark Unread' : 'Mark Read' ?>
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
 

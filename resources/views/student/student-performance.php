@@ -172,6 +172,7 @@ include __DIR__ . '/../partials/head.php';
     <?php
 
     include __DIR__ . '/../partials/nav.php';
+    use Carbon\Carbon;
     ?>
 
     <div class="screen">
@@ -240,6 +241,11 @@ include __DIR__ . '/../partials/head.php';
                             <div class="achievement-details">
                                 <h6><?= e($ach->achievement_name) ?></h6>
                                 <small><?= e($ach->achievement_description) ?></small>
+                                <?php if ($ach->owned):
+                                    $unlockDate = Carbon::parse($ach->unlocked_at)
+                                    ->format('M j, Y g:i A'); ?>
+                                    <small>Obtained On: <?= $unlockDate ?></small>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -286,119 +292,3 @@ include __DIR__ . '/../partials/head.php';
             <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
         </div>
     </div>
-
-    <?php /*
-    <div class="home-tutor-screen">
-        <div class="home-tutor-main">
-            <table>
-                <tr class="module-title">
-                    <th class="table-left-padding"></th>
-                    <th class="table-right-padding">
-                        <div class="module-heading">
-                            <div class="module-logo">
-                                <img class="svg" src="/icons/graph.svg" width="50em" height="auto" />
-                            </div>
-                            <div class="heading-context">
-                                <h5><b>PERFORMANCE ANALYTICS</b></h5>
-                            </div>
-                        </div>
-                    </th>
-                </tr>
-                <tr class="module-subtitle">
-                    <td class="table-left-padding"></td>
-                    <td class="table-right-padding">
-                        <div class="module-section quiz-background profile-color">
-                            <div class="performance-container">
-                                <div class="performance-details">
-                                    <b>ALL COURSES</b>
-                                    <?php
-                                    foreach ($courses as $course) {
-                                        $shortAvg = $shortAverages[$course->course_id]->short_avg ?? null;
-                                        $longAvg = $longAverages[$course->course_id]->long_avg ?? null;
-                                        $combinedAvg = null;
-
-                                        if (!is_null($shortAvg) && !is_null($longAvg)) {
-                                            $combinedAvg = ($shortAvg + $longAvg) / 2;
-                                        } elseif (!is_null($shortAvg)) {
-                                            $combinedAvg = $shortAvg;
-                                        } elseif (!is_null($longAvg)) {
-                                            $combinedAvg = $longAvg;
-                                        }
-                                        echo '<div class="performance-course-element"><table class="performance-table">';
-                                        echo '<tr>
-                                                <th colspan="2" class="performance-course">' . $course->course_name . '</th>
-                                            </tr>
-                                            <tr>
-                                                <th class="performance-overall">Short Quiz Average</th>
-                                                <th class="results">' . (!is_null($shortAvg) ? round($shortAvg, 2) . "%" : "No data") . '</th>
-                                            </tr>';
-
-                                        foreach ($moduleAverages as $m) {
-                                            if ($m->course_id === $course->course_id) {
-                                                echo '<tr>
-                                                        <th class="performance-module span">> ' . $m->module_name . '</th>
-                                                        <th class="results-sub">' . round($m->average_score, 2) . '%</th>
-                                                    </tr>';
-                                            }
-                                        }
-
-                                        echo '<tr>               
-                                            <th class="performance-overall">Long Quiz Average:</th>
-                                            <th class="results">' . (!is_null($longAvg) ? round($longAvg) . "%" : "No data") . '</th>
-                                        </tr>';
-
-                                        foreach ($longQuizzes as $lq) {
-                                            if ($lq->course_id === $course->course_id) {
-                                                echo '<tr>
-                                                        <th class="performance-module span">> '.$lq->long_quiz_name.'</th>
-                                                        <th class="results-sub">'.round($lq->average_score, 2).'%</th>
-                                                    </tr>';
-                                            }
-                                        }
-                                        
-                                        echo '<tr>               
-                                            <th class="performance-overall-both">Course Average:</th>
-                                            <th class="results-main">' . (!is_null($percentage) ? round($percentage) . "%" : "No data") . '</th>
-                                        </tr>
-                                    </table></div>';
-                                    }
-
-                                    ?>
-                                </div>
-                                <div class="performance-graphics">
-                                    <div class="performance-points">
-                                        <img class="svg" src="/icons/points.svg" width="100em" height="auto" />
-                                        <p class="points-total-header">Total Points Gained</p>
-                                        <p class="points-total-points"><?= $progress->total_points ?? 0 ?></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr class="module-title">
-                    <td class="table-left-padding"></td>
-                    <td class="table-right-padding">
-                        <div class="module-heading">
-                            <div class="module-logo">
-                                <img class="svg" src="/icons/achievements.svg" width="50em" height="auto" style="filter: drop-shadow(0 0.2rem 0.25rem rgba(0, 0, 0, 0.2));" />
-                            </div>
-                            <div class="heading-context">
-                                <h5><b>ACHIEVEMENTS</b></h5>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr class="module-subtitle">
-                    <td class="table-left-padding"></td>
-                    <td class="table-right-padding">
-                    </td>
-            </table>
-        </div>
-        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
-    </div>
-</body>
-
-</html>
-
-*/ ?>

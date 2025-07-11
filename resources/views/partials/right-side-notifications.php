@@ -1,204 +1,172 @@
 <?php
-/*  ------------------------------------------------------------------
-    This partial is fully self-contained – it pulls everything it needs
-    directly from the DB every time it is included.
-    ------------------------------------------------------------------*/
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-
 use App\Models\{
-  CalendarEvent,      // table: calendarevent
-  Activities,         // table: activity
-  Modules,            // table: module   (for course_id lookup)
-  LongQuizzes,        // table: longquiz
-  Screening           // table: screening (if you have it)
+    CalendarEvent,
+    Activities,
+    Modules,
+    LongQuizzes,
+    Screening,
+    CourseSection   // <-- has course_id + section_id (+ teacher_id)
 };
 
-/* -------------------------------------------------
- | runtime context
- |-------------------------------------------------*/
+$userId   = session('user_id');
+$roleId   = (int) session('role_id');           // 1 stu | 2 tch | 3 adm
+$now      = Carbon::now();
 
-$userId    = session('user_id');
-$isTeacher = session('role_id') == 2;                 // 2 = teacher in your seed
-$base      = $isTeacher ? '/teachers-panel' : '/home-tutor';
-$studentId = \App\Models\Students::find(session('user_id'));
-if (session('role_id') == 1) {
-  $isLocked  = ($studentId->isCatchUp == 0) && session('role_id') == 1;
-} else {
-  $isLocked = false;
-}
-
-
-/* -------------------------------------------------
- | helpers
- |-------------------------------------------------*/
-function activityUrl(Activities $a, bool $isTeacher, string $base): string
+/* helper ───────────────────────────────────────────────────────── */
+function routeTo(array $piece, int $roleId): string
 {
-  $qt = $a->quiz->quiz_type_id;                     // 1 short, 2 practice, 3 long, 4 screening
+    // $piece = [ 'type'=>'short', 'course'=>…, 'section'=>…, 'act'=>… ]
+    if ($roleId === 3) {  // ADMIN
+        return "/admin-panel/edit-content/course/{$piece['course']}/{$piece['tail']}";
+    }
 
-  if ($qt == 1) {                      // short / practice need course+module
-    $courseId = $a->module->course_id;
-    return "$base/course/$courseId/module/$a->module_id/quiz/$a->activity_id";
-  }
+    if ($roleId === 2) {  // TEACHER   (section **required**)
+        return "/teachers-panel/course/{$piece['course']}/section/{$piece['section']}/{$piece['tail']}";
+    }
 
-  if ($qt == 2) {                      // short / practice need course+module
-    $courseId = $a->module->course_id;
-    return "$base/course/$courseId/module/$a->module_id/practicequiz/$a->activity_id";
-  }
-
-  if ($qt == 3) {                                  // long quiz
-    $courseId = $a->quiz->longquiz->course_id;
-    return "$base/course/$courseId/longquiz/$a->activity_id";
-  }
-
-  if ($qt == 4) {                                  // screening exam
-    $courseId = $a->quiz->screening->course_id;
-    return "$base/course/$courseId/screening/$a->activity_id";
-  }
-
-  return $base;                                    // fallback
+    // STUDENT
+    return "/home-tutor/course/{$piece['course']}/{$piece['tail']}";
 }
 
-/* =================================================
- | 1.  CALENDAR  ───────────────────────────────────*/
-$pivot = Carbon::create(
-  request('y', Carbon::now()->year),
-  request('m', Carbon::now()->month),
-  1
-);                                          // first day of month
-$today = Carbon::today();
+/* -------------------------------------------------
+ | collect the teacher’s sections  (for fast lookup)
+ * ------------------------------------------------*/
+$teachSections = CourseSection::where('teacher_id', $userId)
+    ->pluck('section_id', 'course_id');   // [ course_id => section_id ]
 
-/* ---------- announce & activity rows for this month ---------- */
-$y = $pivot->year;
-$m = $pivot->month;
+/* -------------------------------------------------
+ | build notifications (max 25) – announcements first
+ * ------------------------------------------------*/
 
-$calendar = [];
+$items = collect();
 
-/* announcements (event_type_id = 1) */
-CalendarEvent::whereYear('date', $y)
-  ->whereMonth('date', $m)
-  ->where('event_type_id', 1)             // ANNOUNCEMENT
-  ->get()
-  ->each(function ($e) use (&$calendar) {
-    $key = \Carbon\Carbon::parse($e->date)->format('Y-m-d');
-    $calendar[$key]['ev'][] = $e;
-  });
-
-/* activities that unlock this month (ignore CATCH_UP type-id 5) */
-Activities::whereYear('unlock_date', $y)
-  ->whereMonth('unlock_date', $m)
-  ->whereHas('quiz', fn($q) => $q->whereNot('quiz_type_id', 5))
-  ->get()
-  ->each(function ($a) use (&$calendar) {
-    $key = \Carbon\Carbon::parse($a->unlock_date)->format('Y-m-d');
-    $calendar[$key]['ac'][] = $a;
-  });
-
-/* =================================================
- | 2.  NOTIFICATIONS  ─────────────────────────────*/
-$now = Carbon::now();
-
-/* A) announcements first (max 10) */
-$notifications = CalendarEvent::where('date', '>=', $now)
+/* === A. Announcements (event_type_id = 1) ====================== */
+CalendarEvent::where('date', '>=', $now)
   ->where('event_type_id', 1)
   ->orderByDesc('is_urgent')
   ->orderBy('date')
   ->take(10)
   ->get()
-  ->map(fn($e) => [
-    'type' => 'announcement',
-    'title' => '[ ' . $e->title . ' ]',
-    'date' => Carbon::parse($e->date)->format('M j, Y g:i A'),
-    'url'  => "$base/announcement/$e->event_id",
-  ]);
+  ->each(function ($ev) use (&$items, $roleId) {
+      $items->push([
+        'title' => '[ANN] ' . $ev->title,
+        'date'  => Carbon::parse($ev->date)->format('M j, Y g:i A'),
+        'url'   => ($roleId === 3       // admin page lives elsewhere
+                    ? "/admin-panel/announcement/{$ev->event_id}"
+                    : "/home-tutor/announcement/{$ev->event_id}")
+      ]);
+  });
 
-/* -------- 1. SHORT + PRACTICE (quiz_type 1 & 2) ------------------*/
-$practice = Activities::with(['quiz', 'module'])          // only 1 & 2 live here
-  ->where('unlock_date', '<=', $now)
-  ->where('deadline_date', '>=', $now)
-  ->whereHas('quiz', fn($q) => $q->whereIn('quiz_type_id', [2]))
-  ->when(!$isTeacher, function ($q) use ($userId) {
-    $q->whereDoesntHave('results', fn($r) => $r->where('student_id', $userId)
-      ->where('is_kept', 1));
-  })
-  ->orderBy('deadline_date')
-  ->get()
-  ->map(fn($a) => [
-    'type' => 'quiz',
-    'title' => '[PRAC] ' . $a->activity_name,
-    'date' => 'Due: ' . Carbon::parse($a->deadline_date)->format('M j, Y g:i A'),
-    'url'  => activityUrl($a, $isTeacher, $base)               // helper from earlier
-  ]);
 
-$short = Activities::with(['quiz', 'module'])          // only 1 & 2 live here
-  ->where('unlock_date', '<=', $now)
-  ->where('deadline_date', '>=', $now)
-  ->whereHas('quiz', fn($q) => $q->whereIn('quiz_type_id', [1]))
-  ->when(!$isTeacher, function ($q) use ($userId) {
-    $q->whereDoesntHave('results', fn($r) => $r->where('student_id', $userId)
-      ->where('is_kept', 1));
-  })
-  ->orderBy('deadline_date')
-  ->get()
-  ->map(fn($a) => [
-    'type' => 'quiz',
-    'title' => '[SQ] ' . $a->activity_name,
-    'date' => 'Due: ' . Carbon::parse($a->deadline_date)->format('M j, Y g:i A'),
-    'url'  => activityUrl($a, $isTeacher, $base)               // helper from earlier
-  ]);
+foreach (['practice' => 2, 'short' => 1] as $label => $qt) {
 
-/* -------- 2. LONG-QUIZ   (own table) -----------------------------*/
-$long = \App\Models\LongQuizzes::query()
-  ->where('unlock_date', '<=', $now)
-  ->where('deadline_date', '>=', $now)
-  ->when(!$isTeacher, function ($q) use ($userId) {
-    $q->whereDoesntHave('keptResult', fn($r) => $r->where('student_id', $userId)
-      ->where('is_kept', 1));
-  })
-  ->orderBy('deadline_date')
-  ->get()
-  ->map(fn($l) => [
-    'type' => 'quiz',
-    'title' => '[LQ] ' . $l->long_quiz_name,
-    'date' => 'Due: ' . Carbon::parse($l->deadline_date)->format('M j, Y g:i A'),
-    'url'  => "$base/course/{$l->course_id}/longquiz/{$l->long_quiz_id}",
-  ]);
+    Activities::with(['quiz', 'module'])
+        ->where('unlock_date', '<=', $now)
+        ->where('deadline_date', '>=', $now)
+        ->whereHas('quiz', fn ($q) => $q->where('quiz_type_id', $qt))
+        ->when($roleId === 1, fn ($q) =>                        // students: hide if kept
+            $q->whereDoesntHave('results',
+                fn ($r) => $r->where('student_id', $userId)
+                              ->where('is_kept', 1))
+        )
+        ->orderBy('deadline_date')
+        ->get()
+        ->each(function ($a) use (
+            $label, $roleId, $teachSections, &$items
+        ) {
+            $course   = $a->module->course_id;
+            $section  = $teachSections[$course] ?? null;
+            $secName  = $section
+                        ? \App\Models\Sections::find($section)->section_name
+                        : '';
 
-/* -------- 3. SCREENING EXAM  (own table) ------------------------*/
-$screen = \App\Models\Screening::query()
-  ->when(!$isTeacher, function ($q) use ($userId) {
-    $q->whereDoesntHave('results', fn($r) => $r->where('student_id', $userId)
-      ->where('is_kept', 1));
-  })
-  ->get()
-  ->map(fn($s) => [
-    'type' => 'quiz',
-    'title' => '[SCREENING] ' . $s->screening_name,
-    'date' => '',
-    'url'  => "$base/course/{$s->course_id}/screening/{$s->screening_id}",
-  ]);
+            /* -------- build URL PER-ROLE -------- */
+            if ($roleId === 1) {                    // ── STUDENT
+                $url = "/home-tutor/course/$course/" .
+                       "module/{$a->module_id}/quiz/{$a->activity_id}";
+            } elseif ($roleId === 2) {              // ── TEACHER
+                $url = "/teachers-panel/course/$course/section/$section/" .
+                       "module/{$a->module_id}/" .
+                       ($label === 'practice' ? 'practicequiz' : 'shortquiz') .
+                       "/{$a->activity_id}";
+            } else {                                // ── ADMIN
+                $url = "/admin-panel/edit-content/course/$course/" .
+                       "module/{$a->module_id}/" .
+                       ($label === 'practice' ? 'practicequiz' : 'shortquiz') .
+                       "/{$a->activity_id}";
+            }
 
-/* -------- merge: announcements already in $notifications --------*/
-$notifications = collect($notifications);
-
-$practice = collect($practice);
-$short    = collect($short);
-$long     = collect($long);
-$screen   = collect($screen);
-if (!$isLocked) {
-  $notifications = $notifications
-    ->concat($practice)
-    ->concat($short)
-    ->concat($long)
-    ->concat($screen)
-    ->take(25);
-} else {
-  $notifications = $notifications
-    ->concat($screen)
-    ->take(25);
+            /* -------- push the row into the collection -------- */
+            $items->push([
+                'title' => ($secName ? "[$secName] " : '') .
+                           '[' . strtoupper($label[0]) .
+                           ($label === 'short' ? 'Q' : '') . "] " .
+                           $a->activity_name,
+                'date'  => 'Due: ' .
+                           \Carbon\Carbon::parse($a->deadline_date)
+                               ->format('M j, Y g:i A'),
+                'url'   => $url,
+            ]);
+        });
 }
-// announcements remain on top
+
+/* === C. Long-Quizzes ========================================= */
+LongQuizzes::where('unlock_date','<=',$now)
+  ->where('deadline_date','>=',$now)
+  ->when($roleId===1, fn($q)=>$q->whereDoesntHave('keptResult',
+        fn($r)=>$r->where('student_id',$userId)->where('is_kept',1)))
+  ->orderBy('deadline_date')
+  ->get()
+  ->each(function ($l) use (&$items,$teachSections,$roleId){
+      $course   = $l->course_id;
+      $section  = $teachSections[$course] ?? null;
+      $secName  = $section ? \App\Models\Sections::find($section)->section_name : '';
+
+      $items->push([
+        'title'=> ($secName?"[$secName] ":'').'[LQ] '.$l->long_quiz_name,
+        'date' =>'Due: '.Carbon::parse($l->deadline_date)->format('M j g:i A'),
+        'url'  => routeTo([
+                    'course'=>$course,
+                    'section'=>$section,
+                    'tail'=>"longquiz/{$l->long_quiz_id}"
+                ], $roleId)
+      ]);
+  });
+
+/* === D. Screening Exams (always available) ==================== */
+Screening::all()
+  ->each(function ($s) use (&$items,$teachSections,$roleId){
+      $course  = $s->course_id;
+      $section = $teachSections[$course] ?? null;
+      $secName = $section ? \App\Models\Sections::find($section)->section_name : '';
+
+      if ($roleId === 1){
+      $items->push([
+        'title'=> ($secName?"[$secName] ":'').'[SCREENING] '.$s->screening_name,
+        'date' => '',
+        'url'  => routeTo([
+                    'course'=>$course,
+                    'section'=>$section,
+                    'tail'=>"{$s->screening_id}"
+                ], $roleId)
+      ]);
+      } else {
+      $items->push([
+        'title'=> ($secName?"[$secName] ":'').'[SCREENING] '.$s->screening_name,
+        'date' => '',
+        'url'  => routeTo([
+                    'course'=>$course,
+                    'section'=>$section,
+                    'tail'=>"screening/{$s->screening_id}"
+                ], $roleId)
+      ]); }
+  });
+
+/* keep announcements first, max 25 overall */
+$notifications = $items->take(25);
 ?>
 
 <div class="content-container box-page">
@@ -208,7 +176,6 @@ if (!$isLocked) {
       <div id="details" style="margin-top:.5rem;font-size:13px;"></div>
     </div>
 
-    <?php if (session('role_id') == 1): ?>
       <div class="sidebar-box notifications">
         <h4 style="margin:.2rem 0 .6rem">Notifications</h4>
         <?php if ($notifications->isEmpty()): ?>
@@ -217,15 +184,14 @@ if (!$isLocked) {
 
           <?php foreach ($notifications as $n): ?>
             <div class="notif-block">
-              <a class="<?= $n['type'] ?>" href="<?= $n['url'] ?>">
+              <a href="<?= $n['url'] ?>">
                 <b class="notif-link"><?= htmlspecialchars($n['title']) ?></b>
               </a>
-              <small><?= $n['date'] ?></small>
+              <?php if ($n['date']): ?><small><?= $n['date'] ?></small><?php endif; ?>
             </div>
           <?php endforeach; ?>
 
         <?php endif; ?>
       </div>
-    <?php endif; ?>
   </div>
 </div>

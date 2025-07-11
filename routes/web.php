@@ -26,16 +26,16 @@ Route::get('/login', [LoginController::class, 'showLoginPage']);
 Route::post('/auth', [LoginController::class, 'login']);
 Route::get('/logout', [LoginController::class, 'logout']);
 
-Route::get ('/pin',                 [PinController::class,'show'])->name('pin.form');
-Route::post('/pin/send',            [PinController::class,'send'])->name('pin.send');
-Route::post('/pin/verify',          [PinController::class,'verify'])->name('pin.verify');
+Route::get('/pin',                 [PinController::class, 'show'])->name('pin.form');
+Route::post('/pin/send',            [PinController::class, 'send'])->name('pin.send');
+Route::post('/pin/verify',          [PinController::class, 'verify'])->name('pin.verify');
 
-Route::get ('/replace-password',    [PinController::class,'passwordForm'])->name('pw.form');
-Route::post('/replace-password',    [PinController::class,'passwordSave'])->name('pw.save');
+Route::get('/replace-password',    [PinController::class, 'passwordForm'])->name('pw.form');
+Route::post('/replace-password',    [PinController::class, 'passwordSave'])->name('pw.save');
 
 /* ---------- terms (after login) ---- */
-Route::get ('/terms',               [TermsController::class,'show'])->name('terms.form');
-Route::post('/terms/accept',        [TermsController::class,'accept'])->name('terms.accept');
+Route::get('/terms',               [TermsController::class, 'show'])->name('terms.form');
+Route::post('/terms/accept',        [TermsController::class, 'accept'])->name('terms.accept');
 
 
 // ADMIN 
@@ -198,7 +198,9 @@ Route::get('/inbox/sent',           [InboxController::class, 'sent'])->name('inb
 Route::get('/inbox/{inbox}',        [InboxController::class, 'show'])->name('inbox.show');
 Route::post('/inbox',                [InboxController::class, 'store'])->name('inbox.store');
 Route::post('/inbox/{inbox}/reply',  [InboxController::class, 'reply'])->name('inbox.reply');
+Route::post('/message/{message}',      [InboxController::class, 'destroy'])->name('message.destroy');
 Route::patch('/message/{message}/read', [InboxController::class, 'toggleRead'])->name('message.toggleRead');
+
 
 Route::prefix('home-tutor')->group(function () {
 

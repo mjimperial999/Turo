@@ -20,29 +20,31 @@ include __DIR__ . '/../partials/head.php'; ?>
     .student-rank:nth-child(odd) {
         background:
             linear-gradient(135deg,
-                rgb(236, 228, 252) 0%,
-                /* lavender-tint highlight */
-                rgb(215, 203, 246) 50%,
-                /* soft lilac              */
-                rgb(198, 186, 238) 100%
-                /* mellow violet            */
-            ) padding-box,
-            linear-gradient(135deg,
-                rgb(160, 127, 220) 0%,
-                rgb(139, 104, 202) 50%,
-                rgb(119, 85, 181) 100%) border-box;
-        border: 0.08rem solid transparent;
-        border-radius: 0.5rem;
-    }
-
-    .student-rank:nth-child(even) {
-        background:
-            linear-gradient(135deg,
                 rgb(247, 240, 237) 0%,
                 /* user-supplied base */
                 rgb(235, 222, 218) 50%,
                 /* gentle shade      */
                 rgb(224, 207, 203) 100%
+                /* deeper complement */
+            ) padding-box,
+            linear-gradient(135deg,
+                rgba(213, 147, 131, 1) 0%,
+                /* muted rose edge */
+                rgba(204, 137, 120, 1) 50%,
+                rgba(190, 123, 106, 1) 100%) border-box;
+        border: 0.08rem solid transparent;
+        border-radius: 0.5rem;
+
+    }
+
+    .student-rank:nth-child(even) {
+        background:
+            linear-gradient(135deg,
+                rgba(234, 223, 218, 1) 0%,
+                /* user-supplied base */
+                rgba(225, 212, 207, 1) 50%,
+                /* gentle shade      */
+                rgba(213, 197, 194, 1) 100%
                 /* deeper complement */
             ) padding-box,
             linear-gradient(135deg,
@@ -124,21 +126,38 @@ include __DIR__ . '/../partials/head.php'; ?>
         color: #d4af37;
     }
 
-    /* gold   */
     .medal-2 {
         color: #bec2cb;
     }
 
-    /* silver */
     .medal-3 {
         color: #cd7f32;
     }
 
-    /* bronze */
+    .student-rank.me {
+        position: relative;
+        box-shadow:
+            0 0 .35rem rgba(0, 0, 0, .25);
+    }
+
+    .student-rank.me::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border: .15rem solid #04060aff;
+        border-radius: .5rem;
+        pointer-events: none;
+        box-shadow:
+            0 0 .3rem rgba(0, 0, 0, 0.6),
+            0 0 .6rem rgba(0, 0, 0, 0.3);
+        z-index: 1;
+    }
+
+
     .me {
         background:
             linear-gradient(135deg, rgb(224, 209, 209) 0%, rgb(207, 196, 183) 50%, rgb(196, 187, 163) 100%) border-box;
-
+        border: 0.08rem solid transparent;
     }
 
     .pic {
@@ -187,6 +206,11 @@ include __DIR__ . '/../partials/head.php'; ?>
                         $rank = $idx + 1;
                         $cls  = $rank < 4 ? 'medal-' . $rank : '';
                         $rowC = $s->user_id === $me->user_id ? 'me' : '';
+                        
+                        $isMe    = $s->user_id === $me->user_id;
+                        $youTag  = $isMe ? '<span class="you-tag">(YOU)</span>' : '';
+
+                        $rowC  = $isMe ? 'me' : '';
                         $img  = empty($s->user->image?->image)
                             ? '/icons/no-img.jpg'
                             : "data:" . getMimeTypeFromBlob($s->user->image->image) . ";base64," . base64_encode($s->user->image->image);
@@ -195,7 +219,13 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <div class="student-details">
                                 <div class="rank <?= $cls ?>"><?= $rank ?></div>
                                 <div class="pic" style="background-image:url('<?= $img ?>')"></div>
-                                <div class="name"><?= e($s->user->first_name . ' ' . $s->user->last_name) ?></div>
+                                <div class="name">
+                                    <?php if ($s->user_id === $me->user_id): ?>
+                                        <b><?= e($s->user->first_name . ' ' . $s->user->last_name) . ' (YOU)' ?></b>
+                                    <?php else: ?>
+                                        <?= e($s->user->first_name . ' ' . $s->user->last_name) ?>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="student-points">
                                 <div><?= number_format($s->total_points) ?></div>

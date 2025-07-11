@@ -76,6 +76,12 @@ class TeacherController extends Controller
         return view('teacher.teachers-panel', compact('courseLinks', 'users',));
     }
 
+    private function seq(string $title): int
+    {
+        preg_match('/\d+/', $title, $m);
+        return empty($m) ? 0 : (int) $m[0];
+    }
+
     public function profilePage(Request $request)
     {
         /* ----------  auth guard (already there) ---------- */
@@ -236,29 +242,23 @@ class TeacherController extends Controller
         $users = Users::with('image')->findOrFail($userID);
 
         $course->load([
-            /* ───────── Modules ───────── */
-            'modules' => function ($q) {
-                $q->with('moduleimage')
-                    ->orderByRaw("
-              CAST( REGEXP_SUBSTR(module_name, '[0-9]+' ) AS UNSIGNED )
-          ");
-            },
-
-            /* ───────── Long Quizzes ───── */
-            'longquizzes' => function ($q) {
-                $q->orderByRaw("
-              CAST( REGEXP_SUBSTR(long_quiz_name, '[0-9]+' ) AS UNSIGNED )
-          ");
-            },
-
-            /* ───────── Screening Exams ─ */
-            'screenings' => function ($q) {
-                $q->orderByRaw("
-              CAST( REGEXP_SUBSTR(screening_name, '[0-9]+' ) AS UNSIGNED )
-          ");
-            },
+            'modules.moduleimage',
+            'longquizzes',
+            'screenings',
         ]);
 
+        /* ── PHP sorts ──────────────────────────────────────────── */
+        $course->modules     = $course->modules
+            ->sortBy(fn($m)  => $this->seq($m->module_name))
+            ->values();
+
+        $course->longquizzes = $course->longquizzes
+            ->sortBy(fn($lq) => $this->seq($lq->long_quiz_name))
+            ->values();
+
+        $course->screenings  = $course->screenings
+            ->sortBy(fn($s)  => $this->seq($s->screening_name))
+            ->values();
 
         return view('teacher.view-course', compact('course', 'users', 'students', 'section'));
     }
@@ -472,14 +472,12 @@ class TeacherController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $module->load([
-            'activities' => function ($q) {
-                $q->orderByRaw("
-            CAST( REGEXP_SUBSTR(activity_name, '[0-9]+' ) AS UNSIGNED )
-        ");
-            },
-            'activities.quiz'
-        ]);
+        $module->load(['activities.quiz']);
+
+        /* ── sort activities by numeric order in title ──────────── */
+        $module->activities = $module->activities
+            ->sortBy(fn($a) => $this->seq($a->activity_name))
+            ->values();
 
 
         return view('teacher.view-module', compact('course', 'section', 'module', 'users'));

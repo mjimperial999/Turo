@@ -77,6 +77,12 @@ class MainController extends Controller
         return null;
     }
 
+    private function seq(string $title): int
+    {
+        preg_match('/\d+/', $title, $m);
+        return empty($m) ? 0 : (int) $m[0];
+    }
+
     public function showAnnouncement($announcementID)
     {
         if ($redirect = $this->checkStudentAccess()) return $redirect;
@@ -158,38 +164,25 @@ class MainController extends Controller
 
         /* ---------- eager-load everything we need on *this* course row ---------- */
         $course->load([
-
-            /* ───────── MODULES ───────── */
-            'modules' => function ($q) use ($userID) {
-                $q->with([
-                    'moduleimage',
-                    'studentprogress' => fn($p) => $p->where('student_id', $userID),
-                ])
-                    ->orderByRaw("
-                    CAST( REGEXP_SUBSTR(module_name , '[0-9]+') AS UNSIGNED )
-              ");
-            },
-
-            /* ───────── LONG QUIZZES ──── */
-            'longquizzes' => function ($q) use ($userID) {
-                $q->with([
-                    'keptResult' => fn($r) => $r->where('student_id', $userID),
-                ])
-                    ->orderByRaw("
-                    CAST( REGEXP_SUBSTR(long_quiz_name , '[0-9]+') AS UNSIGNED )
-              ");
-            },
-
-            /* ───────── SCREENING EXAMS ─ */
-            'screenings' => function ($q) use ($userID) {
-                $q->with([
-                    'keptResult' => fn($r) => $r->where('student_id', $userID),
-                ])
-                    ->orderByRaw("
-                    CAST( REGEXP_SUBSTR(screening_name , '[0-9]+') AS UNSIGNED )
-              ");
-            },
+            'modules' => fn($q) => $q->with([
+                'moduleimage',
+                'studentprogress' => fn($p) => $p->where('student_id', $userID),
+            ]),
+            'longquizzes.keptResult' => fn($q) => $q->where('student_id', $userID),
+            'screenings.keptResult'  => fn($q) => $q->where('student_id', $userID),
         ]);
+
+        $course->modules    = $course->modules
+            ->sortBy(fn($m) => $this->seq($m->module_name))
+            ->values();
+
+        $course->longquizzes = $course->longquizzes
+            ->sortBy(fn($lq) => $this->seq($lq->long_quiz_name))
+            ->values();
+
+        $course->screenings  = $course->screenings
+            ->sortBy(fn($s) => $this->seq($s->screening_name))
+            ->values();
 
         /* ---------- pass to the view ---------- */
         return view('student.view-course', compact('course', 'users'));
@@ -206,16 +199,12 @@ class MainController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-        $module->load([
-            'activities' => function ($q) {
-                /* sort by the **first** number that appears in activity_name
-           e.g. “Activity 12 – …” comes after “Activity 2 – …”            */
-                $q->orderByRaw("
-            CAST( REGEXP_SUBSTR(activity_name, '[0-9]+' ) AS UNSIGNED )
-        ");
-            },
-            'activities.quiz'
-        ]);
+        $module->load(['activities.quiz']);
+
+        /* ── sort activities by numeric order in title ──────────── */
+        $module->activities = $module->activities
+            ->sortBy(fn($a) => $this->seq($a->activity_name))
+            ->values();
 
         return view('student.view-module', compact('course', 'module', 'users'));
     }
@@ -413,48 +402,49 @@ class MainController extends Controller
 
         $studentId = session('user_id');
 
-        /* ── keep all roll-ups fresh ───────────── */
         StudentAnalytics::refreshStudentSummary($studentId);
         AchievementService::evaluate($studentId);
 
-        /* ── basic user + grand-total row ───────── */
         $users   = Users::with('image')->findOrFail($studentId);
-        $overall = Students::findOrFail($studentId);       // <- has total_points
+        $overall = Students::findOrFail($studentId);
 
-        /* ── course-level aggregates (already built by StudentAnalytics) */
-        $courses = StudentProgress::with('course')         // eager-loads course name
+        $courses = StudentProgress::with('course')
             ->where('student_id', $studentId)
             ->get();
 
-        /* ── module averages (short+practice) for each course */
-        $modules = ModuleProgress::with('module')          // pull module name
+        $modules = ModuleProgress::with('module')
             ->where('student_id', $studentId)
-            ->orderByRaw("
-                    CAST( REGEXP_SUBSTR(module_name , '[0-9]+') AS UNSIGNED ")
             ->get()
-            ->groupBy('course_id');                 // ⇒ $modules[<course>][]
+            ->sortBy(function ($row) {
 
-        /* ── practice-quiz breakdown inside every module */
+                return (int) preg_replace('/^.*?(\d+).*$/', '$1', $row->module->module_name);
+            })
+            ->values()
+            ->groupBy('course_id');
+
         $practice = AssessmentResult::query()
-            ->from('assessmentresult as ar')                 // alias main table
-            ->join('activity as a',   'ar.activity_id', '=', 'a.activity_id')
-            ->join('quiz as q',       'a.activity_id',  '=', 'q.activity_id')
+            ->from('assessmentresult as ar')
+            ->join('activity as a',  'ar.activity_id', '=', 'a.activity_id')
+            ->join('quiz as q',      'a.activity_id',  '=', 'q.activity_id')
             ->selectRaw('
-        a.module_id                              as module_id,
+        a.module_id,
         ar.activity_id,
-        a.activity_name                          as quiz_name,
-        AVG(ar.score_percentage)                 as avg
-    ')
+        a.activity_name as quiz_name,
+        AVG(ar.score_percentage) as avg')
             ->where([
                 ['ar.student_id',  $studentId],
                 ['ar.is_kept',     1],
-                ['q.quiz_type_id', 2],                   // PRACTICE
+                ['q.quiz_type_id', 2],
             ])
             ->groupBy('a.module_id', 'ar.activity_id', 'a.activity_name')
             ->get()
+            ->sortBy([
+                fn($row) => (int) preg_replace('/^.*?(\d+).*$/', '$1', optional($row->module)->module_name ?? ''),
+                fn($row) => $row->quiz_name,
+            ])
             ->groupBy('module_id');
 
-        /* ── short-quiz breakdown (same idea, quiz_type_id = 1) */
+
         $short = AssessmentResult::query()
             ->from('assessmentresult as ar')
             ->join('activity as a', 'ar.activity_id', '=', 'a.activity_id')
@@ -462,83 +452,74 @@ class MainController extends Controller
             ->selectRaw('
         a.module_id,
         ar.activity_id,
-        a.activity_name      as quiz_name,
-        AVG(ar.score_percentage) as avg
-    ')
+        a.activity_name as quiz_name,
+        AVG(ar.score_percentage) as avg')
             ->where([
                 ['ar.student_id',  $studentId],
                 ['ar.is_kept',     1],
-                ['q.quiz_type_id', 1],          // SHORT
+                ['q.quiz_type_id', 1],
             ])
             ->groupBy('a.module_id', 'ar.activity_id', 'a.activity_name')
             ->get()
+            ->sortBy([
+                fn($row) => (int) preg_replace('/^.*?(\d+).*$/', '$1', optional($row->module)->module_name ?? ''),
+                fn($row) => $row->quiz_name,
+            ])
             ->groupBy('module_id');
 
-        /* ── long-quiz averages & per-quiz rows (course-scoped) */
+
         $long = LongQuizAssessmentResult::query()
-            ->selectRaw(
-                'longquiz.course_id,
-             longquiz.long_quiz_id,
-             longquiz.long_quiz_name as quiz_name,
-             AVG(score_percentage)   as avg'
-            )
-            ->join('longquiz', 'long_assessmentresult.long_quiz_id', '=', 'longquiz.long_quiz_id')
+            ->join('longquiz as lq', 'long_assessmentresult.long_quiz_id', '=', 'lq.long_quiz_id')
+            ->selectRaw('
+        lq.course_id,
+        lq.long_quiz_id,
+        lq.long_quiz_name as quiz_name,
+        AVG(score_percentage) as avg')
             ->where([
                 ['student_id', $studentId],
-                ['is_kept',    1]
+                ['is_kept',    1],
             ])
-            ->groupBy('longquiz.course_id', 'longquiz.long_quiz_id', 'longquiz.long_quiz_name')
+            ->groupBy('lq.course_id', 'lq.long_quiz_id', 'lq.long_quiz_name')
             ->get()
-            ->groupBy('course_id');        // $long[<course>][]
+            ->sortBy(fn($row) => (int) preg_replace('/^.*?(\d+).*$/', '$1', $row->quiz_name))
+            ->groupBy('course_id');
 
-        /* ── best screening-exam score per exam (optional) */
         $screening = ScreeningResult::query()
-            ->join(
-                'screening',      // ← grab title / course id
-                'screening.screening_id',
-                '=',
-                'screeningresult.screening_id'
-            )
+            ->join('screening as s', 's.screening_id', '=', 'screeningresult.screening_id')
             ->where('screeningresult.student_id', $studentId)
-            ->groupBy(
-                'screening.screening_id',
-                'screening.course_id',
-                'screening.screening_name'
-            )
-            ->select(
-                'screening.screening_id',
-                'screening.course_id',
-                'screening.screening_name',
-                DB::raw('MAX(score_percentage) as best_score')
-            )
+            ->groupBy('s.screening_id', 's.course_id', 's.screening_name')
+            ->selectRaw('
+        s.screening_id,
+        s.course_id,
+        s.screening_name,
+        MAX(score_percentage) as best_score')
             ->get()
-            ->groupBy('course_id');           // $screening[<course>][]
+            ->sortBy(fn($row) => (int) preg_replace('/^.*?(\d+).*$/', '$1', $row->screening_name))
+            ->groupBy('course_id');
 
-        $ownedAchIds = StudentAchievements::where('student_id', $studentId)
-            ->pluck('achievement_id')
-            ->toArray();                       // quick lookup array
+        $ownedAch = StudentAchievements::where('student_id', $studentId)
+            ->get()
+            ->keyBy('achievement_id');
 
-        $ownedBadgeIds = StudentBadges::where('student_id', $studentId)
-            ->pluck('badge_id')
-            ->toArray();
-
-        /* ----------------------------------------------------------
-     | 3.  Load *all* achievements with their condition details
-     |     and add an `owned` attribute for easy checks in Blade
-     * -------------------------------------------------------- */
-        $achievements = Achievements::with('conditionType')        // ->conditionType relation
+        $achievements = Achievements::with('conditionType')
             ->orderBy('achievement_id')
             ->get()
-            ->map(function ($a) use ($ownedAchIds) {
-                $a->owned = in_array($a->achievement_id, $ownedAchIds);
+            ->map(function ($a) use ($ownedAch) {
+                $row = $ownedAch->get($a->achievement_id);
+                $a->owned       = (bool) $row;
+                $a->unlocked_at = $row?->unlocked_at;
                 return $a;
             });
 
-        /* badges -------------------------------------------------- */
+        $ownedBadge = StudentBadges::where('student_id', $studentId)
+            ->get()                                 // student_id | badge_id | unlocked_at
+            ->keyBy('badge_id');
+
         $badges = Badges::orderBy('points_required')
             ->get()
-            ->map(function ($b) use ($ownedBadgeIds) {
-                $b->owned = in_array($b->badge_id, $ownedBadgeIds);
+            ->map(function ($b) use ($ownedBadge) {
+                $row = $ownedBadge->get($b->badge_id);
+                $b->owned       = (bool) $row;
                 return $b;
             });
 

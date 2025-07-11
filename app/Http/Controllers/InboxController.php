@@ -224,4 +224,27 @@ class InboxController extends Controller
 
         return response()->noContent();
     }
+
+    public function destroy(Message $message)
+    {
+        $userID = session('user_id');
+
+        // ① author OR any participant may delete
+        $hasAccess = $message->sender_id === $userID
+            || $message->inbox
+            ->participants
+            ->contains('user_id', $userID);
+
+        abort_unless($hasAccess, 403);
+
+        DB::transaction(function () use ($message) {
+            /* child rows first (safety if FK lacks CASCADE) */
+            MessageUserState::where('message_id', $message->message_id)->delete();
+
+            /* parent row  */
+            $message->delete();
+        });
+
+        return back()->with('success', 'Message deleted.');
+    }
 }
