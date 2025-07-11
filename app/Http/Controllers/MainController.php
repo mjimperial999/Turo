@@ -545,35 +545,44 @@ class MainController extends Controller
     {
         $studentId = session('user_id');
 
-        /* 1. Fetch the caller’s section  */
-        $me = Students::with('user')->findOrFail($studentId);
+        /* 1. caller’s section */
+        $me        = Students::with('user')->findOrFail($studentId);
         $sectionId = $me->section_id;
 
-        $users = Users::with('image')->findOrFail($studentId);
+        $users     = Users::with('image')->findOrFail($studentId);
 
-        /* 2. Rank everyone in that section by total_points DESC  */
-        $ranked = Students::with('user')                // eager-load name + pic
+        /* 2. everyone in that section, HIGH-to-LOW points               */
+        $ranked = Students::with('user')
             ->where('section_id', $sectionId)
             ->orderByDesc('total_points')
-            ->orderBy('user_id')                        // deterministic tie-break
+            ->orderBy('user_id')          // deterministic tie-break
             ->get()
-            ->values();                                 // fresh 0-based index
+            ->values();                   // fresh 0-based index
 
-        /* 3. Determine my rank (1-based)                    */
+        /* 3. assign “tied” ranks (1-based, duplicates allowed)           */
+        $prevPts = null;
+        $rank    = 0;
+
+        foreach ($ranked as $idx => $row) {
+            if ($prevPts === null || $row->total_points < $prevPts) {
+                // points dropped → next rank is current position +1
+                $rank = $idx + 1;
+            }
+            $row->rank = $rank;           // attach for the view
+            $prevPts   = $row->total_points;
+        }
+
+        /* 4. my own rank                                                  */
         $myRank = optional(
             $ranked->firstWhere('user_id', $studentId)
-        )->index ?? null;
-        $myRank = $myRank !== null ? $myRank + 1 : null;
+        )->rank;
 
-        /* 4. Slice the Top-15 for display                  */
+        /* 5. Top-15 slice (ties can produce duplicate ranks)              */
         $top15 = $ranked->take(15);
 
-        return view('student.student-leaderboards', compact(
-            'top15',
-            'me',
-            'myRank',
-            'ranked',
-            'users'
-        ));
+        return view(
+            'student.student-leaderboards',
+            compact('top15', 'me', 'myRank', 'ranked', 'users')
+        );
     }
 }

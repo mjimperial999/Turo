@@ -298,20 +298,20 @@ class TeacherController extends Controller
 
     /* ========= helpers ========= */
 
-    private function overallRow($courseId, $studentId)
+    private function overallRow(string $courseId, string $studentId)
     {
         return StudentProgress::query()
             ->selectRaw('
             total_points,
-            RANK() OVER (
-                PARTITION BY course_id
-                ORDER BY total_points DESC
+            (
+                SELECT COUNT(*) + 1
+                FROM studentprogress AS sp2
+                WHERE sp2.course_id     = studentprogress.course_id
+                  AND sp2.total_points  > studentprogress.total_points
             ) AS rank
         ')
-            ->where([
-                ['course_id',  $courseId],
-                ['student_id', $studentId],
-            ])
+            ->where('course_id',  $courseId)
+            ->where('student_id', $studentId)
             ->first();
     }
 

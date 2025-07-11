@@ -86,7 +86,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <h6> > </h6>
                         </div>
                         <div class="text title">
-                            <h6><?= $course->course_name ?></h6>
+                            <h6><?= $course->course_name ?> (Section: <?= strtoupper($section->section_name) ?>)</h6>
                             <div class="line active"></div>
                         </div>
                     </div>

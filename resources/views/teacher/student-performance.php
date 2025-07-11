@@ -77,7 +77,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                     <div class="text title">
                         <h6>
                             <a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>">
-                                <?= $course->course_name ?> (Sect <?= strtoupper($section->section_id) ?>)
+                                <?= $course->course_name ?> (Section: <?= strtoupper($section->section_name) ?>)
                             </a>
                         </h6>
                         <div class="line"></div>

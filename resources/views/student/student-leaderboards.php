@@ -57,7 +57,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
     }
 
-    .student-rank:nth-child(1) {
+    .student-rank.medal-1 {
         background:
             /* inner fill */
             linear-gradient(135deg,
@@ -78,7 +78,7 @@ include __DIR__ . '/../partials/head.php'; ?>
         border-radius: 0.5rem;
     }
 
-    .student-rank:nth-child(2) {
+    .student-rank.medal-2 {
         background:
             linear-gradient(135deg,
                 rgb(240, 240, 245) 0%,
@@ -97,7 +97,7 @@ include __DIR__ . '/../partials/head.php'; ?>
         border-radius: 0.5rem;
     }
 
-    .student-rank:nth-child(3) {
+    .student-rank.medal-3 {
         background:
             linear-gradient(135deg,
                 rgb(247, 225, 205) 0%,
@@ -122,15 +122,15 @@ include __DIR__ . '/../partials/head.php'; ?>
         text-align: right;
     }
 
-    .medal-1 {
+    .medal-1-color {
         color: #d4af37;
     }
 
-    .medal-2 {
+    .medal-2-color {
         color: #bec2cb;
     }
 
-    .medal-3 {
+    .medal-3-color {
         color: #cd7f32;
     }
 
@@ -202,22 +202,20 @@ include __DIR__ . '/../partials/head.php'; ?>
                 </div>
 
                 <div class="content padding">
-                    <?php foreach ($top15 as $idx => $s):
-                        $rank = $idx + 1;
+                    <?php foreach ($top15 as $s):
+                        $rank = $s->rank;                      // ← use the pre-computed rank
                         $cls  = $rank < 4 ? 'medal-' . $rank : '';
-                        $rowC = $s->user_id === $me->user_id ? 'me' : '';
-                        
-                        $isMe    = $s->user_id === $me->user_id;
-                        $youTag  = $isMe ? '<span class="you-tag">(YOU)</span>' : '';
+                        $isMe = $s->user_id === $me->user_id;
+                        $rowC = $isMe ? 'me' : '';
 
-                        $rowC  = $isMe ? 'me' : '';
                         $img  = empty($s->user->image?->image)
                             ? '/icons/no-img.jpg'
-                            : "data:" . getMimeTypeFromBlob($s->user->image->image) . ";base64," . base64_encode($s->user->image->image);
+                            : "data:" . getMimeTypeFromBlob($s->user->image->image) .
+                            ";base64," . base64_encode($s->user->image->image);
                     ?>
-                        <div class="student-rank <?= $rowC ?>">
+                        <div class="student-rank <?= $rowC . ' ' . $cls?> ">
                             <div class="student-details">
-                                <div class="rank <?= $cls ?>"><?= $rank ?></div>
+                                <div class="rank <?= $cls . '-color' ?>"><?= $rank ?></div>
                                 <div class="pic" style="background-image:url('<?= $img ?>')"></div>
                                 <div class="name">
                                     <?php if ($s->user_id === $me->user_id): ?>
