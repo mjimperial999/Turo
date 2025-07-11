@@ -137,7 +137,7 @@ include __DIR__ . '/../partials/head.php';
 
                     <hr class="divider-hr">
 
-                    <p class="description"><b>INSTUCTIONS:</b><br><?= nl2br(htmlspecialchars($longquiz->long_quiz_instructions)) ?></p>
+                    <p class="description"><b>INSTUCTIONS:</b><br><?= ($longquiz->long_quiz_instructions) ?></p>
 
 
                 </div>

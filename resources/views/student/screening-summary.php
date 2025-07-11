@@ -301,8 +301,10 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                             <div class="content padding">
                                 <div class="screening-results-container-results">
-                                    <p> You have used all three attempts.<br>
-                                        You will now enter the personalised catch-up program.</p>
+                                    <p> You have used all three attempts, and did not reach a score high enough to pass.<br>
+                                        You will now enter the personalised catch-up program to help you aid your academic studies.<br><br>
+                                        This program will help you understand your lessons and catch-up to your classes and curriculum.
+                                        There will be elements, such as the points system, leaderboards, achievements, and badges to help you encourage honing your skills and maximize your scores.</p>
                                 </div>
                                 <a class="btn screening-resources" href="/home-tutor">Begin Catch-up Program</a>
                             </div>

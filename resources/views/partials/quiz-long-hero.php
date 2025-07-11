@@ -31,18 +31,19 @@ if (session('role_id') == 1) {
     } else {
         echo
         '<div class="quiz-flex-box locked">
-        <div class="quiz-box">
+        <div class="quiz-box long">
             <div class="quiz-title">
                 <div class="logo">
                     <img class="svg" src="/icons/long-quiz.svg" width="42em" height="auto" />
                 </div>
                 <div class="text title">
                     <h6>' . $longquiz->long_quiz_name . ' (LOCKED)</h6>
+                    <p>' . $description . '</p>
                 </div>
             </div>
             <div class="quiz-score">
                 <div class="text title">
-                    <h6>' . $percentage . '</h6>
+                    <h6 style="--percentage:' . $color . '" >' . $percentage . '%</h6>
                 </div>
             </div>
         </div>

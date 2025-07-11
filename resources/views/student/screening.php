@@ -121,7 +121,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     <br>
                                 </div>
                                 <hr class="divider-hr">
-                                <p class="description">Instructions:<br> <?= nl2br(htmlspecialchars($screening->screening_instructions)) ?></p><br>
+                                <p class="description">Instructions:<br> <?= $screening->screening_instructions ?></p><br>
                             </div>
                             <div class="quiz-graphics">
                                 <div class="percentage-container">

@@ -31,7 +31,7 @@ if (session('role_id') == 1) {
     } else {
         echo
         '<div class="quiz-flex-box locked">
-        <div class="quiz-box">
+        <div class="quiz-box practice">
             <div class="quiz-title">
                 <div class="logo">
                     <img class="svg" src="/icons/practice-quiz.svg" width="42em" height="auto" />
@@ -43,7 +43,7 @@ if (session('role_id') == 1) {
             </div>
             <div class="quiz-score">
                 <div class="text title">
-                    <h6>' . $percentage . '</h6>
+                    <h6 style="--percentage:' . $color . '" >' . $percentage . '%</h6>
                 </div>
             </div>
         </div>

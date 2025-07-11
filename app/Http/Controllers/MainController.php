@@ -429,6 +429,8 @@ class MainController extends Controller
         /* ── module averages (short+practice) for each course */
         $modules = ModuleProgress::with('module')          // pull module name
             ->where('student_id', $studentId)
+            ->orderByRaw("
+                    CAST( REGEXP_SUBSTR(module_name , '[0-9]+') AS UNSIGNED ")
             ->get()
             ->groupBy('course_id');                 // ⇒ $modules[<course>][]
 
