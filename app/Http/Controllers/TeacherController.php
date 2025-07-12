@@ -38,7 +38,8 @@ use App\Models\{
     LongQuizAssessmentResult,
     ScreeningResult,
     LearningResource,
-    UserImages
+    UserImages,
+    CalendarEvent
 };
 
 class TeacherController extends Controller
@@ -58,6 +59,17 @@ class TeacherController extends Controller
         }
 
         return null;
+    }
+
+    public function showAnnouncement($announcementID)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+        $announcement = CalendarEvent::findOrFail($announcementID);
+
+        return view('teacher.view-annoucement', compact('users', 'announcement'));
     }
 
     public function teacherPanel()
@@ -125,18 +137,6 @@ class TeacherController extends Controller
             ])->exists();
 
         abort_if(!$owns, 403, 'Not assigned to this section.');
-    }
-
-    private function studentsInSection($sectionId)
-    {
-        return Students::query()
-            ->select('student.*')
-            ->join('user', 'student.user_id', '=', 'user.user_id')
-            ->where('student.section_id', $sectionId)
-            ->orderBy('user.last_name')
-            ->orderBy('user.first_name')
-            ->with('user')                           // keep eager load
-            ->get();
     }
 
     // ---------------------------------------------
@@ -234,9 +234,22 @@ class TeacherController extends Controller
 
         $sectionID = $section->section_id;
 
-        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+        $this->assertOwnsCourseSection($course->course_id, $sectionID);
 
-        $students = $this->studentsInSection($sectionID);
+        $students = Students::query()
+            ->with([
+                'user.image',
+            ])
+            ->leftJoin('studentprogress as sp', function ($q) use ($course) {
+                $q->on('sp.student_id', '=', 'student.user_id')
+                    ->where('sp.course_id', '=', $course->course_id);
+            })
+            ->where('section_id', $sectionID)
+            ->join('user', 'user.user_id', '=', 'student.user_id')
+            ->orderBy('user.last_name')
+            ->orderBy('user.first_name')
+            ->select('student.*')
+            ->get();
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);

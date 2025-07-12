@@ -82,6 +82,13 @@
                 </div>
             <?php endforeach; ?>
         <?php endif; /* screening */ ?>
-
+        <div class="performance-course-details">
+            <div class="performance-course-name">
+                <b>Points Garnered:</b>
+            </div>
+            <span class="score" style="color: #343434ff;">
+                <b><?= htmlspecialchars($c->total_points) ?></b>
+            </span>
+        </div>
     <?php endforeach; ?>
 </div>

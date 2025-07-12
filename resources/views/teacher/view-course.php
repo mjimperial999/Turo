@@ -120,11 +120,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                 No modules available for this course.
                             </div>
 
-                        <?php else: foreach (
-                                $course->modules->sortBy(
-                                    fn($m) => (int) preg_replace('/\D/', '', $m->module_name) ?: 9999
-                                ) as $module
-                            ):
+                        <?php else: foreach ($course->modules as $module):
                                 include __DIR__ . '/../partials/module-hero.php';
                             endforeach;
                         endif; ?>
@@ -159,11 +155,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                 No long quizzes available for this course.
                             </div>
 
-                        <?php else: foreach (
-                                $course->longquizzes->sortBy(
-                                    fn($m) => (int) preg_replace('/\D/', '', $m->long_quiz_name) ?: 9999
-                                ) as $longquiz
-                            ):
+                        <?php else: foreach ($course->longquizzes as $longquiz):
                                 include __DIR__ . '/../partials/time-lock-check-modules.php';
                                 include __DIR__ . '/../partials/quiz-long-hero.php';
 
@@ -204,11 +196,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                 No screening exams available for this course.
                             </div>
 
-                        <?php else: foreach (
-                                $course->screenings->sortBy(
-                                    fn($m) => (int) preg_replace('/\D/', '', $m->screening_name) ?: 9999
-                                ) as $screening
-                            ):
+                        <?php else: foreach ($course->screenings as $screening):
                                 $blobData = $screening->image->image ?? null;
 
                                 if (!$blobData) {
@@ -233,7 +221,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                     <div class="header">
                         <div class="text title">
-                            <h5> Students – <?= htmlspecialchars($section->section_name) ?></h5>
+                            <h5> Students – <?= e($section->section_name) ?></h5>
                         </div>
                     </div>
 
@@ -261,10 +249,10 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     <td>
                                         <div style="display:flex;align-items:center">
                                             <div class="std-img" style="background-image:url('<?= $avatar ?>')"></div>
-                                            <?= htmlspecialchars($s->user->last_name . ', ' . $s->user->first_name) ?>
+                                            <?= e($s->user->last_name . ', ' . $s->user->first_name) ?>
                                         </div>
                                     </td>
-                                    <td><?= number_format($s->total_points) ?></td>
+                                    <td><?= $s->total_points ?? 0 ?></td>
                                     <td>
                                         <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/student/<?= $s->user_id ?>/performance" method="GET">
                                             <button class="edit">

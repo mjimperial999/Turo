@@ -59,8 +59,11 @@ if (session('role_id') == 1) {
                     <img class="svg" src="/icons/long-quiz.svg" width="42em" height="auto" />
                 </div>
                 <div class="text title">
-                    <h6>' . $longquiz->long_quiz_name . '</h6>
-                </div>
+                    <h6>' . $longquiz->long_quiz_name . '</h6>';
+                    if (!$isAvailable) {
+                    echo '<p>' . $description . '</p>';
+                    }
+            echo '</div>
             </div>
             <div class="quiz-score">
                 <div class="text title">
@@ -97,8 +100,11 @@ if (session('role_id') == 1) {
                     <img class="svg" src="/icons/long-quiz.svg" width="42em" height="auto" />
                 </div>
                 <div class="text title">
-                    <h6>' . $longquiz->long_quiz_name . '</h6>
-                </div>
+                    <h6>' . $longquiz->long_quiz_name . '</h6>';
+                    if (!$isAvailable) {
+                    echo '<p>' . $description . '</p>';
+                    }
+                echo '</div>
             </div>
             <div class="quiz-score">
                 <div class="text title">

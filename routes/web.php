@@ -382,6 +382,8 @@ Route::prefix('teachers-panel')->group(function () {
 });
 
 Route::get('/home-tutor/announcement/{annoucement}', [MainController::class, 'showAnnouncement']);
+Route::get('/teachers-panel/announcement/{annoucement}', [TeacherController::class, 'showAnnouncement']);
+Route::get('/admin-panel/announcement/{annoucement}', [AdminController::class, 'showAnnouncement']);
 
 // TEST
 Route::get('/test-session', function () {

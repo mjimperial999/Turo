@@ -3,7 +3,6 @@
 </footer>
 </body>
 <script>
-
     /* ─── navigation bar ───────*/
     const navMobile = document.getElementById('primary-navigation');
     const toggle = document.querySelector('.nav-toggle');
@@ -29,11 +28,24 @@
 
     /* ─── click calendar tile to display activities ───────*/
     document.querySelectorAll('.calendar td').forEach(td => {
-        td.addEventListener('click', () => {
-            const copy = td.cloneNode(true);
-            copy.querySelectorAll('.num').forEach(n => n.remove());
-            document.getElementById('details').innerHTML =
-                copy.innerHTML.trim() ? copy.innerHTML : '<em>No items this day</em>';
+    td.onclick = () => {
+
+        /* 1️⃣ map every recognised marker to its icon + label */
+        const map = {
+            '•': { icon: '●', label: 'Unlocks'       },   // unchanged
+            '×': { icon: '✕', label: 'Due This Day'  },   // unchanged
+            '‼': { icon: '‼', label: 'Announcement'  }    // NEW
+        };
+
+        /* 2️⃣ build the detail pane */
+        const lines = [...td.querySelectorAll('.entry')].map(e => {
+            const m = map[e.dataset.marker] ?? { icon: e.dataset.marker, label: '' };
+            return `<div>${m.icon} <b>${m.label}</b> – ${e.dataset.text}</div>`;
         });
-    });
+
+        /* 3️⃣ inject or fallback */
+        document.getElementById('details').innerHTML =
+            lines.length ? lines.join('') : '<em>No items this day</em>';
+    };
+});
 </script>

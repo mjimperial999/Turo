@@ -44,7 +44,8 @@ use App\Models\{
     LongQuizAssessmentResult,
     ScreeningResult,
     LearningResource,
-    UserImages
+    UserImages,
+    CalendarEvent
 };
 
 class AdminController extends Controller
@@ -95,6 +96,17 @@ class AdminController extends Controller
     {
         preg_match('/\d+/', $title, $m);
         return empty($m) ? 0 : (int) $m[0];
+    }
+
+    public function showAnnouncement($announcementID)
+    {
+        if ($redirect = $this->checkAdminAccess()) return $redirect;
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+        $announcement = CalendarEvent::findOrFail($announcementID);
+
+        return view('admin.view-annoucement', compact('users', 'announcement'));
     }
 
     public function studentList(Request $req)

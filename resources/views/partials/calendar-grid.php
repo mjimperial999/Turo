@@ -1,85 +1,135 @@
 <?php
-/* -------------------------------------------------
- * Calendar grid – 100 % self-contained
- * ------------------------------------------------*/
+
 use Carbon\Carbon;
 
-/* ---------- pick month to show ---------- */
-$year  = (int) ($_GET['y'] ?? Carbon::now()->year);
-$month = (int) ($_GET['m'] ?? Carbon::now()->month);
-$pivot = Carbon::create($year, $month, 1);     // first day of month
+/* ---------- pick month ---------- */
+
+$year  = (int) ($_GET['y'] ?? date('Y'));
+$month = (int) ($_GET['m'] ?? date('n'));
+$first = Carbon::create($year, $month, 1);
 $today = Carbon::today();
 
-/* ---------- build a keyed map of events / activities ----------
-   ( → populate $calendar['YYYY-MM-DD']['ev'|'ac'][] = … )
-   NB: replace the example arrays with whatever you fetch
----------------------------------------------------------------*/
-$calendar = [];
-
-/* demo – you probably already fill this in another file
-$calendar['2025-07-14']['ev'][] = (object)['title'=>'System maintenance'];
-$calendar['2025-07-22']['ac'][] = (object)['activity_name'=>'[PRAC] Module 3 Quiz'];
-*/
-
-/* ---------- date helpers ---------- */
-function keyFor(Carbon $c){ return $c->format('Y-m-d'); }
-
-/* span to display: start on the **Sunday** before month-start,
-   finish on the **Saturday** after month-end                    */
-$start = $pivot->copy()->startOfWeek(Carbon::SUNDAY);
-$end   = $pivot->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
-
-/* total weeks = rows in the grid */
+/* helpers */
+$key   = fn(Carbon $c) => $c->format('Y-m-d');
+$start = $first->copy()->startOfWeek();
+$end   = $first->copy()->endOfMonth()->endOfWeek();
 $weeks = $start->diffInWeeks($end) + 1;
+
 ?>
 <style>
-    table.calendar   {width:100%;border-collapse:collapse;font-family:Albert-Sans,sans-serif}
-    .calendar th,.calendar td{border:1px solid #ddd;padding:.25rem;font-size:.8rem}
-    .calendar th     {background:#eee;font-size:.9rem;text-align:center}
-    .calendar .num   {font-weight:700}
-    .calendar .today {background:#fde9e9}
-    .calendar .entry {display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;margin:.1rem 0}
-    .calendar .ev    {color:#c00}
-    .calendar .ac    {color:#1976d2}
+    table.calendar {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: Albert-Sans, sans-serif
+    }
+
+    .calendar th,
+    .calendar td {
+        border: 1px solid #ddd;
+        padding: .25rem;
+        font-size: .8rem;
+        vertical-align: top
+    }
+
+    .calendar th {
+        background: #eee;
+        font-size: .9rem;
+        text-align: center
+    }
+
+    .calendar .num {
+        font-weight: 700
+    }
+
+    .calendar .today {
+        background: #fde9e9
+    }
+
+    /* colour text */
+    .calendar .prc {
+        color: #e67e22
+    }
+
+    /* orange   */
+    .calendar .sht {
+        color: #2e7d32
+    }
+
+    /* green    */
+    .calendar .lng {
+        color: #1565c0
+    }
+
+    /* blue     */
+    .calendar .ann {
+        color: #c0392b;
+    }
+
+    /* red text  */
+    .calendar .urgent {
+        font-weight: 700;
+    }
+
+    /* bold      */
+    .calendar .ann-bg {
+        background: #fff8c5
+    }
+
+    /* yellow cell */
+    .calendar .ann-urg {
+        border: 3px solid #c0392b !important;
+    }
+
+    /* urgent border */
+
+    /* cell tint */
+    .calendar .entry {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 11px
+    }
 </style>
 
 <!-- ===== month header with ‹ › nav ===== -->
-<h4 style="text-align:center;margin:0 0 .4rem">
-    <?php
-      $prev = $pivot->copy()->subMonth();
-      $next = $pivot->copy()->addMonth();
-    ?>
+<h4 style="text-align:center;margin:.3rem 0">
+    <?php $prev = $first->copy()->subMonth();
+    $next = $first->copy()->addMonth(); ?>
     <a href="?y=<?= $prev->year ?>&m=<?= $prev->month ?>">&#9664;</a>
-    <?= $pivot->format('F Y') ?>
+    <?= $first->format('F Y') ?>
     <a href="?y=<?= $next->year ?>&m=<?= $next->month ?>">&#9654;</a>
 </h4>
 
 <table class="calendar">
-    <tr><?php foreach(['Su','Mo','Tu','We','Th','Fr','Sa'] as $d) echo "<th>$d</th>"; ?></tr>
+    <tr><?php foreach (['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as $d) echo "<th>$d</th>"; ?></tr>
     <?php
     $cur = $start->copy();
-    for($w=0;$w<$weeks;$w++):
-        echo "<tr>";
-        for($d=0;$d<7;$d++, $cur->addDay()):
-            $key = keyFor($cur);
-            $inMonth = $cur->month === $month;
-            $isToday = $cur->eq($today);
-
-            echo '<td'.($isToday?' class="today"':'').'>';
-            if($inMonth){
-                echo '<span class="num">'.$cur->day.'</span>';
-
-                foreach(($calendar[$key]['ev'] ?? []) as $e)
-                    echo '<span class="entry ev">'.e($e->title).'</span>';
-
-                foreach(($calendar[$key]['ac'] ?? []) as $a)
-                    echo '<span class="entry ac">'.e($a->activity_name).'</span>';
+    for ($w = 0; $w < $weeks; $w++):
+        echo '<tr>';
+        for ($d = 0; $d < 7; $d++, $cur->addDay()):
+            $dayKey = $key($cur);
+            $inMonth = ($cur->month == $month);
+            $cellItems = $calendar[$dayKey] ?? [];
+            $hasAnn = collect($cellItems)->contains(fn($i) => str_contains($i['class'], 'ann'));
+            $hasUrg = collect($cellItems)->contains(fn($i) => str_contains($i['class'], 'urgent'));
+            $cls = ($cur->eq($today) ? 'today ' : '')
+                . ($hasAnn ? 'ann-bg ' : '')
+                . ($hasUrg ? 'ann-urg ' : '');
+            echo "<td class=\"$cls\">";
+            if ($inMonth) {
+                echo '<span class="num">' . $cur->day . '</span>';
+                foreach ($cellItems as $it) {
+                    echo '<span class="entry ' . $it['class'] . '" '
+                        . 'data-marker="' . $it['marker'] . '" '
+                        . 'data-text="' . e($it['text']) . '">'
+                        . $it['marker'] . ' ' . $it['text'] . '</span>';
+                }
             }
             echo '</td>';
         endfor;
-        echo "</tr>";
-    endfor;
-    ?>
+        echo '</tr>';
+    endfor; ?>
 </table>
 
 <div id="details" style="margin-top:.5rem;font-size:13px;"></div>

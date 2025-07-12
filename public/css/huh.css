@@ -1957,6 +1957,17 @@ h5.description,
 }
 
 
+.notif-url {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.notif-url img {
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, .3));
+}
+
 .sidebar-box.notifications a {
     text-decoration: none;
     color: #000000;

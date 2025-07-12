@@ -205,10 +205,7 @@ include __DIR__ . '/../partials/head.php';
                         <div class="performance-graphics">
                             <div class="performance-points">
                                 <img class="svg" src="/icons/points.svg" width="100em" height="auto" />
-                                <p class="points-total-header">Total Points Gained</p>
-                                <p class="points-total-points"><?= $overall->total_points ?? 0 ?></p>
-                                <hr class="divider-hr">
-                                <p class="points-total-header">Current Points Stored</p>
+                                <p class="points-total-header">Accumulated Points</p>
                                 <p class="points-total-points"><?= $overall->total_points ?? 0 ?></p>
                             </div>
                         </div>
