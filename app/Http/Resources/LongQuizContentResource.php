@@ -17,10 +17,14 @@ class LongQuizContentResource extends JsonResource
         return [
             'question_id'      => $this->long_quiz_question_id,
             'question_text'    => $this->question_text,
-            'question_image'   => $this->question_blob ? base64_encode($this->question_blob) : null,
+            'question_image'   => $this->question_blob
+                ? base64_encode($this->question_blob)
+                : null,
             'type_name'        => $typeName,
             'score'            => (int) $this->score,
-            'options'          => LongQuizQuestionOptionResource::collection($this->longquizoptions),
+            'options'          => LongQuizQuestionOptionResource::collection(
+                $this->longquizoptions
+            ),
         ];
     }
 }

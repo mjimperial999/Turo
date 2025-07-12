@@ -380,16 +380,16 @@ class MobileModelController extends Controller
         $longquiz = LongQuizzes::query()
             ->selectRaw('
             long_quiz_id,
-            course_id
+            course_id,
             long_quiz_name,
             long_quiz_instructions,
             number_of_attempts,
             time_limit,
             number_of_questions,
-            overall_points
+            overall_points,
             has_answers_shown,
             unlock_date,
-            deadline_date
+            deadline_date,
         ')
             ->where('long_quiz_id', $r->long_quiz_id)
             ->firstOrFail();
@@ -399,7 +399,6 @@ class MobileModelController extends Controller
         );
     }
 
-    // Store New Long Quiz Record
     public function showLongQuizContent(Request $r)
     {
         $r->validate([
@@ -407,16 +406,19 @@ class MobileModelController extends Controller
         ]);
 
         $questions = LongQuizQuestions::query()
-            ->where('long_quiz_id', $r->long_quiz_id)
-            ->leftJoin('longquiz_question_image as lqi', 'lqi.question_id', '=', 'longquiz_question.long_quiz_question_id')
-            ->selectRaw('
-            longquizquestion.*,
-            lqi.image as question_blob
-        ')
-            ->get()
-            ->each(function ($q) {
-                $q->options = LongQuizOptions::where('long_quiz_question_id', $q->question_id)->get();
-            });
+            ->with('longquizoptions')                      // eager-load options
+            ->leftJoin(
+                'longquiz_question_image as lqi',
+                'lqi.long_quiz_question_id',
+                '=',
+                'longquiz_question.long_quiz_question_id'  // fully-qualified
+            )
+            ->where('longquiz_question.long_quiz_id', $r->long_quiz_id)
+            ->select(
+                'longquiz_question.*',
+                'lqi.image as question_blob'
+            )
+            ->get();
 
         return response()->json(
             [
@@ -425,6 +427,7 @@ class MobileModelController extends Controller
         );
     }
 
+    // Store New Long Quiz Record
     public function saveLongAssessmentResult(LongQuizAssessmentResultStoreRequest $r)
     {
         $now = Carbon::now()->timestamp;
