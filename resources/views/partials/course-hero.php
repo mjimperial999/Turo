@@ -43,11 +43,8 @@ if (session('role_id') == 1) {
                         <div class="box-title">
                             <div class="title">
                                 <h6>' . $course->course_name . '</h6>
-                                <p>'. $course->course_description .'</p>
+                                <p><b>Section:</b> ['. $section->section_name .']</p>
                             </div>
-                            <div class="code">
-                            <p><b>Section</b></p>
-                            <p>' . $section->section_name . '</p></div>
                         </div>
                     </div>
                 

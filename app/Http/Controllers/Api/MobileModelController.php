@@ -24,13 +24,19 @@ use App\Http\Resources\{
     ResultResource,
     QuizResource,
     QuizContentResource,
+    LongQuizResource,
+    LongQuizContentResource,
+    ScreeningResource,
+    ScreeningContentResource,
     TutorialResource
 };
 
 use App\Http\Requests\{
     ModuleStoreRequest,
     ModuleUpdateRequest,
-    AssessmentResultStoreRequest
+    AssessmentResultStoreRequest,
+    LongQuizAssessmentResultStoreRequest,
+    ScreeningAssessmentResultStoreRequest
 };
 
 use App\Models\{
@@ -41,6 +47,17 @@ use App\Models\{
     Options,
     AssessmentResult,
     AssessmentResultAnswer,
+    LongQuizzes,
+    LongQuizQuestions,
+    LongQuizOptions,
+    LongQuizAssessmentResult,
+    LongQuizAssessmentResultAnswer,
+    Screening,
+    ScreeningConcept,
+    ScreeningTopic,
+    ScreeningQuestion,
+    ScreeningOption,
+    ScreeningResult,
     Students,
     Users,
     ModuleProgress
@@ -56,49 +73,61 @@ class MobileModelController extends Controller
         );
     }
 
+    // Fetch Courses
     public function course()
     {
         return CoursesResource::collection(Users::all());
     }
 
+    public function getCatchUpStatus(Request $r)
+    {
+
+        $isCatchUp = Students::where('student_id', $r->student_id)
+            ->value('isCatchUp');
+
+        return response()->json(
+            ['is_catch_up' => (bool) $isCatchUp]
+        );
+    }
+
+    // Fetch Modules
     /* ---------- GET get-course_modules-for-student ---------- */
     public function indexStudent(Request $r)
     {
         $student = Students::findOrFail($r->student_id);
 
-        // 2) fetch modules + progress + image in **one** query
         $modules = Modules::query()
-        ->where('module.course_id', $r->course_id)
+            ->where('module.course_id', $r->course_id)
 
-        // ← natural-ish sort: “Module 2 …”   before  “Module 10 …”
-        ->orderByRaw("
+            ->orderByRaw("
             CAST( REGEXP_REPLACE(module.module_name, '[^0-9]', '') AS UNSIGNED ),
             module.module_name
         ")
 
-        ->leftJoin('moduleprogress as mp', function ($q) use ($r) {
-            $q->on('mp.module_id', '=', 'module.module_id')
-               ->where('mp.student_id', '=', $r->student_id);
-        })
-        ->leftJoin('module_image as mi', 'mi.module_id', '=', 'module.module_id')
-        ->selectRaw('
+            ->leftJoin('moduleprogress as mp', function ($q) use ($r) {
+                $q->on('mp.module_id', '=', 'module.module_id')
+                    ->where('mp.student_id', '=', $r->student_id);
+            })
+            ->leftJoin('module_image as mi', 'mi.module_id', '=', 'module.module_id')
+            ->selectRaw('
             module.*,
             mp.progress as progress_value,
             mi.image    as picture_blob
         ')
-        ->get();
+            ->get();
 
         return response()->json([
             'data' => ModuleCollectionResource::collection($modules)
         ]);
     }
 
+    // Fetch Activities
     /* ---------- GET get-activities-in-module.php ---------- */
     public function activities(Request $r)
     {
         $activities = Activities::query()
             ->where('module_id', $r->module_id)
-            ->leftJoin('quiz as q', 'q.activity_id', '=', 'activity.activity_id')  // numeric id lives here
+            ->leftJoin('quiz as q', 'q.activity_id', '=', 'activity.activity_id')
             ->selectRaw('
             activity.*,
             q.quiz_type_id    as quiz_type_id          -- 1 = SHORT, 2 = PRACTICE
@@ -132,6 +161,7 @@ class MobileModelController extends Controller
         ]);
     }
 
+    // Lecture PDF
     public function showLecture(Request $r)
     {
         $r->validate([
@@ -154,6 +184,7 @@ class MobileModelController extends Controller
         );
     }
 
+    // Tutorial Video
     public function showTutorial(Request $r)
     {
         $r->validate([
@@ -176,6 +207,7 @@ class MobileModelController extends Controller
         );
     }
 
+    // Practice and Short Quiz
     public function showQuiz(Request $r)
     {
         $r->validate([
@@ -208,6 +240,7 @@ class MobileModelController extends Controller
         );
     }
 
+    // Interface - Practice and Short Quiz
     public function showQuizContent(Request $r)
     {
         $r->validate([
@@ -233,26 +266,27 @@ class MobileModelController extends Controller
         );
     }
 
+    // Store New Record - Practice and Short Quiz
     public function saveAssessmentResult(AssessmentResultStoreRequest $r)
     {
         $now = Carbon::now()->timestamp;
 
         DB::transaction(function () use ($r, $now) {
 
-            /* attempt # = existing rows +1 */
+            // Count All Attempts and Set New Attempt Number
             $attemptNumber = AssessmentResult::where([
                 'student_id'  => $r->student_id,
                 'activity_id' => $r->activity_id,
             ])->count() + 1;
 
-            /* create parent row */
+            // Create New Attempt Entry
             $result = AssessmentResult::create([
                 'result_id' => (string) Str::uuid(),
                 'student_id'          => $r->student_id,
                 'module_id'           => $r->module_id,
                 'activity_id'         => $r->activity_id,
                 'attempt_number'      => $attemptNumber,
-                'tier_level_id'      => 1,
+                'tier_level_id'       => 1,
                 'score_percentage'    => $r->score_percentage,
                 'earned_points'       => $r->earned_points,
                 'date_taken'          => Carbon::now('Asia/Manila'),
@@ -264,21 +298,21 @@ class MobileModelController extends Controller
                 ['activity_id', $r->activity_id],
             ])->update(['is_kept' => 0]);
 
+            // After storing, find and set the Best Record
             $best = AssessmentResult::where([
                 ['student_id',  $r->student_id],
                 ['activity_id', $r->activity_id],
             ])
                 ->orderByDesc('score_percentage')
-                ->orderBy('date_taken')          // earliest wins when scores tie
+                ->orderBy('date_taken')
                 ->first();
 
-            /* 3️⃣  flag that one as kept */
             $best?->update(['is_kept' => 1]);
 
-            /* store every answer */
+            // Store Answers
             foreach ($r->input('answers') as $ans) {
                 AssessmentResultAnswer::create([
-                    'result_id' =>  $result->result_id,
+                    'result_id'           => $result->result_id,
                     'question_id'         => $ans['question_id'],
                     'option_id'           => $ans['option_id'],
                     'is_correct'          => $ans['is_correct'],
@@ -296,13 +330,267 @@ class MobileModelController extends Controller
             'activity_id'     => 'required|exists:activity,activity_id',
         ]);
 
-        /* pull every attempt (latest first) + their answers */
+        // Get the Best Record
         $best = AssessmentResult::where([
             'student_id'  => $r->student_id,
             'activity_id' => $r->activity_id,
             'is_kept'     => 1,
         ])
-            ->with('answers')          // eager-load submitted answers
+            ->with('answers')
+            ->first();
+
+        return response()->json([
+            'data' => is_array($best) && array_is_list($best) ? $best : [$best]
+        ]);
+    }
+
+    // Long Quiz
+    public function showLongQuiz(Request $r)
+    {
+        $r->validate([
+            'long_quiz_id' => 'required|exists:longquiz,long_quiz_id',
+        ]);
+
+        $longquiz = LongQuizzes::query()
+            ->selectRaw('
+            long_quiz_id,
+            course_id
+            long_quiz_name,
+            long_quiz_instructions,
+            number_of_attempts,
+            time_limit,
+            number_of_questions,
+            overall_points
+            has_answers_shown,
+            unlock_date,
+            deadline_date
+        ')
+            ->where('long_quiz_id', $r->long_quiz_id)
+            ->firstOrFail();
+
+        return response()->json(
+            new LongQuizResource($longquiz)
+        );
+    }
+
+    // Store New Long Quiz Record
+    public function showLongQuizContent(Request $r)
+    {
+        $r->validate([
+            'long_quiz_id' => 'required|exists:longquiz,long_quiz_id',
+        ]);
+
+        $questions = LongQuizQuestions::query()
+            ->where('long_quiz_id', $r->long_quiz_id)
+            ->leftJoin('longquiz_question_image as lqi', 'lqi.question_id', '=', 'longquiz_question.long_quiz_question_id')
+            ->selectRaw('
+            longquizquestion.*,
+            lqi.image as question_blob
+        ')
+            ->get()
+            ->each(function ($q) {
+                $q->options = LongQuizOptions::where('long_quiz_question_id', $q->question_id)->get();
+            });
+
+        return response()->json(
+            [
+                'questions' => LongQuizContentResource::collection($questions)
+            ]
+        );
+    }
+
+    public function saveLongAssessmentResult(LongQuizAssessmentResultStoreRequest $r)
+    {
+        $now = Carbon::now()->timestamp;
+
+        DB::transaction(function () use ($r, $now) {
+
+            /* attempt # = existing rows +1 */
+            $attemptNumber = LongQuizAssessmentResult::where([
+                'student_id'  => $r->student_id,
+                'long_quiz_id' => $r->long_quiz_id,
+            ])->count() + 1;
+
+            /* create parent row */
+            $result = LongQuizAssessmentResult::create([
+                'result_id'           => (string) Str::uuid(),
+                'student_id'          => $r->student_id,
+                'long_quiz_id'        => $r->long_quiz_id,
+                'attempt_number'      => $attemptNumber,
+                'tier_level_id'       => 1,
+                'score_percentage'    => $r->score_percentage,
+                'earned_points'       => $r->earned_points,
+                'date_taken'          => Carbon::now('Asia/Manila'),
+                'is_kept'             => 0,          // change later if you keep best
+            ]);
+
+            LongQuizAssessmentResult::where([
+                ['student_id',   $r->student_id],
+                ['long_quiz_id', $r->long_quiz_id],
+            ])->update(['is_kept' => 0]);
+
+            $best = LongQuizAssessmentResult::where([
+                ['student_id',  $r->student_id],
+                ['long_quiz_id', $r->long_quiz_id],
+            ])
+                ->orderByDesc('score_percentage')
+                ->orderBy('date_taken')          // earliest wins when scores tie
+                ->first();
+
+            /* 3️⃣  flag that one as kept */
+            $best?->update(['is_kept' => 1]);
+
+            /* store every answer */
+            foreach ($r->input('answers') as $ans) {
+                LongQuizAssessmentResultAnswer::create([
+                    'result_id'                 => $result->result_id,
+                    'long_quiz_question_id'     => $ans['question_id'],
+                    'long_quiz_option_id'       => $ans['option_id'],
+                    'is_correct'                => $ans['is_correct'],
+                ]);
+            }
+        });
+
+        return response()->json(['message' => 'Result saved'], 201);
+    }
+
+    public function longAssessmentResults(Request $r)
+    {
+        $r->validate([
+            'student_id'      => 'required|exists:student,user_id',
+            'long_quiz_id'     => 'required|exists:longquiz,long_quiz_id',
+        ]);
+
+        $best = LongQuizAssessmentResult::where([
+            'student_id'   => $r->student_id,
+            'long_quiz_id' => $r->long_quiz_id,
+            'is_kept'      => 1,
+        ])
+            ->with('answers')
+            ->first();
+
+        return response()->json([
+            'data' => is_array($best) && array_is_list($best) ? $best : [$best]
+        ]);
+    }
+
+    // Screening Exams
+    public function showScreeningExam(Request $r)
+    {
+        $r->validate([
+            'screening_id' => 'required|exists:screening,screening_id',
+        ]);
+
+        $screening = LongQuizzes::query()
+            ->selectRaw('
+            screening_id,
+            course_id
+            screening_name,
+            screening_instructions,
+            time_limit,
+            number_of_questions,
+        ')
+            ->where('screening_id', $r->screening_id)
+            ->firstOrFail();
+
+        return response()->json(
+            new LongQuizResource($screening)
+        );
+    }
+
+    // Store New Long Quiz Record
+    public function showScreeningExamContent(Request $r)
+    {
+        $r->validate([
+            'screening_id' => 'required|exists:screening,screening_id',
+        ]);
+
+        $questions = LongQuizQuestions::query()
+            ->where('screening_id', $r->screening_id)
+            ->leftJoin('screeningquestion_image as sqi', 'sqi.question_id', '=', 'screeningquestion.screening_question_id')
+            ->selectRaw('
+            screeningquestion.*,
+            sqi.image as question_blob
+        ')
+            ->get()
+            ->each(function ($q) {
+                $q->options = ScreeningOption::where('screening_question_id', $q->question_id)->get();
+            });
+
+        return response()->json(
+            [
+                'questions' => ScreeningContentResource::collection($questions)
+            ]
+        );
+    }
+
+    public function saveScreeningExamResult(LongQuizAssessmentResultStoreRequest $r)
+    {
+        $now = Carbon::now()->timestamp;
+
+        DB::transaction(function () use ($r, $now) {
+
+            /* attempt # = existing rows +1 */
+            $attemptNumber = LongQuizAssessmentResult::where([
+                'student_id'  => $r->student_id,
+                'screening_id' => $r->long_quiz_id,
+            ])->count() + 1;
+
+            /* create parent row */
+            $result = LongQuizAssessmentResult::create([
+                'result_id'           => (string) Str::uuid(),
+                'student_id'          => $r->student_id,
+                'long_quiz_id'        => $r->long_quiz_id,
+                'attempt_number'      => $attemptNumber,
+                'tier_level_id'       => 1,
+                'score_percentage'    => $r->score_percentage,
+                'earned_points'       => $r->earned_points,
+                'date_taken'          => Carbon::now('Asia/Manila'),
+                'is_kept'             => 0,          // change later if you keep best
+            ]);
+
+            LongQuizAssessmentResult::where([
+                ['student_id',   $r->student_id],
+                ['long_quiz_id', $r->long_quiz_id],
+            ])->update(['is_kept' => 0]);
+
+            $best = LongQuizAssessmentResult::where([
+                ['student_id',  $r->student_id],
+                ['long_quiz_id', $r->long_quiz_id],
+            ])
+                ->orderByDesc('score_percentage')
+                ->orderBy('date_taken')          // earliest wins when scores tie
+                ->first();
+
+            /* 3️⃣  flag that one as kept */
+            $best?->update(['is_kept' => 1]);
+
+            /* store every answer */
+            foreach ($r->input('answers') as $ans) {
+                LongQuizAssessmentResultAnswer::create([
+                    'result_id'                 => $result->result_id,
+                    'long_quiz_question_id'     => $ans['question_id'],
+                    'long_quiz_option_id'       => $ans['option_id'],
+                    'is_correct'                => $ans['is_correct'],
+                ]);
+            }
+        });
+
+        return response()->json(['message' => 'Result saved'], 201);
+    }
+
+    public function screeningExamResults(Request $r)
+    {
+        $r->validate([
+            'student_id'      => 'required|exists:student,user_id',
+            'long_quiz_id'     => 'required|exists:longquiz,long_quiz_id',
+        ]);
+
+        $best = LongQuizAssessmentResult::where([
+            'student_id'   => $r->student_id,
+            'long_quiz_id' => $r->long_quiz_id,
+            'is_kept'      => 1,
+        ])
             ->first();
 
         return response()->json([

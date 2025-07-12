@@ -277,7 +277,7 @@ class TeacherController extends Controller
         abort_if($student->section_id !== $sectionID, 403);
 
         /* ----- roll-ups (helpers below) ----- */
-        $overall   = $this->overallRow($course->course_id, $student->user_id);
+        $overall   = $this->overallRow($course->course_id, $student->user_id, $sectionID);
         $practice  = $this->quizAverages($course->course_id, $student->user_id, 'practice');
         $short     = $this->quizAverages($course->course_id, $student->user_id, 'short');
         $long      = $this->longQuizAverages($course->course_id, $student->user_id);
@@ -298,22 +298,38 @@ class TeacherController extends Controller
 
     /* ========= helpers ========= */
 
-    private function overallRow(string $courseId, string $studentId)
+    private function overallRow(string $courseId, string $studentId, string $sectionId)
     {
-        return StudentProgress::query()
-            ->selectRaw('
-            total_points,
-            (
-                SELECT COUNT(*) + 1
-                FROM studentprogress AS sp2
-                WHERE sp2.course_id     = studentprogress.course_id
-                  AND sp2.total_points  > studentprogress.total_points
-            ) AS rank
-        ')
-            ->where('course_id',  $courseId)
-            ->where('student_id', $studentId)
-            ->first();
+        /* alias the tables so every column is unambiguous ------------------- */
+        $rows = StudentProgress::query()
+            ->from('studentprogress as sp')
+            ->join('student as st', 'st.user_id', '=', 'sp.student_id')
+            ->where('sp.course_id',  $courseId)   // course filter
+            ->where('st.section_id', $sectionId)  // section filter
+            ->orderByDesc('sp.total_points')      // fully-qualified
+            ->orderBy('sp.student_id')            // deterministic tie-break
+            ->get([
+                'sp.student_id',
+                'sp.total_points',                // fully-qualified ‼
+            ]);
+
+        /* tie-aware ranks (duplicates allowed) ------------------------------ */
+        $prevPts = null;
+        $rank    = 0;
+
+        foreach ($rows as $idx => $r) {
+            if ($prevPts === null || $r->total_points < $prevPts) {
+                $rank = $idx + 1;                 // increase only when score drops
+            }
+            $r->rank  = $rank;                    // attach for later use
+            $prevPts  = $r->total_points;
+        }
+
+        /* return *my* row – or a harmless stub if I don’t have points yet --- */
+        return $rows->firstWhere('student_id', $studentId)
+            ?? (object) ['total_points' => 0, 'rank' => null];
     }
+
 
     private function quizAverages($courseId, $studentId, $type)
     {

@@ -106,7 +106,10 @@ include __DIR__ . '/../partials/head.php'; ?>
                         <div class="subtitle">
                             <h6><b><?= strtoupper($section->section_name) ?></b></h6>
                             <h6>Total points in this course: <b><?= number_format($overall->total_points ?? 0) ?></b></h6>
-                            <h6>Leaderboard rank: <b>#<?= $overall->rank ?? '—' ?></b></h6>
+                            <h6>
+                                Leaderboard rank:
+                                <b><?= $overall->rank !== null ? "#$overall->rank" : '—' ?></b>
+                            </h6>
                         </div>
                     </div>
                 </div>

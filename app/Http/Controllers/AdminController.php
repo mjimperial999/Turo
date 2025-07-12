@@ -244,22 +244,49 @@ class AdminController extends Controller
         $student->load('user');                        // name + email + hash
 
         /* 1.  every course row with total_points + rank inside that course */
-        $courses = StudentProgress::query()
-            ->selectRaw('
-        studentprogress.course_id,
-        course.course_name,
-        studentprogress.total_points,
-        (
-            SELECT COUNT(*) + 1
-            FROM studentprogress AS sp2
-            WHERE sp2.course_id   = studentprogress.course_id
-              AND sp2.total_points > studentprogress.total_points
-        ) AS course_rank            --  <--  alias no longer a reserved word
-    ')
-            ->join('course', 'course.course_id', '=', 'studentprogress.course_id')
-            ->where('student_id', $student->user_id)
-            ->get()
-            ->keyBy('course_id');               // ↳ quick look-ups later
+        $courses = collect();     // we'll fill this manually
+
+        $sectionId = $student->section_id;
+
+        $raw = StudentProgress::query()
+            ->join('student   as st',  'st.user_id',      '=', 'studentprogress.student_id')
+            ->join('course     as c',   'c.course_id',     '=', 'studentprogress.course_id')
+            ->where('st.section_id', $sectionId)           // ← section filter lives here
+            ->whereIn('studentprogress.course_id', function ($q) use ($student) {
+                $q->select('course_id')
+                    ->from('studentprogress')
+                    ->where('student_id', $student->user_id);   // only courses the student actually takes
+            })
+            ->get([
+                'studentprogress.course_id',
+                'c.course_name',
+                'studentprogress.student_id',
+                'studentprogress.total_points',
+            ]);
+
+        /* group per-course, sort, and assign tied ranks */
+        foreach ($raw->groupBy('course_id') as $cid => $rows) {
+
+            // stable sort: points DESC   then user_id ASC
+            $rows = $rows->sortByDesc('total_points')
+                ->sortBy('student_id')   // deterministic tiebreaker
+                ->values();              // reset keys 0…n
+
+            $prevPts = null;
+            $rank = 0;
+            foreach ($rows as $idx => $row) {
+                if ($prevPts === null || $row->total_points < $prevPts) {
+                    $rank = $idx + 1;            // advance only when score drops
+                }
+                $row->rank = $rank;
+                $prevPts   = $row->total_points;
+            }
+
+            /* keep only **this** student’s row */
+            if ($mine = $rows->firstWhere('student_id', $student->user_id)) {
+                $courses->put($cid, $mine);
+            }
+        }
 
         /* 2.  attach per-course aggregates (reuse one helper) */
         foreach ($courses as $c) {
@@ -657,7 +684,7 @@ class AdminController extends Controller
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
 
-                $course->modules     = $course->modules
+        $course->modules     = $course->modules
             ->sortBy(fn($m)  => $this->seq($m->module_name))
             ->values();
 

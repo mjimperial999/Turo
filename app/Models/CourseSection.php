@@ -10,6 +10,7 @@ class CourseSection extends Model
     protected $table = 'course_section';
     protected $primaryKey = 'id';
     public $incrementing  = true;
+    public $timestamps  = false;
     protected $keyType    = 'int';
 
     protected $fillable = [
