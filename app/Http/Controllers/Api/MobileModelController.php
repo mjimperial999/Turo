@@ -86,7 +86,7 @@ class MobileModelController extends Controller
             ->value('isCatchUp');
 
         return response()->json(
-            ['is_catch_up' => (bool) $isCatchUp]
+            ['is_catch_up' => (int) $isCatchUp]
         );
     }
 
