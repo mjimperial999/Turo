@@ -24,6 +24,7 @@ use App\Http\Resources\{
     ResultResource,
     QuizResource,
     QuizContentResource,
+    LongQuizCollectionResource,
     LongQuizResource,
     LongQuizContentResource,
     ScreeningResource,
@@ -341,6 +342,21 @@ class MobileModelController extends Controller
 
         return response()->json([
             'data' => is_array($best) && array_is_list($best) ? $best : [$best]
+        ]);
+    }
+
+    public function showLongQuizList(Request $r)
+    {
+        $longquiz = LongQuizzes::query()
+            ->where('course_id', $r->course_id)
+            ->leftJoin('longquiz as lq', 'lq.long_quiz_id', '=', 'lq.long_quiz_id')
+            ->selectRaw('
+            longquiz.*
+        ')
+            ->get();
+
+        return response()->json([
+            'data' => LongQuizCollectionResource::collection($longquiz)
         ]);
     }
 

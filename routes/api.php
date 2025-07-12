@@ -28,6 +28,7 @@ Route::prefix('v1')->group(function () {
         Route::post('save-assessment-result',                       [MobileModelController::class, 'saveAssessmentResult']);
         Route::get('get-assessment-result-for-student-and-quiz',    [MobileModelController::class, 'assessmentResults']);
 
+        Route::get('get-long-quiz-list',                                    [MobileModelController::class, 'showLongQuizList']);
         Route::get('get-long-quiz',                                         [MobileModelController::class, 'showLongQuiz']);
         Route::get('get-long-quiz-content',                                 [MobileModelController::class, 'showLongQuizContent']);
         Route::post('save-long-quiz-assessment-result',                     [MobileModelController::class, 'saveLongAssessmentResult']);
