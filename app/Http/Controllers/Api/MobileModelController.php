@@ -67,6 +67,12 @@ use App\Models\{
 class MobileModelController extends Controller
 {
 
+    private function seq(string $title): int
+    {
+        preg_match('/\d+/', $title, $m);
+        return empty($m) ? 0 : (int) $m[0];
+    }
+
     public function getCourses()
     {
         return CoursesResource::collection(
@@ -83,11 +89,15 @@ class MobileModelController extends Controller
     public function getCatchUpStatus(Request $r)
     {
 
-        $isCatchUp = Students::where('student_id', $r->student_id)
-            ->value('isCatchUp');
+        $r->validate([
+            'student_id' => 'required|exists:student,user_id',
+        ]);
+
+        $isCatchUp = (int) Students::where('user_id', $r->student_id)
+            ->value('isCatchUp') ?? 0;
 
         return response()->json(
-            ['is_catch_up' => (int) $isCatchUp]
+            ['is_catch_up' => $isCatchUp]
         );
     }
 
@@ -347,13 +357,13 @@ class MobileModelController extends Controller
 
     public function showLongQuizList(Request $r)
     {
-        $longquiz = LongQuizzes::query()
-            ->where('course_id', $r->course_id)
-            ->leftJoin('longquiz as lq', 'lq.long_quiz_id', '=', 'lq.long_quiz_id')
-            ->selectRaw('
-            longquiz.*
-        ')
+        $longquiz = LongQuizzes::where('course_id', $r->course_id)
+            ->orderBy('long_quiz_name')          // optional: sort any way you like
             ->get();
+
+        $longquiz = $longquiz
+            ->sortBy(fn($lq) => $this->seq($lq->long_quiz_name))
+            ->values();
 
         return response()->json([
             'data' => LongQuizCollectionResource::collection($longquiz)

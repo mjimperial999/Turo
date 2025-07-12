@@ -11,8 +11,8 @@ class LongQuizCollectionResource extends JsonResource
             'course_id'             => $this->course_id,
             'long_quiz_id'          => $this->long_quiz_id,
             'long_quiz_name'        => $this->long_quiz_name,
-            'unlock_date'           => optional($this->unlock_date)->toAtomString(),
-            'deadline_date'         => optional($this->deadline_date)->toAtomString(),
+            'unlock_date'           => $this->unlock_date,
+            'deadline_date'         => $this->deadline_date,
         ];
     }
 }
