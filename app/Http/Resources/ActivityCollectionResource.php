@@ -20,8 +20,8 @@ class ActivityCollectionResource extends JsonResource
             'activity_name'       => $this->activity_name,
             'quiz_type_name'      => $quizName,          // null for lectures/tutorials
             'activity_description'=> $this->activity_description,
-            'unlock_date'         => optional($this->unlock_date)->toAtomString(),
-            'deadline_date'       => optional($this->deadline_date)->toAtomString(),
+            'unlock_date'         => $this->unlock_date,
+            'deadline_date'       => $this->deadline_date,
         ];
     }
 }

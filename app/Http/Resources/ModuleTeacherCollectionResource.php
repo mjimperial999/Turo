@@ -11,9 +11,7 @@ class ModuleTeacherCollectionResource extends JsonResource
         return [
             'module_id'    => $this->module_id,
             'module_name'  => $this->module_name,
-            'image_blob'   => $this->moduleimage
-                ? base64_encode($this->moduleimage->image)
-                : null,
+            'image_blob'   => '(image-blob)'
         ];
     }
 }

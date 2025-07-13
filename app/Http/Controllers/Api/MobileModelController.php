@@ -1108,7 +1108,7 @@ class MobileModelController extends Controller
                 $unread = $state ? !$state->is_read : true;
 
                 return [[
-                    'message_id'  => $msg->message_id, 
+                    'message_id'  => $msg->message_id,
                     'sender_id'   => $msg->sender_id,
                     'sender_name' => trim($msg->sender->first_name . ' ' . $msg->sender->last_name),
                     'image_blob'  => $img($msg->sender),
@@ -1145,7 +1145,7 @@ class MobileModelController extends Controller
                     ->map(function ($p) use ($msg, $img) {
                         $u = $p->user;
                         return [
-                            'message_id'  => $msg->message_id, 
+                            'message_id'  => $msg->message_id,
                             'recipient_id'   => $u->user_id,
                             'recipient_name' => trim($u->first_name . ' ' . $u->last_name),
                             'image_blob'     => $img($u),
@@ -1253,6 +1253,9 @@ class MobileModelController extends Controller
             'section_id' => 'required|exists:section,section_id',
         ]);
 
+        $sectionId = $r->section_id;
+        $sectionName = Sections::find($sectionId)?->section_name;
+
         /* 2️⃣  pull every module in that course (with its image blob) ------ */
         $modules = Modules::with('moduleimage')              // eager-load blob
             ->where('course_id', $r->course_id)
@@ -1266,42 +1269,39 @@ class MobileModelController extends Controller
 
         /* 3️⃣  respond as a collection resource ---------------------------- */
         return response()->json([
+            'section_id' => $sectionId,
+            'section_name' => $sectionName,
             'data' => ModuleTeacherCollectionResource::collection($modules),
         ]);
     }
 
     public function getActivitiesTeacher(Request $r)
     {
-        /* 1️⃣  validate the two IDs we need */
         $r->validate([
             'module_id'  => 'required|exists:module,module_id',
-            'section_id' => 'required|exists:section,section_id',
+            'section_id' => 'sometimes|exists:section,section_id',  // front-end only
         ]);
 
-        $moduleId  = $r->module_id;
-        $sectionId = $r->section_id;
+        /* ── helper for natural numeric ordering ───────────────────────── */
+        $seq = fn(string $s) => (int) (preg_match('/\d+/', $s, $m) ? $m[0] : 0);
 
-        /* 2️⃣  fetch every activity that belongs to *this* module  */
-        $activities = Activities::with(['module.course', 'quiz'])
-            ->where('module_id', $moduleId)
-            ->orderBy('unlock_date')               // crude DB-order (will re-sort)
-            ->get();
+        /* ── pull activities + quiz_type_id in one query ───────────────── */
+        $activities = Activities::query()
+            ->where('module_id', $r->module_id)
+            ->leftJoin('quiz as q', 'q.activity_id', '=', 'activity.activity_id')
+            ->selectRaw('
+            activity.*,
+            q.quiz_type_id      as quiz_type_id     -- 1 = SHORT, 2 = PRACTICE
+        ')
+            ->get()
+            ->sortBy(fn($a) => $seq($a->activity_name))
+            ->values();
 
-        /* 3️⃣  tack the section meta onto every row (mobile wants it) */
-        $sectionName = Sections::find($sectionId)?->section_name;
-        $activities->each(function ($a) use ($sectionId, $sectionName) {
-            $a->section_id   = $sectionId;
-            $a->section_name = $sectionName;
-        });
-
-        /* 4️⃣  sort “Module 1 Quiz 2 …” → natural ascending            */
-        $activities = $activities
-            ->sortBy(fn($a) => $this->seq($a->activity_name))
-            ->values();                            // reset 0-based indices
-
-        /* 5️⃣  JSON-encode via your existing collection resource       */
+        /* ── top-level payload ───────────────────────────────────────────── */
         return response()->json([
-            'data' => ActivityCollectionResource::collection($activities)
+            'section_id'   => $r->section_id,                 // front-end will keep it
+            'section_name' => $r->section_id,
+            'data'         => ActivityCollectionResource::collection($activities),
         ]);
     }
 
