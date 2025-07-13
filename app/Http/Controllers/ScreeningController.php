@@ -207,7 +207,7 @@ class ScreeningController extends Controller
                 'result_id'        => Str::uuid(),            // non-null PK
                 'screening_id'     => $screeningId,
                 'student_id'       => $studentId,
-                'tier_id'          => $state['tier_id'],
+                'tier_id'          => $state['attempt_no'],
                 'attempt_number'   => $state['attempt_no'],
                 'score_percentage' => 0,                      // provisional
                 'earned_points'    => 0,
@@ -359,7 +359,12 @@ class ScreeningController extends Controller
         /* -------------------------------------------------------------
  * Attach resource_id to every concept + topic in one query
  * ------------------------------------------------------------- */
-        $conceptRes = LearningResource::whereIn('screening_concept_id', array_keys($conceptData))
+        $conceptRes = LearningResource::whereIn(
+            'screening_concept_id',
+            array_keys($conceptData)
+        )
+            ->whereNull('screening_topic_id')        // ⬅️ only real “tier-1” rows
+            ->orderBy('learning_resource_id')        // deterministic for pluck()
             ->pluck('learning_resource_id', 'screening_concept_id')
             ->toArray();
 

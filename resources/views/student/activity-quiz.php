@@ -150,6 +150,13 @@ include __DIR__ . '/../partials/head.php';
 
             <div class="content-container box-page">
                 <div class="content padding <?= $class ?>">
+                    <?php if (!$assessDisplay->isEmpty()): ?>
+                        <div class="module-section quiz-button-section">
+                            <?= '<a class="activity-link" href="/home-tutor/course/' . $course->course_id . '/module/' . $module->module_id . '/quiz/' . $activity->activity_id . '/summary"> ' ?>
+                            <div class="quiz-button activity-button <?= $buttonClass ?>">VIEW LATEST RESULT</div>
+                            </a>
+                        </div>
+                    <?php endif ?>
                     <div class="module-section">
                         <p class="description" style="color: #492C2C;"><b>ANALYSIS</b></p>
                         <p class="description" style="color: #492C2C;"><b>ATTEMPTS TAKEN: </b><?= $attempts ?></p>

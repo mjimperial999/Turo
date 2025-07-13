@@ -567,16 +567,15 @@ class MobileModelController extends Controller
                 ['screening_id', $r->screening_id],
             ])->update(['is_kept' => 0]);
 
-            $best = ScreeningResult::where([
+            $latest = ScreeningResult::where([
                 ['student_id',  $r->student_id],
                 ['screening_id', $r->screening_id],
             ])
-                ->orderByDesc('score_percentage')
-                ->orderBy('date_taken')
+                ->orderByDesc('date_taken')
                 ->first();
 
             /* 3️⃣  flag that one as kept */
-            $best?->update(['is_kept' => 1]);
+            $latest?->update(['is_kept' => 1]);
 
             /* store every answer */
             foreach ($r->answers as $a) {

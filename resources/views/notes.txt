@@ -460,3 +460,56 @@ A teacher can handle a section (group of students). They can also handle multipl
 Sections are about a group of certain students. In schools here in PH, they use sections to group students into 2, one for morning session, other for afternoon session. You can look it up for more context.
 
 The students have their id for section in student table so that for students who have the same course but different section could have a different teacher (or can be the same.) The section just is there for scheduling purposes. This is so that I dont have to duplicate courses, as courses content remain the same even for different sections.
+
+
+
+Time to revise the method to include Personalized Learning.
+Data to be sent:
+earned_score
+number_of_questions
+tier_id
+concepts:
+   ├▶concept_id
+   ├▶concept_name
+   ├▶concept_score_percentage
+   ├▶passed
+   └▶topics:
+      ├▶topic_id
+      ├▶topic_name
+      ├▶topic_score_percentage
+      └▶passed
+
+If tier_id = 1, Tier 1 (include only concepts)
+Calculate all scores (isCorrect) of concepts
+if score percentage is less than 60%, put passed = false
+
+If tier_id = 2, Tier 2 (include concepts and topics)
+if score percentage is less than 60%, put passed = false
+
+public function screeningExamResults(Request $r)
+    {
+        $r->validate([
+            'student_id'   => 'required|exists:student,user_id',
+            'screening_id' => 'required|exists:screening,screening_id',
+        ]);
+
+        $best = ScreeningResult::where([
+            'student_id'   => $r->student_id,
+            'screening_id' => $r->screening_id,
+            'is_kept'      => 1,
+        ])->first();
+
+        return response()->json(['data' => $best ?? []]);
+    }
+
+Then, create a post method where the mobile app will send data to retrieve learning resource materials
+(needed is concept_id, and topic_id)
+
+Find all entries that match concept_id, and topic_id
+If the topic_id sent is null, that means find the entry that has screening_topic_id as null (usuallty for tier 1)
+
+return:
+title
+description
+video_url
+pdf_blob (base64 encoded)

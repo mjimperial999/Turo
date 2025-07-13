@@ -15,7 +15,7 @@ class ScreeningResultStoreRequest extends FormRequest
             'earned_points'    => 'required|integer|min:0',
             'answers'                       => 'required|array|min:1',
             'answers.*.question_id'         => 'required|exists:screeningquestion,screening_question_id',
-            'answers.*.option_id'           => 'required|exists:screeningoption,screening_option_id',
+            'answers.*.option_id'           => 'nullable|exists:screeningoption,screening_option_id',
             'answers.*.is_correct'          => 'required|integer|in:0,1',
         ];
     }

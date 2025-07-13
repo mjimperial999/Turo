@@ -132,17 +132,19 @@ include __DIR__ . '/../partials/head.php';
                             <div class="quiz-button activity-button quiz-long-activity">TAKE QUIZ</div>
                             </a>
                         </div>
-                        <div class="module-section quiz-button-section">
-                            <?= '<a class="activity-link" href="/home-tutor/course/' . $course->course_id . '/longquiz/' . $longquiz->long_quiz_id . '/summary"> ' ?>
-                            <div class="quiz-button activity-button quiz-long-activity">View Result</div>
-                            </a>
-                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="content-container box-page">
                 <div class="content padding long-quiz">
+                    <?php if (!$assessDisplay->isEmpty()): ?>
+                        <div class="module-section quiz-button-section">
+                            <?= '<a class="activity-link" href="/home-tutor/course/' . $course->course_id . '/longquiz/' . $longquiz->long_quiz_id . '/summary"> ' ?>
+                            <div class="quiz-button activity-button quiz-long-activity">VIEW LATEST RESULT</div>
+                            </a>
+                        </div>
+                    <?php endif ?>
                     <div class="module-section">
                         <p class="description" style="color: #492C2C;"><b>ANALYSIS</b></p>
                         <p class="description" style="color: #492C2C;"><b>ATTEMPTS TAKEN: </b><?= $attempts ?></p>

@@ -1942,7 +1942,7 @@ h5.description,
 }
 
 .sidebar-box.notifications {
-    max-height: 18rem;
+    max-height: 30rem;
     display: flex;
     flex-direction: column;
     overflow-y: scroll;
