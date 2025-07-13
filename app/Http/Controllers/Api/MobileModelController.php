@@ -389,7 +389,7 @@ class MobileModelController extends Controller
             overall_points,
             has_answers_shown,
             unlock_date,
-            deadline_date,
+            deadline_date
         ')
             ->where('long_quiz_id', $r->long_quiz_id)
             ->firstOrFail();

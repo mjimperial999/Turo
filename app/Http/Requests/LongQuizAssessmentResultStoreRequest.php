@@ -10,6 +10,7 @@ class LongQuizAssessmentResultStoreRequest extends FormRequest
         return [
             'student_id'            => 'required|exists:student,user_id',
             'course_id'             => 'required|exists:course,course_id',
+            'long_quiz_id'          => 'required|exists:longquiz,long_quiz_id',
             'score_percentage'      => 'required|numeric|min:0|max:100',
             'earned_points'         => 'required|integer|min:0',
             'answers'               => 'required|array|min:1',
