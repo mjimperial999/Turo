@@ -1108,6 +1108,7 @@ class MobileModelController extends Controller
                 $unread = $state ? !$state->is_read : true;
 
                 return [[
+                    'message_id'  => $msg->message_id, 
                     'sender_id'   => $msg->sender_id,
                     'sender_name' => trim($msg->sender->first_name . ' ' . $msg->sender->last_name),
                     'image_blob'  => $img($msg->sender),
@@ -1144,6 +1145,7 @@ class MobileModelController extends Controller
                     ->map(function ($p) use ($msg, $img) {
                         $u = $p->user;
                         return [
+                            'message_id'  => $msg->message_id, 
                             'recipient_id'   => $u->user_id,
                             'recipient_name' => trim($u->first_name . ' ' . $u->last_name),
                             'image_blob'     => $img($u),
@@ -1182,7 +1184,7 @@ class MobileModelController extends Controller
             'user_id'    => $me,
         ])->update(['is_read' => 1]);
 
-        return response()->noContent();
+        return response()->json(['message' => 'Message Marked Read'], 201);
     }
 
     /** POST /api/v1/delete-message   body: { "message_id": "…" } */
@@ -1209,7 +1211,7 @@ class MobileModelController extends Controller
             $msg->delete();
         });
 
-        return response()->noContent();
+        return response()->json(['message' => 'Message Marked Read'], 201);
     }
 
     // TEACHER SIDE
@@ -1247,7 +1249,8 @@ class MobileModelController extends Controller
     public function getModulesTeacher(Request $r)
     {
         $r->validate([
-            'course_id'  => 'required|exists:course,course_id'
+            'course_id'  => 'required|exists:course,course_id',
+            'section_id' => 'required|exists:section,section_id',
         ]);
 
         /* 2️⃣  pull every module in that course (with its image blob) ------ */
@@ -1264,6 +1267,41 @@ class MobileModelController extends Controller
         /* 3️⃣  respond as a collection resource ---------------------------- */
         return response()->json([
             'data' => ModuleTeacherCollectionResource::collection($modules),
+        ]);
+    }
+
+    public function getActivitiesTeacher(Request $r)
+    {
+        /* 1️⃣  validate the two IDs we need */
+        $r->validate([
+            'module_id'  => 'required|exists:module,module_id',
+            'section_id' => 'required|exists:section,section_id',
+        ]);
+
+        $moduleId  = $r->module_id;
+        $sectionId = $r->section_id;
+
+        /* 2️⃣  fetch every activity that belongs to *this* module  */
+        $activities = Activities::with(['module.course', 'quiz'])
+            ->where('module_id', $moduleId)
+            ->orderBy('unlock_date')               // crude DB-order (will re-sort)
+            ->get();
+
+        /* 3️⃣  tack the section meta onto every row (mobile wants it) */
+        $sectionName = Sections::find($sectionId)?->section_name;
+        $activities->each(function ($a) use ($sectionId, $sectionName) {
+            $a->section_id   = $sectionId;
+            $a->section_name = $sectionName;
+        });
+
+        /* 4️⃣  sort “Module 1 Quiz 2 …” → natural ascending            */
+        $activities = $activities
+            ->sortBy(fn($a) => $this->seq($a->activity_name))
+            ->values();                            // reset 0-based indices
+
+        /* 5️⃣  JSON-encode via your existing collection resource       */
+        return response()->json([
+            'data' => ActivityCollectionResource::collection($activities)
         ]);
     }
 
