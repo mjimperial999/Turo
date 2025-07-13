@@ -720,6 +720,26 @@ class MobileModelController extends Controller
         return response()->json(['resources' => $resources]);
     }
 
+    public function setCatchUp(Request $request)
+    {
+        /* 1️⃣  Validate ------------------------------------------------------- */
+        $data = $request->validate([
+            'student_id' => 'required|exists:student,user_id',
+        ]);
+
+        /* 2️⃣  Update --------------------------------------------------------- */
+        $updated = Students::where('user_id', $data['student_id'])
+            ->update(['isCatchUp' => 1]);
+
+        /* 3️⃣  Return --------------------------------------------------------- */
+        // $updated will be 0 or 1 (number of rows changed)
+        return response()->json([
+            'student_id'  => $data['student_id'],
+            'isCatchUp'   => 1,
+            'updated'     => (bool) $updated,   // true if the column actually changed
+        ], 200);
+    }
+
     /* ---------- POST create_module.php ---------- */
     public function store(ModuleStoreRequest $req)
     {

@@ -39,7 +39,9 @@ Route::prefix('v1')->group(function () {
         Route::get('get-screening-exam-content',                                 [MobileModelController::class, 'showScreeningExamContent']);
         Route::post('save-screening-exam-result',                                [MobileModelController::class, 'saveScreeningResults']);
         Route::get('get-screening-exam-result',                                  [MobileModelController::class, 'screeningExamResults']);
-        Route::post('learning-resources',                                        [MobileModelController::class, 'fetchLearningResources']);
+        Route::get('get-learning-resources',                                     [MobileModelController::class, 'fetchLearningResources']);
+
+        Route::post('set-catch-up',                                              [MobileModelController::class, 'setCatchUp']);
 
         // TEACHER
         Route::get('get_course_modules_for_teacher',      [MobileModelController::class, 'indexTeacher']);
