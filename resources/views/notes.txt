@@ -545,3 +545,44 @@ long-quiz:
 screening:
     screening_name
     percentage
+
+
+Create a new method where
+Route::get('get-gamified-elements',     [MobileModelController::class, 'showGamifiedElements']);
+
+Return
+
+leaderboard-ranking (based on section)
+leaderboards: (loop with maximum of 15 students, starting from rank 1)
+    student_name
+    student_ranking
+    student_points
+
+achievements:
+    achivement_id
+    achivement_name
+    achivement_description
+    image_name
+
+achivements_retrived:
+    achivement_id
+    unlocked_at
+
+badges:
+    achivement_id
+    achivement_name
+    achivement_description
+
+achivements_retrived:
+    achivement_id
+    unlocked_at
+
+badges:
+    badge_id
+    badge_name
+    badge_description
+    image_name
+
+badges_retrived:
+    badge_id
+    unlocked_at

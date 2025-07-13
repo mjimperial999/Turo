@@ -871,7 +871,7 @@ class MobileModelController extends Controller
 
         /* 7 ───── respond --------------------------------------------------- */
         return response()->json([
-            'course'        => $courseName,
+            'course'         => $courseName,
             'section'        => $sectionName,
             'overall_grade'  => $overall,
             'points'         => (int) $points,

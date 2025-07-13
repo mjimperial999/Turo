@@ -43,7 +43,8 @@ Route::prefix('v1')->group(function () {
 
         Route::post('set-catch-up',     [MobileModelController::class, 'setCatchUp']);
 
-        Route::get('get-student-analysis', [MobileModelController::class, 'showStudentAnalysis']);
+        Route::get('get-student-analysis',      [MobileModelController::class, 'showStudentAnalysis']);
+        Route::get('get-gamified-elements',     [MobileModelController::class, 'showGamifiedElements']);
 
         // TEACHER
         Route::get('get_course_modules_for_teacher',      [MobileModelController::class, 'indexTeacher']);
