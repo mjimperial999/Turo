@@ -47,6 +47,7 @@ use App\Models\{
     Sections,
     Modules,
     Activities,
+    Quizzes,
     Questions,
     Options,
     AssessmentResult,
@@ -1307,12 +1308,444 @@ class MobileModelController extends Controller
         ]);
     }
 
-    /* ---------- POST create_module.php ---------- */
-    public function store(ModuleStoreRequest $req)
+    public function getStudentQuizResultBySection(Request $r)
     {
-        $mod = Modules::create($req->validated());
+        /* 1. validate ---------------------------------------------------- */
+        $r->validate([
+            'activity_id' => 'required|exists:activity,activity_id',
+            'section_id'  => 'required|exists:section,section_id',
+        ]);
 
-        return (new ResultResource($mod))
-            ->response()->setStatusCode(201);   // Created
+        /* 2. fetch section name once ------------------------------------ */
+        $section      = Sections::findOrFail($r->section_id);
+        $sectionName  = $section->section_name;
+
+        /* 3. kept-attempt rows for *this* section + activity ------------ */
+        $rows = AssessmentResult::with([
+            'student.user',            // need first/last names
+            'activity.quiz',           // to fetch #-of-questions
+        ])
+            ->where([
+                ['activity_id', $r->activity_id],
+                ['is_kept',     1],
+            ])
+            ->whereHas(
+                'student',
+                fn($q) =>
+                $q->where('section_id', $r->section_id)
+            )
+            ->orderByDesc('score_percentage')   // optional: rank by score
+            ->get();
+
+        /* 4. transform --------------------------------------------------- */
+        $data = $rows->map(function ($r) {
+            $u = $r->student->user;
+            return [
+                'student_id'         => $r->student_id,
+                'student_name'       => trim($u->last_name . ', ' . $u->first_name),
+                'earned_score'       => (int) $r->earned_points,
+                'number_of_questions' => (int) optional($r->activity->quiz)->number_of_questions,
+                'score_percentage'   => (float) $r->score_percentage,
+                'attempt_number'     => (int) $r->attempt_number,
+                'date_taken'         => $r->date_taken,            // keep raw datetime
+            ];
+        })->values();                                              // tidy JSON array
+
+        /* 5. payload ----------------------------------------------------- */
+        return response()->json([
+            'section_name' => $sectionName,
+            'students'     => $data,
+        ]);
+    }
+
+    public function getStudentLongQuizResultBySection(Request $r)
+    {
+        $r->validate([
+            'long_quiz_id' => 'required|exists:longquiz,long_quiz_id',
+            'section_id'   => 'required|exists:section,section_id',
+        ]);
+
+        /* ----- fetch section once (name needed for payload) ----- */
+        $section = Sections::findOrFail($r->section_id);
+
+        /* ----- kept attempts for every student in that section -- */
+        $rows = LongQuizAssessmentResult::with('student.user')          // eager load names
+            ->where('long_quiz_id', $r->long_quiz_id)
+            ->where('is_kept', 1)
+            ->whereHas(
+                'student',
+                fn($q) =>
+                $q->where('section_id', $r->section_id)
+            )
+            ->orderByDesc('date_taken')                                 // newest first (optional)
+            ->get()
+            ->map(function ($row) {
+                $u = $row->student->user;                               // Users relation
+                return [
+                    'student_id'          => $row->student_id,
+                    'student_name'        => trim("$u->last_name, $u->first_name"),
+                    'earned_score'        => (int) $row->earned_points,
+                    'number_of_questions' => (int) $row->longquiz->number_of_questions,
+                    'score_percentage'    => (float) $row->score_percentage,
+                    'attempt_number'      => (int) $row->attempt_number,
+                    'date_taken'          => $row->date_taken,          // leave as raw datetime
+                ];
+            })
+            ->values();                                                 // tidy JSON array
+
+        return response()->json([
+            'section_name' => $section->section_name,
+            'students'     => $rows,
+        ]);
+    }
+
+    /* =========================================================
+ |  SCREENING-EXAM  ➜  per-section score sheet
+ |  GET /api/v1/get-student-screening-result-by-section
+ * =======================================================*/
+    public function getStudentScreeningResultBySection(Request $r)
+    {
+        $r->validate([
+            'screening_id' => 'required|exists:screening,screening_id',
+            'section_id'   => 'required|exists:section,section_id',
+        ]);
+
+        $section = Sections::findOrFail($r->section_id);
+
+        $rows = ScreeningResult::with('student.user')
+            ->where('screening_id', $r->screening_id)
+            ->where('is_kept', 1)
+            ->whereHas(
+                'student',
+                fn($q) =>
+                $q->where('section_id', $r->section_id)
+            )
+            ->orderByDesc('date_taken')
+            ->get()
+            ->map(function ($row) {
+                $u = $row->student->user;
+                return [
+                    'student_id'          => $row->student_id,
+                    'student_name'        => trim("$u->last_name, $u->first_name"),
+                    'earned_score'        => (int) $row->earned_points,
+                    'number_of_questions' => (int) $row->screening->number_of_questions,
+                    'score_percentage'    => (float) $row->score_percentage,
+                    'attempt_number'      => (int) $row->attempt_number,
+                    'date_taken'          => $row->date_taken,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'section_name' => $section->section_name,
+            'students'     => $rows,
+        ]);
+    }
+
+    public function getStudentList(Request $r)
+    {
+        /* 1 ─── validate ----------------------------------------------------- */
+        $r->validate([
+            'course_id'  => 'required|exists:course,course_id',
+            'section_id' => 'required|exists:section,section_id',
+        ]);
+
+        $courseId  = $r->course_id;
+        $sectionId = $r->section_id;
+
+        /* 2 ─── section name ------------------------------------------------- */
+        $sectionName = Sections::where('section_id', $sectionId)
+            ->value('section_name') ?? '';
+
+        /* 3 ─── fetch students (+ user + image in one query) ----------------- */
+        $students = Students::with(['user.image'])
+            ->where('section_id', $sectionId)
+            ->get();
+
+        /* 4 ─── look-up points per student for this course ------------------- */
+        $pointsLookup = StudentProgress::where('course_id', $courseId)
+            ->whereIn('student_id', $students->pluck('user_id'))
+            ->pluck('total_points', 'student_id');          // [ student_id => pts ]
+
+        /* 5 ─── shape the payload ------------------------------------------- */
+        $data = $students->map(function ($s) use ($pointsLookup) {
+
+            /* image  → base64 or null */
+            $imgBlob = !empty($s->user->image?->image)
+                ? base64_encode($s->user->image->image)
+                : null;
+
+            return [
+                'student_id'   => $s->user_id,
+                'student_name' => trim($s->user->last_name . ', ' . $s->user->first_name),
+                'image_blob'   => $imgBlob,
+                'points'       => (int) ($pointsLookup[$s->user_id] ?? 0),
+            ];
+        })
+            /* sort A-Z by last name for nicer UX */
+            ->sortBy('student_name')
+            ->values();
+
+        /* 6 ─── respond ------------------------------------------------------ */
+        return response()->json([
+            'section_id'   => $sectionId,
+            'section_name' => $sectionName,
+            'data'         => $data,
+        ]);
+    }
+
+    /* =========================================================================
+ |  MODULE CRUD
+ |======================================================================== */
+    public function showModule(Request $r)
+    {
+        $r->validate([
+            'module_id' => 'required|exists:module,module_id',
+        ]);
+
+        $module = Modules::with('image')
+            ->findOrFail($r->module_id);
+
+        return response()->json([
+            'data' => new ModuleResource($module)
+        ]);
+    }
+
+    public function storeModule(ModuleStoreRequest $r)
+    {
+        $module = Modules::create([
+            'module_id'      => (string) Str::uuid(),
+            'course_id'      => $r->course_id,
+            'module_name'    => $r->module_name,
+            'module_details' => $r->module_details,
+            'unlock_date'    => $r->unlock_date,
+            'deadline_date'  => $r->deadline_date,
+        ]);
+
+        return response()->json([
+            'message' => 'Module created',
+            'data'    => new ModuleResource($module)
+        ], 201);
+    }
+
+    public function updateModule(ModuleUpdateRequest $r)
+    {
+        $module = Modules::findOrFail($r->module_id);
+
+        $module->update($r->only([
+            'module_name',
+            'module_details',
+            'unlock_date',
+            'deadline_date',
+        ]));
+
+        return response()->json([
+            'message' => 'Module updated',
+            'data'    => new ModuleResource($module->fresh())
+        ]);
+    }
+
+    public function destroyModule(Request $r)
+    {
+        $r->validate([
+            'module_id' => 'required|exists:module,module_id',
+        ]);
+
+        DB::transaction(function () use ($r) {
+            Activities::where('module_id', $r->module_id)->delete();
+            Modules::where('module_id', $r->module_id)->delete();
+        });
+
+        return response()->json(['message' => 'Module deleted']);
+    }
+
+    /* =========================================================================
+ |  LONG-QUIZ CRUD
+ |======================================================================== */
+    public function storeLongQuiz(LongQuizStoreRequest $r)
+    {
+        $lq = LongQuizzes::create([
+            'long_quiz_id'        => (string) Str::uuid(),
+            'course_id'           => $r->course_id,
+            'long_quiz_name'      => $r->long_quiz_name,
+            'long_quiz_instructions' => $r->long_quiz_instructions,
+            'number_of_attempts'  => $r->number_of_attempts,
+            'time_limit'          => $r->time_limit,
+            'number_of_questions' => $r->number_of_questions,
+            'overall_points'      => $r->overall_points,
+            'has_answers_shown'   => $r->has_answers_shown,
+            'unlock_date'         => $r->unlock_date,
+            'deadline_date'       => $r->deadline_date,
+        ]);
+
+        return response()->json(['message' => 'Long-quiz created'], 201);
+    }
+
+    public function updateLongQuiz(LongQuizUpdateRequest $r)
+    {
+        LongQuizzes::findOrFail($r->long_quiz_id)
+            ->update($r->only([
+                'long_quiz_name',
+                'long_quiz_instructions',
+                'number_of_attempts',
+                'time_limit',
+                'number_of_questions',
+                'overall_points',
+                'has_answers_shown',
+                'unlock_date',
+                'deadline_date',
+            ]));
+
+        return response()->json(['message' => 'Long-quiz updated']);
+    }
+
+    public function destroyLongQuiz(Request $r)
+    {
+        $r->validate([
+            'long_quiz_id' => 'required|exists:longquiz,long_quiz_id',
+        ]);
+
+        DB::transaction(function () use ($r) {
+            LongQuizQuestions::where('long_quiz_id', $r->long_quiz_id)->delete();
+            LongQuizzes::where('long_quiz_id', $r->long_quiz_id)->delete();
+        });
+
+        return response()->json(['message' => 'Long-quiz deleted']);
+    }
+
+    /* =========================================================================
+ |  SCREENING EXAM CRUD
+ |======================================================================== */
+    public function storeScreeningExam(ScreeningStoreRequest $r)
+    {
+        Screening::create($r->validated() + [
+            'screening_id' => (string) Str::uuid(),
+        ]);
+
+        return response()->json(['message' => 'Screening-exam created'], 201);
+    }
+
+    public function updateScreeningExam(ScreeningUpdateRequest $r)
+    {
+        Screening::findOrFail($r->screening_id)->update($r->validated());
+
+        return response()->json(['message' => 'Screening-exam updated']);
+    }
+
+    public function destroyScreeningExam(Request $r)
+    {
+        $r->validate([
+            'screening_id' => 'required|exists:screening,screening_id',
+        ]);
+
+        DB::transaction(function () use ($r) {
+            ScreeningConcept::where('screening_id', $r->screening_id)->delete();
+            Screening::where('screening_id', $r->screening_id)->delete();
+        });
+
+        return response()->json(['message' => 'Screening-exam deleted']);
+    }
+
+    /* =========================================================================
+ |  QUIZ  (SHORT / PRACTICE)  CRUD
+ |======================================================================== */
+    public function storeQuiz(QuizStoreRequest $r)
+    {
+        $activity = Activities::create([
+            'activity_id'      => (string) Str::uuid(),
+            'module_id'        => $r->module_id,
+            'activity_name'    => $r->activity_name,
+            'activity_type_id' => 2,                // QUIZ
+            'activity_description' => $r->activity_description,
+            'unlock_date'         => $r->unlock_date,
+            'deadline_date'       => $r->deadline_date,
+        ]);
+
+        Quizzes::create([
+            'activity_id'   => $activity->activity_id,
+            'quiz_type_id'  => $r->quiz_type_id,    // 1 = SHORT, 2 = PRACTICE
+        ]);
+
+        return response()->json(['message' => 'Quiz created'], 201);
+    }
+
+    public function updateQuiz(QuizUpdateRequest $r)
+    {
+        Activities::findOrFail($r->activity_id)
+            ->update($r->only([
+                'activity_name',
+                'activity_description',
+                'unlock_date',
+                'deadline_date',
+            ]));
+
+        Quizzes::where('activity_id', $r->activity_id)
+            ->update(['quiz_type_id' => $r->quiz_type_id]);
+
+        return response()->json(['message' => 'Quiz updated']);
+    }
+
+    public function destroyQuiz(Request $r)
+    {
+        $r->validate([
+            'activity_id' => 'required|exists:activity,activity_id',
+        ]);
+
+        DB::transaction(function () use ($r) {
+            QuizQuestions::where('activity_id', $r->activity_id)->delete();
+            Quizzes::where('activity_id', $r->activity_id)->delete();
+            Activities::where('activity_id', $r->activity_id)->delete();
+        });
+
+        return response()->json(['message' => 'Quiz deleted']);
+    }
+
+    /* =========================================================================
+ |  LECTURE  &  TUTORIAL  CRUD  (activity_type_id = 3 | 4)
+ |======================================================================== */
+    private function storeGenericActivity(array $data, int $typeId): Activities
+    {
+        return Activities::create($data + [
+            'activity_id'       => (string) Str::uuid(),
+            'activity_type_id'  => $typeId,                // 3 = LECTURE, 4 = TUTORIAL
+        ]);
+    }
+
+    public function storeLecture(TutorialLectureStoreRequest $r)
+    {
+        $this->storeGenericActivity($r->validated(), 3);
+        return response()->json(['message' => 'Lecture created'], 201);
+    }
+
+    public function storeTutorial(TutorialLectureStoreRequest $r)
+    {
+        $this->storeGenericActivity($r->validated(), 4);
+        return response()->json(['message' => 'Tutorial created'], 201);
+    }
+
+    public function updateLecture(TutorialLectureUpdateRequest $r)
+    {
+        Activities::findOrFail($r->activity_id)->update($r->validated());
+        return response()->json(['message' => 'Lecture updated']);
+    }
+
+    public function updateTutorial(TutorialLectureUpdateRequest $r)
+    {
+        Activities::findOrFail($r->activity_id)->update($r->validated());
+        return response()->json(['message' => 'Tutorial updated']);
+    }
+
+    public function destroyLecture(Request $r)
+    {
+        $r->validate(['activity_id' => 'required|exists:activity,activity_id']);
+        Activities::where('activity_id', $r->activity_id)->delete();
+        return response()->json(['message' => 'Lecture deleted']);
+    }
+
+    public function destroyTutorial(Request $r)
+    {
+        $r->validate(['activity_id' => 'required|exists:activity,activity_id']);
+        Activities::where('activity_id', $r->activity_id)->delete();
+        return response()->json(['message' => 'Tutorial deleted']);
     }
 }

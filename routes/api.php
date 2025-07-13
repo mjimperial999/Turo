@@ -64,11 +64,38 @@ Route::prefix('v1')->group(function () {
         Route::get('get-student-long-quiz-result-by-section', [MobileModelController::class, 'getStudentLongQuizResultBySection']);
         Route::get('get-student-screening-result-by-section', [MobileModelController::class, 'getStudentScreeningResultBySection']);
 
-        Route::delete('delete_module_in_course.php',      [MobileModelController::class, 'destroy']);
-        Route::post('create_module.php',                  [MobileModelController::class, 'store']);
-        Route::get('get_module.php',                      [MobileModelController::class, 'show']);
-        Route::post('update_module.php',                  [MobileModelController::class, 'update']);
-        Route::get('get-current-module',                  [MobileModelController::class, 'current']);
+        Route::get('get-section-student-list-for-teacher',      [MobileModelController::class, 'getStudentList']);
+
+        // TEACHER CRUD OPERATIONS
+        /* MODULE */
+        Route::get('get-module',          [MobileModelController::class, 'showModule']);
+        Route::post('create-module',      [MobileModelController::class, 'storeModule']);
+        Route::post('update-module',      [MobileModelController::class, 'updateModule']);
+        Route::post('delete-module',      [MobileModelController::class, 'destroyModule']);
+
+        /* LONG QUIZ */
+        Route::post('create-long-quiz',   [MobileModelController::class, 'storeLongQuiz']);
+        Route::post('update-long-quiz',   [MobileModelController::class, 'updateLongQuiz']);
+        Route::post('delete-long-quiz',   [MobileModelController::class, 'destroyLongQuiz']);
+
+        /* SCREENING   */
+        Route::post('create-screening-exam', [MobileModelController::class, 'storeScreeningExam']);
+        Route::post('update-screening-exam', [MobileModelController::class, 'updateScreeningExam']);
+        Route::post('delete-screening-exam', [MobileModelController::class, 'destroyScreeningExam']);
+
+        /* QUIZ  (short / practice) */
+        Route::post('create-quiz',        [MobileModelController::class, 'storeQuiz']);
+        Route::post('update-quiz',        [MobileModelController::class, 'updateQuiz']);
+        Route::post('delete-quiz',        [MobileModelController::class, 'destroyQuiz']);
+
+        /* LECTURE / TUTORIAL */
+        Route::post('create-lecture',     [MobileModelController::class, 'storeLecture']);
+        Route::post('update-lecture',     [MobileModelController::class, 'updateLecture']);
+        Route::post('delete-lecture',     [MobileModelController::class, 'destroyLecture']);
+
+        Route::post('create-tutorial',    [MobileModelController::class, 'storeTutorial']);
+        Route::post('update-tutorial',    [MobileModelController::class, 'updateTutorial']);
+        Route::post('delete-tutorial',    [MobileModelController::class, 'destroyTutorial']);
 
         Route::get('course', [MobileModelController::class, 'course']);
         Route::get('modules', [MobileModelController::class, 'modules']);

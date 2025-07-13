@@ -56,53 +56,75 @@ class ScreeningController extends Controller
     /*--------------------------------------------------------
     | START ATTEMPT
     *-------------------------------------------------------*/
+    /*--------------------------------------------------------
+| START ATTEMPT  (fixed: always builds the exact
+|                 number_of_questions list)
+*-------------------------------------------------------*/
     public function start(Request $request, $courseId, $screeningId)
     {
         $studentId = session()->get('user_id');
 
-        /* eager-load options + image in one hit */
+        /* ①  eager-load everything (options + image) ------------- */
         $screening = Screening::with([
             'concepts.topics.questions' => fn($q) => $q->with(['options', 'image']),
         ])
             ->where('course_id', $courseId)
             ->findOrFail($screeningId);
 
-        /* determine attempt # and tier */
+        /* ②  determine attempt # and tier ----------------------- */
         $attemptNo = ScreeningResult::where([
-            ['student_id', $studentId],
+            ['student_id',   $studentId],
             ['screening_id', $screeningId],
         ])->max('attempt_number') ?? 0;
         $attemptNo++;
         $tierId = min($attemptNo, 2);
 
-        /* flatten question IDs */
-        $totalNeeded = $screening->number_of_questions;
-        $topicPools  = [];
-
+        /* ③  build shuffled question pools per-topic ------------ */
+        $topicPools = [];
         foreach ($screening->concepts as $concept) {
             foreach ($concept->topics as $topic) {
                 $topicPools[$topic->screening_topic_id] =
-                    $topic->questions->shuffle();   // shuffle inside each topic
+                    $topic->questions->shuffle();          // random inside topic
             }
         }
+
+        /* ④  work out how many we can really serve -------------- */
+        $totalAvailable = collect($topicPools)->flatten()->count();
+        $totalNeeded    = min($screening->number_of_questions, $totalAvailable);
 
         $topics = array_keys($topicPools);
         $base   = intdiv($totalNeeded, count($topics));
         $extra  = $totalNeeded % count($topics);
 
+        /* ⑤  first pass: proportional pick per-topic ------------ */
         $questions = [];
+        $remaining = $totalNeeded;
         foreach ($topics as $idx => $tId) {
             $take = $base + ($idx < $extra ? 1 : 0);
-            $questions = array_merge(
-                $questions,
-                $topicPools[$tId]->take($take)
-                    ->pluck('screening_question_id')
-                    ->all()
-            );
+            $slice = $topicPools[$tId]->take($take)
+                ->pluck('screening_question_id')
+                ->all();
+            $questions   = array_merge($questions, $slice);
+            // remove what we just used so leftovers stay unique
+            $topicPools[$tId] = $topicPools[$tId]->slice($take);
+            $remaining  -= count($slice);
         }
 
+        /* ⑥  second pass: fill any shortfall with random spares -- */
+        if ($remaining > 0) {
+            $leftovers = collect($topicPools)
+                ->flatten()
+                ->shuffle()
+                ->pluck('screening_question_id')
+                ->take($remaining)
+                ->all();
+
+            $questions = array_merge($questions, $leftovers);
+        }
+
+        /* ⑦  store state in the session ------------------------- */
         Session::put("se_$screeningId", [
-            'questions'   => $questions,
+            'questions'   => $questions,                 // exact count guaranteed
             'answers'     => [],
             'started_at'  => Carbon::now(),
             'deadline'    => Carbon::now()->addSeconds($screening->time_limit),
@@ -112,6 +134,7 @@ class ScreeningController extends Controller
 
         return redirect("/home-tutor/course/$courseId/$screeningId/q/0");
     }
+
 
     /*--------------------------------------------------------
     | SHOW / SUBMIT QUESTION
