@@ -1251,3 +1251,20 @@ class LongQuizCollectionResource extends JsonResource
 }
 
 
+Create method to get records of students from an activity quiz by a section
+Route::get('get-student-quiz-result-by-section',      [MobileModelController::class, 'getStudentQuizResultBySection']);
+Needed: 'activity_id' and 'section_id'
+
+get the isKept entry per student from a certain section
+Result
+section_name
+student:
+    student_id
+    student_name (last_name, first_name)
+    earned_score (earned_points)
+    number_of_questions
+    score_percentage
+    attempt_number
+    date_taken
+
+
