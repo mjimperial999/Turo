@@ -55,10 +55,14 @@ Route::prefix('v1')->group(function () {
         // TEACHER
         Route::get('get-courses-for-teacher',      [MobileModelController::class, 'getCoursesTeacher']);
         Route::get('get-modules-for-teacher',      [MobileModelController::class, 'getModulesTeacher']);
-        Route::get('get-activities-for-teacher',      [MobileModelController::class, 'getActivitiesTeacher']);
+        Route::get('get-activities-for-teacher',   [MobileModelController::class, 'getActivitiesTeacher']);
 
         Route::get('get-lecture-for-teacher',      [MobileModelController::class, 'getCoursesTeacher']);
-        Route::get('get-tutorial-for-teacher',      [MobileModelController::class, 'getCoursesTeacher']);
+        Route::get('get-tutorial-for-teacher',     [MobileModelController::class, 'getCoursesTeacher']);
+
+        Route::get('get-student-quiz-result-by-section',      [MobileModelController::class, 'getStudentQuizResultBySection']);
+        Route::get('get-student-long-quiz-result-by-section', [MobileModelController::class, 'getStudentLongQuizResultBySection']);
+        Route::get('get-student-screening-result-by-section', [MobileModelController::class, 'getStudentScreeningResultBySection']);
 
         Route::delete('delete_module_in_course.php',      [MobileModelController::class, 'destroy']);
         Route::post('create_module.php',                  [MobileModelController::class, 'store']);

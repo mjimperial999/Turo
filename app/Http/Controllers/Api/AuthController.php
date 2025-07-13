@@ -13,8 +13,6 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {   
-        $token = "1|905a4315b0ad4d597be462c1bfc13435524fdb9cf66dfb69e7dba81d6b050a3b";
-
         // 1️⃣  Validate input
         $request->validate([
             'email'    => 'required|email',

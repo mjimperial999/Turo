@@ -477,7 +477,7 @@ class AdminController extends Controller
     {
         $year  = date('Y');          // 2025
         $count = Teachers::count() + 1;                 // simple auto-index
-        return 'T' . $year . str_pad($count, 5, '0', STR_PAD_LEFT);
+        return $year . str_pad($count, 5, '0', STR_PAD_LEFT);
     }
 
     /* ───────────────────────────────────────────────
