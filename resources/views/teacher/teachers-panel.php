@@ -27,20 +27,12 @@ include __DIR__ . '/../partials/head.php'; ?>
             </div>
 
             <div class="content-container">
-                <div class="content padding heading box-gray crud">
+                <div class="content padding heading box-gray">
 
                     <div class="header">
                         <div class="text title">
                             <h5> Your Courses </h5>
                         </div>
-                    </div>
-
-                    <div class="crud-header">
-                        <form action="/teachers-panel/create-course" method="GET">
-                            <button type="submit" class="crud-button-add">
-                                New Course <img src="/icons/new-black.svg" width="25em" height="25em" />
-                            </button>
-                        </form>
                     </div>
 
                 </div>

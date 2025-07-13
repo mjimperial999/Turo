@@ -27,8 +27,9 @@ use App\Http\Resources\{
     LongQuizCollectionResource,
     LongQuizResource,
     LongQuizContentResource,
+    ScreeningCollectionResource,
     ScreeningResource,
-    ScreeningContentResource,
+    ScreeningConceptResource,
     TutorialResource
 };
 
@@ -37,7 +38,7 @@ use App\Http\Requests\{
     ModuleUpdateRequest,
     AssessmentResultStoreRequest,
     LongQuizAssessmentResultStoreRequest,
-    ScreeningAssessmentResultStoreRequest
+    ScreeningResultStoreRequest
 };
 
 use App\Models\{
@@ -59,6 +60,7 @@ use App\Models\{
     ScreeningQuestion,
     ScreeningOption,
     ScreeningResult,
+    ScreeningResultAnswer,
     Students,
     Users,
     ModuleProgress
@@ -377,22 +379,7 @@ class MobileModelController extends Controller
             'long_quiz_id' => 'required|exists:longquiz,long_quiz_id',
         ]);
 
-        $longquiz = LongQuizzes::query()
-            ->selectRaw('
-            long_quiz_id,
-            course_id,
-            long_quiz_name,
-            long_quiz_instructions,
-            number_of_attempts,
-            time_limit,
-            number_of_questions,
-            overall_points,
-            has_answers_shown,
-            unlock_date,
-            deadline_date
-        ')
-            ->where('long_quiz_id', $r->long_quiz_id)
-            ->firstOrFail();
+        $longquiz = LongQuizzes::findOrFail($r->long_quiz_id);
 
         return response()->json(
             new LongQuizResource($longquiz)
@@ -504,27 +491,31 @@ class MobileModelController extends Controller
     }
 
     // Screening Exams
+    public function showScreeningExamList(Request $r)
+    {
+        $r->validate([
+            'course_id' => 'required|exists:course,course_id',
+        ]);
+
+        $screening = Screening::with('image')
+        ->where('course_id', $r->course_id)->get();
+
+        return response()->json([
+            'data' => ScreeningCollectionResource::collection($screening),
+        ]);
+    }
+
+
     public function showScreeningExam(Request $r)
     {
         $r->validate([
             'screening_id' => 'required|exists:screening,screening_id',
         ]);
 
-        $screening = LongQuizzes::query()
-            ->selectRaw('
-            screening_id,
-            course_id
-            screening_name,
-            screening_instructions,
-            time_limit,
-            number_of_questions,
-        ')
-            ->where('screening_id', $r->screening_id)
-            ->firstOrFail();
+        /* single model → single resource */
+        $screening = Screening::findOrFail($r->screening_id);
 
-        return response()->json(
-            new LongQuizResource($screening)
-        );
+        return response()->json(new ScreeningResource($screening));
     }
 
     // Store New Long Quiz Record
@@ -534,73 +525,66 @@ class MobileModelController extends Controller
             'screening_id' => 'required|exists:screening,screening_id',
         ]);
 
-        $questions = LongQuizQuestions::query()
+        /* eager-load ↓↓↓ everything in one go */
+        $concepts = ScreeningConcept::with([
+            'topics.questions.options',
+            'topics.questions.image',
+        ])
             ->where('screening_id', $r->screening_id)
-            ->leftJoin('screeningquestion_image as sqi', 'sqi.question_id', '=', 'screeningquestion.screening_question_id')
-            ->selectRaw('
-            screeningquestion.*,
-            sqi.image as question_blob
-        ')
-            ->get()
-            ->each(function ($q) {
-                $q->options = ScreeningOption::where('screening_question_id', $q->question_id)->get();
-            });
+            ->get();
 
-        return response()->json(
-            [
-                'questions' => ScreeningContentResource::collection($questions)
-            ]
-        );
+        return response()->json([
+            'concepts' => ScreeningConceptResource::collection($concepts),
+        ]);
     }
 
-    public function saveScreeningExamResult(LongQuizAssessmentResultStoreRequest $r)
+    public function saveScreeningResults(ScreeningResultStoreRequest  $r)
     {
         $now = Carbon::now()->timestamp;
 
         DB::transaction(function () use ($r, $now) {
 
             /* attempt # = existing rows +1 */
-            $attemptNumber = LongQuizAssessmentResult::where([
+            $attemptNumber = ScreeningResult::where([
                 'student_id'  => $r->student_id,
-                'screening_id' => $r->long_quiz_id,
+                'screening_id' => $r->screening_id,
             ])->count() + 1;
 
-            /* create parent row */
-            $result = LongQuizAssessmentResult::create([
-                'result_id'           => (string) Str::uuid(),
-                'student_id'          => $r->student_id,
-                'long_quiz_id'        => $r->long_quiz_id,
-                'attempt_number'      => $attemptNumber,
-                'tier_level_id'       => 1,
-                'score_percentage'    => $r->score_percentage,
-                'earned_points'       => $r->earned_points,
-                'date_taken'          => Carbon::now('Asia/Manila'),
-                'is_kept'             => 0,          // change later if you keep best
+            $result = ScreeningResult::create([
+                'result_id'        => (string) Str::uuid(),
+                'screening_id'     => $r->screening_id,
+                'student_id'       => $r->student_id,
+                'tier_id'          => $attemptNumber,
+                'score_percentage' => $r->score_percentage,
+                'earned_points'    => $r->earned_points,
+                'attempt_number'   => $attemptNumber,
+                'date_taken'       => Carbon::now('Asia/Manila'),
+                'is_kept'          => 0,
             ]);
 
-            LongQuizAssessmentResult::where([
+            ScreeningResult::where([
                 ['student_id',   $r->student_id],
-                ['long_quiz_id', $r->long_quiz_id],
+                ['screening_id', $r->screening_id],
             ])->update(['is_kept' => 0]);
 
-            $best = LongQuizAssessmentResult::where([
+            $best = ScreeningResult::where([
                 ['student_id',  $r->student_id],
-                ['long_quiz_id', $r->long_quiz_id],
+                ['screening_id', $r->screening_id],
             ])
                 ->orderByDesc('score_percentage')
-                ->orderBy('date_taken')          // earliest wins when scores tie
+                ->orderBy('date_taken')
                 ->first();
 
             /* 3️⃣  flag that one as kept */
             $best?->update(['is_kept' => 1]);
 
             /* store every answer */
-            foreach ($r->input('answers') as $ans) {
-                LongQuizAssessmentResultAnswer::create([
-                    'result_id'                 => $result->result_id,
-                    'long_quiz_question_id'     => $ans['question_id'],
-                    'long_quiz_option_id'       => $ans['option_id'],
-                    'is_correct'                => $ans['is_correct'],
+            foreach ($r->answers as $a) {
+                ScreeningResultAnswer::create([
+                    'result_id'             => $result->result_id,
+                    'screening_question_id' => $a['question_id'],
+                    'screening_option_id'   => $a['option_id'],
+                    'is_correct'            => $a['is_correct'],
                 ]);
             }
         });
@@ -611,20 +595,17 @@ class MobileModelController extends Controller
     public function screeningExamResults(Request $r)
     {
         $r->validate([
-            'student_id'      => 'required|exists:student,user_id',
-            'long_quiz_id'     => 'required|exists:longquiz,long_quiz_id',
+            'student_id'   => 'required|exists:student,user_id',
+            'screening_id' => 'required|exists:screening,screening_id',
         ]);
 
-        $best = LongQuizAssessmentResult::where([
+        $best = ScreeningResult::where([
             'student_id'   => $r->student_id,
-            'long_quiz_id' => $r->long_quiz_id,
+            'screening_id' => $r->screening_id,
             'is_kept'      => 1,
-        ])
-            ->first();
+        ])->first();
 
-        return response()->json([
-            'data' => is_array($best) && array_is_list($best) ? $best : [$best]
-        ]);
+        return response()->json(['data' => $best ?? []]);
     }
 
     /* ---------- POST create_module.php ---------- */

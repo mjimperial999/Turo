@@ -24,3 +24,15 @@ class QuizContentResource extends JsonResource
         ];
     }
 }
+
+class QuestionOptionResource extends JsonResource
+{
+    public function toArray($req)
+    {
+        return [
+            'option_id'   => $this->option_id,
+            'option_text' => $this->option_text,
+            'is_correct'  => (int) $this->is_correct,
+        ];
+    }
+}

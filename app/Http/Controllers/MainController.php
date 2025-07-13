@@ -363,7 +363,7 @@ class MainController extends Controller
         $users = Users::with('image')->findOrFail($userID);
 
         $assessment = LongQuizAssessmentResult::where('student_id', $userID)
-            ->where('course_id', $courseID)
+            ->where('long_quiz_id', $longQuizID)
             ->orderByDesc('date_taken')
             ->with([
                 'answers.longquizoption',                     // chosen option

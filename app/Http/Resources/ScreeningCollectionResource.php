@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ScreeningResource extends JsonResource
+class ScreeningCollectionResource extends JsonResource
 {
     public function toArray($req)
     {
@@ -13,9 +13,9 @@ class ScreeningResource extends JsonResource
             'screening_id'          => $this->screening_id,
             'course_id'             => $this->course_id,
             'screening_name'        => $this->screening_name,
-            'screening_instructions'=> $this->screening_instructions,
-            'time_limit'            => (int) $this->time_limit,
-            'number_of_questions'   => (int) $this->number_of_questions,
+            'screening_image'     => optional($this->image?->image)
+                                      ? base64_encode($this->image?->image)
+                                      : null,
         ];
     }
 }
