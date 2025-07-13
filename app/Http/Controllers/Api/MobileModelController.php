@@ -713,7 +713,7 @@ class MobileModelController extends Controller
             ->map(fn($res) => [
                 'title'       => $res->title,
                 'description' => $res->description,
-                'video_url'   => $res->video_url,
+                'video_url'   => $res->video_url ?: null,
                 'pdf_blob'    => $res->pdf_blob ? base64_encode($res->pdf_blob) : null,
             ]);
 
