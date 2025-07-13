@@ -511,5 +511,5 @@ If the topic_id sent is null, that means find the entry that has screening_topic
 return:
 title
 description
-video_url
-pdf_blob (base64 encoded)
+video_url (can be null)
+pdf_blob (base64 encoded) (can be null)

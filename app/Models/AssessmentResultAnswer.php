@@ -9,8 +9,8 @@ class AssessmentResultAnswer extends Model
 {
     /* ---------- table & primary-key ---------- */
     protected $table      = 'assessmentresult_answers';   // exact table name
-    protected $primaryKey = null;                         // composite PK → handled manually
-    public    $incrementing = false;
+    protected $primaryKey = 'result_answer_id';
+    protected $keyType = 'int';                        
     public    $timestamps   = false;                      // no created_at / updated_at columns
 
     /* ---------- mass-assignable columns ---------- */

@@ -7,9 +7,9 @@ class LongQuizAssessmentResultAnswer extends Model
 {
     /* ---------- table & primary key ---------- */
     protected $table      = 'long_assessmentresult_answer';
-    public    $incrementing = false;          // composite PK ⇒ handled manually
+    protected $primaryKey = 'result_answer_id';
+    protected $keyType = 'int';    
     public    $timestamps   = false;
-    protected $primaryKey = null;
 
     /* ---------- mass-assignable columns ---------- */
     protected $fillable = [

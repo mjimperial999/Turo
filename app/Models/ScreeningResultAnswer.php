@@ -7,7 +7,8 @@ class ScreeningResultAnswer extends Model
 {
     /* ---------- table & PK ---------- */
     protected $table      = 'screeningresult_answers';
-    protected $primaryKey = null;             // composite PK → result_id + screening_question_id
+    protected $primaryKey = 'result_answer_id';
+    protected $keyType = 'int';
     public    $incrementing = false;
     public    $timestamps   = false;
 

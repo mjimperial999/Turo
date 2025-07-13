@@ -61,6 +61,7 @@ use App\Models\{
     ScreeningOption,
     ScreeningResult,
     ScreeningResultAnswer,
+    LearningResource,
     Students,
     Users,
     ModuleProgress
@@ -498,7 +499,7 @@ class MobileModelController extends Controller
         ]);
 
         $screening = Screening::with('image')
-        ->where('course_id', $r->course_id)->get();
+            ->where('course_id', $r->course_id)->get();
 
         return response()->json([
             'data' => ScreeningCollectionResource::collection($screening),
@@ -593,18 +594,130 @@ class MobileModelController extends Controller
 
     public function screeningExamResults(Request $r)
     {
+        /* ---------- 1. validate input ---------- */
         $r->validate([
             'student_id'   => 'required|exists:student,user_id',
             'screening_id' => 'required|exists:screening,screening_id',
         ]);
 
-        $best = ScreeningResult::where([
+        /* ---------- 2. newest (latest-attempt) result ---------- */
+        $result = ScreeningResult::where([
             'student_id'   => $r->student_id,
             'screening_id' => $r->screening_id,
-            'is_kept'      => 1,
-        ])->first();
+        ])
+            ->orderByDesc('attempt_number')                 // NEWEST first
+            ->with('answers.question.topic.concept')        // eager-load graph
+            ->first();
 
-        return response()->json(['data' => $best ?? []]);
+        if (!$result) {
+            return response()->json([], 404);               // no attempt yet
+        }
+
+        /* ---------- 3. tally correct / totals ---------- */
+        $conceptRaw = $topicRaw = [];
+
+        foreach ($result->answers as $ans) {
+            $q         = $ans->question;                       // already loaded
+            $concept   = $q->topic->concept;
+            $topic     = $q->topic;
+
+            $cId = $concept->screening_concept_id;
+            $tId = $topic->screening_topic_id;
+
+            // ensure array keys exist
+            $conceptRaw[$cId] ??= [
+                'name'    => $concept->concept_name,
+                'total'   => 0,
+                'correct' => 0,
+                'topics'  => [],
+            ];
+            $conceptRaw[$cId]['total']++;
+
+            if ($result->tier_id == 2) {                     // topic stats only for tier-2
+                $topicRaw[$tId] ??= [
+                    'name'       => $topic->topic_name,
+                    'concept_id' => $cId,
+                    'total'      => 0,
+                    'correct'    => 0,
+                ];
+                $topicRaw[$tId]['total']++;
+            }
+
+            if ($ans->is_correct) {
+                $conceptRaw[$cId]['correct']++;
+                if (isset($topicRaw[$tId])) {
+                    $topicRaw[$tId]['correct']++;
+                }
+            }
+        }
+
+        /* ---------- 4. fold topics into concepts (tier-2) ---------- */
+        if ($result->tier_id == 2) {
+            foreach ($topicRaw as $tId => $row) {
+                $pct = $row['total']
+                    ? round($row['correct'] / $row['total'] * 100, 2)
+                    : 0;
+                $conceptRaw[$row['concept_id']]['topics'][] = [
+                    'topic_id'               => $tId,
+                    'topic_name'             => $row['name'],
+                    'topic_score_percentage' => $pct,
+                    'passed'                 => $pct >= 60,
+                ];
+            }
+        }
+
+        /* ---------- 5. final normalisation pass (handles stray rows) ---------- */
+        foreach ($conceptRaw as $cId => &$row) {
+            // if already normalised (tier-2 path) skip recalculation
+            if (isset($row['concept_score_percentage'])) continue;
+
+            $pct = $row['total']
+                ? round($row['correct'] / $row['total'] * 100, 2)
+                : 0;
+
+            $row = [
+                'concept_id'               => $cId,
+                'concept_name'             => $row['name'],
+                'concept_score_percentage' => $pct,
+                'passed'                   => $pct >= 60,
+                'topics'                   => $row['topics'] ?? [],   // tier-1 ⇒ []
+            ];
+        }
+        unset($row);
+
+        /* ---------- 6. ship it ---------- */
+        return response()->json([
+            'earned_points'       => $result->earned_points,
+            'number_of_questions' => $result->answers->count(),
+            'tier_id'             => $result->tier_id,
+            'attempt_number'      => $result->attempt_number,
+            'data'                => array_values($conceptRaw),       // re-index
+        ]);
+    }
+
+    public function fetchLearningResources(Request $r)
+    {
+        $r->validate([
+            'concept_id' => 'required|exists:screeningconcept,screening_concept_id',
+            'topic_id'   => 'nullable|exists:screeningtopic,screening_topic_id',
+        ]);
+
+        $resources = LearningResource::query()            // model + columns :contentReference[oaicite:8]{index=8}
+            ->where('screening_concept_id', $r->concept_id)
+            ->when(
+                $r->filled('topic_id'),
+                fn($q) => $q->where('screening_topic_id', $r->topic_id),
+                fn($q) => $q->whereNull('screening_topic_id')  // tier-1 materials
+            )
+            ->get()
+            ->map(fn($res) => [
+                'title'       => $res->title,
+                'description' => $res->description,
+                'video_url'   => $res->video_url,
+                'pdf_blob'    => $res->pdf_blob ? base64_encode($res->pdf_blob) : null,
+            ]);
+
+        return response()->json(['resources' => $resources]);
     }
 
     /* ---------- POST create_module.php ---------- */

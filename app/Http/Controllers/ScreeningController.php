@@ -260,26 +260,29 @@ class ScreeningController extends Controller
                 : 0;
 
             /* -----------------------------------------------------------------
-         * 6 ▸ Decide whether this attempt becomes the kept one
-         * ----------------------------------------------------------------- */
-            $best = ScreeningResult::where('screening_id', $screeningId)
-                ->where('student_id',  $studentId)
-                ->where('is_kept',     1)
-                ->first();
+ * 6 ▸ Always keep the **latest** attempt
+ * ----------------------------------------------------------------- */
+            $prevKept = ScreeningResult::where([
+                ['screening_id', $screeningId],
+                ['student_id',   $studentId],
+                ['is_kept',      1],
+            ])->first();
 
-            $isKept = (!$best || $percent > $best->score_percentage) ? 1 : 0;
-
-            if ($isKept && $best) {
-                $best->update(['is_kept' => 0]);           // demote old record
+            if ($prevKept) {
+                // demote the previously-kept row
+                $prevKept->update(['is_kept' => 0]);
             }
 
+            // this ( newly-inserted ) result is now the kept one
+            $isKept = 1;
+
             /* -----------------------------------------------------------------
-         * 7 ▸ Update header with real score + kept flag
-         * ----------------------------------------------------------------- */
+ * 7 ▸ Final-update header row
+ * ----------------------------------------------------------------- */
             $result->update([
                 'score_percentage' => $percent,
                 'earned_points'    => $earned,
-                'is_kept'          => $isKept
+                'is_kept'          => $isKept,   // always 1 for the newest
             ]);
 
             $failed   = $percent < 70;
