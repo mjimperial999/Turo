@@ -766,8 +766,11 @@ class MobileModelController extends Controller
         $courseId  = $r->course_id;
 
         /* 2 ───── section name & course points ------------------------------- */
-        $student      = Students::with('section')->where('user_id',$studentId);
+        $student      = Students::with('section')->findOrFail($studentId);
         $sectionName  = $student->section->section_name ?? '';
+
+        $courseName = Courses::where('course_id', $r->course_id)
+        ->value('course_name');
 
         $points = StudentProgress::where([
             ['student_id', $studentId],
@@ -868,6 +871,7 @@ class MobileModelController extends Controller
 
         /* 7 ───── respond --------------------------------------------------- */
         return response()->json([
+            'course'        => $courseName,
             'section'        => $sectionName,
             'overall_grade'  => $overall,
             'points'         => (int) $points,
