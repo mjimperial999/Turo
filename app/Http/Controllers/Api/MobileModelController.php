@@ -766,9 +766,8 @@ class MobileModelController extends Controller
         $courseId  = $r->course_id;
 
         /* 2 ───── section name & course points ------------------------------- */
-        $student      = Students::with('section')->findOrFail($studentId);
+        $student      = Students::with('section')->where('user_id',$studentId);
         $sectionName  = $student->section->section_name ?? '';
-
 
         $points = StudentProgress::where([
             ['student_id', $studentId],

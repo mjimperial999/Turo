@@ -18,9 +18,10 @@ class Students extends Model
     }
 
     protected $table = 'student';
-    protected $primaryKey = 'entry_id';
+    protected $primaryKey = 'user_id';
     public $timestamps = false;
-    protected $keyType = 'int';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'user_id',
