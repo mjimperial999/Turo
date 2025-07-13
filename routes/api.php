@@ -46,7 +46,10 @@ Route::prefix('v1')->group(function () {
         Route::get('get-student-analysis',      [MobileModelController::class, 'showStudentAnalysis']);
         Route::get('get-gamified-elements',     [MobileModelController::class, 'showGamifiedElements']);
 
-        Route::get('get-inbox',     [MobileModelController::class, 'showInbox']);
+        Route::get('get-inbox',         [MobileModelController::class, 'showInbox']);
+        Route::post('mark-read',        [MobileModelController::class, 'markMessageRead']);
+        Route::post('delete-message',   [MobileModelController::class, 'deleteMessage']);
+
         Route::get('get-calendar-events',     [MobileModelController::class, 'showCalendarEvents']);
 
         // TEACHER

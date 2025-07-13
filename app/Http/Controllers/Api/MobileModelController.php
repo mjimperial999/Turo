@@ -69,7 +69,13 @@ use App\Models\{
     StudentAchievements,
     StudentBadges,
     Users,
-    ModuleProgress
+    ModuleProgress,
+    CalendarEvent,
+    Inbox,
+    InboxParticipant,
+    Message,
+    MessageUserState,
+    Teachers
 };
 
 use App\Services\{
@@ -899,9 +905,9 @@ class MobileModelController extends Controller
         $studentId = $data['student_id'];
 
         $student = Users::where('user_id', $r->student_id)->first();
-$studentName = $student
-    ? trim("{$student->first_name} {$student->last_name}")
-    : null;
+        $studentName = $student
+            ? trim("{$student->first_name} {$student->last_name}")
+            : null;
 
         $overallPoints = Students::where('user_id', $r->student_id)
             ->value('total_points');
@@ -996,6 +1002,243 @@ $studentName = $student
         ]);
     }
 
+    /* ===========================================================
+|  GET /api/v1/get-calendar-events
+|  Returns *all* items that should be plotted in the calendar
+|  — raw dates, no formatting; is_urgent converted to boolean
+|===========================================================*/
+    public function showCalendarEvents()
+    {
+        /* ─── 1. ANNOUNCEMENTS ───────────────────────────────── */
+        $announcements = CalendarEvent::where('event_type_id', 1)
+            ->orderByDesc('is_urgent')
+            ->orderBy('date')
+            ->get(['title', 'description', 'date', 'is_urgent'])
+            ->map(fn($e) => [
+                'title'       => $e->title,
+                'description' => $e->description,
+                'date'        => $e->date,                // raw datetime string
+                'is_urgent'   => (bool) $e->is_urgent,    // int → bool
+            ]);
+
+        /* ─── 2. PRACTICE-QUIZZES (quiz_type_id = 2) ─────────── */
+        $practiceQuiz = Activities::with('quiz')                // eager-load quiz tiny
+            ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 2))
+            ->get(['activity_name', 'unlock_date', 'deadline_date'])
+            ->map(fn($a) => [
+                'name'          => $a->activity_name,
+                'unlock_date'   => $a->unlock_date,
+                'deadline_date' => $a->deadline_date,
+            ]);
+
+        /* ─── 3. SHORT-QUIZZES (quiz_type_id = 1) ────────────── */
+        $shortQuiz = Activities::with('quiz')
+            ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 1))
+            ->get(['activity_name', 'unlock_date', 'deadline_date'])
+            ->map(fn($a) => [
+                'name'          => $a->activity_name,
+                'unlock_date'   => $a->unlock_date,
+                'deadline_date' => $a->deadline_date,
+            ]);
+
+        /* ─── 4. LONG-QUIZZES  ───────────────────────────────── */
+        $longQuiz = LongQuizzes::get(['long_quiz_name', 'unlock_date', 'deadline_date'])
+            ->map(fn($l) => [
+                'name'          => $l->long_quiz_name,
+                'unlock_date'   => $l->unlock_date,
+                'deadline_date' => $l->deadline_date,
+            ]);
+
+        /* ─── 5. FINAL PAYLOAD ───────────────────────────────── */
+        return response()->json([
+            'announcements'  => $announcements,
+            'practice_quiz'  => $practiceQuiz,
+            'short_quiz'     => $shortQuiz,
+            'long_quiz'      => $longQuiz,
+        ]);
+    }
+
+    public function showInbox(Request $r)
+    {
+        $r->validate([
+            'user_id' => 'required|exists:user,user_id',
+        ]);
+
+        $me = $r->user_id;                        // shorthand
+
+        /* -------------------------------------------------------------
+     * Helpers
+     * ----------------------------------------------------------- */
+        $img = function (?Users $u) {
+            if (!$u || empty($u->image?->image)) {
+                return null;                         // let mobile show a stock icon
+            }
+            return base64_encode($u->image->image);  // blob → base64
+        };
+
+        /* -------------------------------------------------------------
+     * INCOMING  (threads that have at least ONE msg not from me)
+     * ----------------------------------------------------------- */
+        $incoming = Inbox::whereHas(
+            'participants',
+            fn($q) => $q->where('participant_id', $me)
+        )
+            ->whereHas(
+                'messages',
+                fn($q) => $q->where('sender_id', '!=', $me)
+            )
+            ->with(['messages.userStates', 'messages.sender'])
+            ->orderBy('timestamp', 'desc')
+            ->get()
+            ->flatMap(function ($thread) use ($me, $img) {
+                // latest message in this thread that was **not** sent by me
+                $msg = $thread->messages
+                    ->where('sender_id', '!=', $me)
+                    ->sortByDesc('timestamp')
+                    ->first();
+
+                // if sender was deleted somehow, skip the row
+                if (!$msg?->sender) return [];
+
+                // unread? -> any state row for *this* msg + me that is_read==0
+                $state = $msg->userStates
+                    ->firstWhere('user_id', $me);
+                $unread = $state ? !$state->is_read : true;
+
+                return [[
+                    'sender_id'   => $msg->sender_id,
+                    'sender_name' => trim($msg->sender->first_name . ' ' . $msg->sender->last_name),
+                    'image_blob'  => $img($msg->sender),
+                    'subject'     => $msg->subject,
+                    'message'     => $msg->body,
+                    'date'        => Carbon::parse($msg->timestamp)->format('Y-m-d H:i:s'),
+                    'unread'      => (bool) $unread,
+                ]];
+            })
+            ->values();
+
+        /* -------------------------------------------------------------
+     * SENT  (latest message *from* me in each thread I participate)
+     * ----------------------------------------------------------- */
+        $sent = Inbox::whereHas(
+            'messages',
+            fn($q) => $q->where('sender_id', $me)
+        )
+            ->with(['participants.user', 'messages'])
+            ->orderBy('timestamp', 'desc')
+            ->get()
+            ->flatMap(function ($thread) use ($me, $img) {
+                // latest message **sent by me**
+                $msg = $thread->messages
+                    ->where('sender_id', $me)
+                    ->sortByDesc('timestamp')
+                    ->first();
+
+                if (!$msg) return [];
+
+                // pick *all* recipients except me
+                return $thread->participants
+                    ->where('participant_id', '!=', $me)
+                    ->map(function ($p) use ($msg, $img) {
+                        $u = $p->user;
+                        return [
+                            'recipient_id'   => $u->user_id,
+                            'recipient_name' => trim($u->first_name . ' ' . $u->last_name),
+                            'image_blob'     => $img($u),
+                            'subject'        => $msg->subject,
+                            'message'        => $msg->body,
+                            'date'           => Carbon::parse($msg->timestamp)->format('Y-m-d H:i:s'),
+                        ];
+                    });
+            })
+            ->values();
+
+        /* -------- final payload ------------------------------------ */
+        return response()->json([
+            'messages' => [
+                'incoming' => $incoming,
+                'sent'     => $sent,
+            ],
+        ]);
+    }
+
+    /* ========================================================================
+ |  OPTIONAL HELPERS  (wire them if you like)
+ |=======================================================================*/
+
+    /** POST /api/v1/mark-read   body: { "message_id": "…" } */
+    public function markMessageRead(Request $r)
+    {
+        $r->validate([
+            'message_id' => 'required|exists:message,message_id',
+            'user_id' => 'required|exists:user,user_id',
+        ]);
+        $me = $r->user_id;
+
+        MessageUserState::where([
+            'message_id' => $r->message_id,
+            'user_id'    => $me,
+        ])->update(['is_read' => 1]);
+
+        return response()->noContent();
+    }
+
+    /** POST /api/v1/delete-message   body: { "message_id": "…" } */
+    public function deleteMessage(Request $r)
+    {
+        $r->validate([
+            'message_id' => 'required|exists:message,message_id',
+            'user_id' => 'required|exists:user,user_id',
+        ]);
+
+        $me = $r->user_id;
+
+        $msg = Message::with('inbox.participants')->findOrFail($r->message_id);
+
+        // author OR any participant may hard-delete
+        abort_unless(
+            $msg->sender_id == $me ||
+                $msg->inbox->participants->contains('participant_id', $me),
+            403
+        );
+
+        DB::transaction(function () use ($msg) {
+            MessageUserState::where('message_id', $msg->message_id)->delete();
+            $msg->delete();
+        });
+
+        return response()->noContent();
+    }
+
+    // TEACHER SIDE
+    public function indexTeacher(Request $r)
+    {
+        $teacher = Teachers::findOrFail($r->teacher_id);
+
+        $modules = Modules::query()
+            ->where('module.course_id', $r->course_id)
+
+            ->orderByRaw("
+            CAST( REGEXP_REPLACE(module.module_name, '[^0-9]', '') AS UNSIGNED ),
+            module.module_name
+        ")
+
+            ->leftJoin('moduleprogress as mp', function ($q) use ($r) {
+                $q->on('mp.module_id', '=', 'module.module_id')
+                    ->where('mp.student_id', '=', $r->teacher_id);
+            })
+            ->leftJoin('module_image as mi', 'mi.module_id', '=', 'module.module_id')
+            ->selectRaw('
+            module.*,
+            mp.progress as progress_value,
+            mi.image    as picture_blob
+        ')
+            ->get();
+
+        return response()->json([
+            'data' => ModuleCollectionResource::collection($modules)
+        ]);
+    }
 
     /* ---------- POST create_module.php ---------- */
     public function store(ModuleStoreRequest $req)
