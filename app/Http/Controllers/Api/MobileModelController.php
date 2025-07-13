@@ -64,6 +64,10 @@ use App\Models\{
     LearningResource,
     Students,
     StudentProgress,
+    Achievements,
+    Badges,
+    StudentAchievements,
+    StudentBadges,
     Users,
     ModuleProgress
 };
@@ -770,7 +774,7 @@ class MobileModelController extends Controller
         $sectionName  = $student->section->section_name ?? '';
 
         $courseName = Courses::where('course_id', $r->course_id)
-        ->value('course_name');
+            ->value('course_name');
 
         $points = StudentProgress::where([
             ['student_id', $studentId],
@@ -883,6 +887,114 @@ class MobileModelController extends Controller
         ]);
     }
 
+    /* -----------------------------------------------------------
+ *  GET  /api/v1/get-gamified-elements?student_id=…
+ * ----------------------------------------------------------*/
+    public function showGamifiedElements(Request $r)
+    {
+        /* ---------- 1. validate input ----------------------------------- */
+        $data = $r->validate([
+            'student_id' => 'required|exists:student,user_id',
+        ]);
+        $studentId = $data['student_id'];
+
+        $student = Users::where('user_id', $r->student_id)->first();
+$studentName = $student
+    ? trim("{$student->first_name} {$student->last_name}")
+    : null;
+
+        $overallPoints = Students::where('user_id', $r->student_id)
+            ->value('total_points');
+
+        /* ---------- 2. caller, section + leaderboard -------------------- */
+        $me       = Students::with('user', 'section')->findOrFail($studentId);
+        $section  = $me->section;                       // Eager-loaded above
+        $sectionId = $section->section_id;
+
+        /* Pull every student in this section, ordered by points ↓ */
+        $ranked = Students::with('user')
+            ->where('section_id', $sectionId)
+            ->whereHas('user')                          // skip orphans safely
+            ->orderByDesc('total_points')
+            ->orderBy('user_id')                        // deterministic tie-break
+            ->get()
+            ->values();                                 // 0-based indexing
+
+        /* Tie-aware ranks (duplicates allowed) */
+        $prev = null;
+        $rank = 0;
+        foreach ($ranked as $idx => $row) {
+            if ($prev === null || $row->total_points < $prev) {
+                $rank = $idx + 1;
+            }
+            $row->calc_rank = $rank;                   // attach for later
+            $prev           = $row->total_points;
+        }
+
+        /* Top-15 slice for the payload */
+        $top15 = $ranked->take(15)->map(fn($s) => [
+            'student_name'   => trim($s->user->first_name . ' ' . $s->user->last_name),
+            'student_ranking' => $s->calc_rank,
+            'student_points' => (int) $s->total_points,
+        ]);
+
+        $myRank = optional(
+            $ranked->firstWhere('user_id', $studentId)
+        )->calc_rank;
+
+        /* ---------- 3. achievements + which ones are unlocked ---------- */
+        $achievements = Achievements::orderBy('achievement_id')
+            ->get(['achievement_id', 'achievement_name', 'achievement_description', 'achievement_image']);
+
+        $ownedAch = StudentAchievements::where('student_id', $studentId)
+            ->pluck('unlocked_at', 'achievement_id');        // [ id => datetime ]
+
+        $achievementRows = $achievements->map(fn($a) => [
+            'achievement_id'          => $a->achievement_id,
+            'achievement_name'        => $a->achievement_name,
+            'achievement_description' => $a->achievement_description,
+            'image_name'              => $a->achievement_image,
+        ]);
+
+        $achievementsRetrieved = $ownedAch->map(fn($dt, $id) => [
+            'achievement_id' => $id,
+            'unlocked_at'   => $dt,
+        ])->values();
+
+        /* ---------- 4. badges + which ones are unlocked ---------------- */
+        $badges = Badges::orderBy('badge_id')
+            ->get(['badge_id', 'badge_name', 'badge_description', 'badge_image']);
+
+        $ownedBadges = StudentBadges::where('student_id', $studentId)
+            ->pluck('unlocked_at', 'badge_id');              // [ id => datetime ]
+
+        $badgeRows = $badges->map(fn($b) => [
+            'badge_id'          => $b->badge_id,
+            'badge_name'        => $b->badge_name,
+            'badge_description' => $b->badge_description,
+            'image_name'        => $b->badge_image,
+        ]);
+
+        $badgesRetrieved = $ownedBadges->map(fn($dt, $id) => [
+            'badge_id'    => $id,
+            'unlocked_at' => $dt,
+        ])->values();
+
+        /* ---------- 5. final JSON payload ------------------------------ */
+        return response()->json([
+            'student_name'        => $studentName,
+            'overall_points'      => $overallPoints,
+            'leaderboard_ranking' => $myRank,
+            'section'             => $section->section_name,
+            'leaderboards'        => $top15,
+
+            'achievements'            => $achievementRows,
+            'achievements_retrieved'  => $achievementsRetrieved,
+
+            'badges'           => $badgeRows,
+            'badges_retrieved' => $badgesRetrieved,
+        ]);
+    }
 
 
     /* ---------- POST create_module.php ---------- */

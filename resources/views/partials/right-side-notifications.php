@@ -270,7 +270,7 @@ $notifications = $notifications->map(function ($n) use ($icon, $colour) {
     </div>
 
     <div class="sidebar-box notifications">
-      <h4 style="margin:.6rem 0">Notifications</h4>
+      <h4 style="margin:.6rem 0">Tasks and Announcements</h4>
       <?php if ($notifications->isEmpty()): ?>
         <p style="font-size:.8rem;color:#555">No pending items 🎉</p>
       <?php else: ?>

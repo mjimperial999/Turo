@@ -46,6 +46,9 @@ Route::prefix('v1')->group(function () {
         Route::get('get-student-analysis',      [MobileModelController::class, 'showStudentAnalysis']);
         Route::get('get-gamified-elements',     [MobileModelController::class, 'showGamifiedElements']);
 
+        Route::get('get-inbox',     [MobileModelController::class, 'showInbox']);
+        Route::get('get-calendar-events',     [MobileModelController::class, 'showCalendarEvents']);
+
         // TEACHER
         Route::get('get_course_modules_for_teacher',      [MobileModelController::class, 'indexTeacher']);
 
