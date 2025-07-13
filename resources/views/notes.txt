@@ -513,3 +513,35 @@ title
 description
 video_url (can be null)
 pdf_blob (base64 encoded) (can be null)
+
+
+
+Return:
+section (section_name)
+overall_grade (average percentage of all assessments EXCEPT screening)
+points (points gathered from this course only - total_points from studentprogress)
+practice-quiz:
+    average
+    module:
+        module_name
+        quiz:
+            quiz_name
+            percentage
+
+short-quiz:
+    average
+    module:
+        module_name
+        quiz:
+            quiz_name
+            percentage
+
+long-quiz:
+    average
+    quiz:
+        long_quiz_name
+        percentage
+
+screening:
+    screening_name
+    percentage

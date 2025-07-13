@@ -63,8 +63,14 @@ use App\Models\{
     ScreeningResultAnswer,
     LearningResource,
     Students,
+    StudentProgress,
     Users,
     ModuleProgress
+};
+
+use App\Services\{
+    StudentAnalytics,
+    AchievementService
 };
 
 class MobileModelController extends Controller
@@ -334,6 +340,8 @@ class MobileModelController extends Controller
             }
         });
 
+        StudentAnalytics::refreshStudentSummary($r->student_id);
+        AchievementService::evaluate($r->student_id);
         return response()->json(['message' => 'Result saved'], 201);
     }
 
@@ -468,6 +476,8 @@ class MobileModelController extends Controller
             }
         });
 
+        StudentAnalytics::refreshStudentSummary($r->student_id);
+        AchievementService::evaluate($r->student_id);
         return response()->json(['message' => 'Result saved'], 201);
     }
 
@@ -589,6 +599,8 @@ class MobileModelController extends Controller
             }
         });
 
+        StudentAnalytics::refreshStudentSummary($r->student_id);
+        AchievementService::evaluate($r->student_id);
         return response()->json(['message' => 'Result saved'], 201);
     }
 
@@ -733,12 +745,141 @@ class MobileModelController extends Controller
 
         /* 3️⃣  Return --------------------------------------------------------- */
         // $updated will be 0 or 1 (number of rows changed)
-        return response()->json([
-            'student_id'  => $data['student_id'],
-            'isCatchUp'   => 1,
-            'updated'     => (bool) $updated,   // true if the column actually changed
-        ], 200);
+        return response()->json(['message' => 'Student Catch-Up Status updated'], 201);
     }
+
+    /**
+     * GET /api/v1/get-student-analysis
+     *
+     * Query params ─ student_id, course_id   (both required)
+     * Response ─ structured analytics for a single student inside one course.
+     */
+    public function showStudentAnalysis(Request $r)
+    {
+        /* 1 ───── validate --------------------------------------------------- */
+        $r->validate([
+            'student_id' => 'required|exists:student,user_id',
+            'course_id'  => 'required|exists:course,course_id',
+        ]);
+
+        $studentId = $r->student_id;
+        $courseId  = $r->course_id;
+
+        /* 2 ───── section name & course points ------------------------------- */
+        $student      = Students::with('section')->findOrFail($studentId);
+        $sectionName  = $student->section->section_name ?? '';
+
+        $points = StudentProgress::where([
+            ['student_id', $studentId],
+            ['course_id',  $courseId],
+        ])->value('total_points') ?? 0;
+
+        /* helper to shape each quiz row ------------------------------------- */
+        $fmt = fn($row) => [
+            'quiz_name'  => $row->quiz_name,
+            'percentage' => round($row->avg, 2),
+        ];
+
+        /* 3 ───── practice- & short-quiz averages --------------------------- */
+        $collectQuizRows = function (int $quizType) use ($studentId, $courseId) {
+            return AssessmentResult::query()
+                ->join('activity   as a', 'a.activity_id', '=', 'assessmentresult.activity_id')
+                ->join('quiz       as q', 'q.activity_id',   '=', 'a.activity_id')
+                ->join('module     as m', 'm.module_id',     '=', 'a.module_id')
+                ->where([
+                    ['assessmentresult.student_id', $studentId],
+                    ['assessmentresult.is_kept',    1],
+                    ['q.quiz_type_id',              $quizType],   // 2 = practice, 1 = short
+                    ['m.course_id',                 $courseId],
+                ])
+                ->groupBy('m.module_name', 'a.activity_name')
+                ->selectRaw('m.module_name, a.activity_name as quiz_name, AVG(score_percentage) as avg')
+                ->get();
+        };
+
+        $practiceRows = $collectQuizRows(2);
+        $shortRows    = $collectQuizRows(1);
+
+        /* group by module for JSON ------------------------------------------ */
+        $groupByModule = function ($rows) use ($fmt) {
+            return $rows->groupBy('module_name')
+                ->map(fn($grp) => [
+                    'module_name' => $grp->first()->module_name,
+                    'quiz'        => $grp->map($fmt)->values(),
+                ])->values();
+        };
+
+        $practice = [
+            'average' => round($practiceRows->avg('avg') ?? 0, 2),
+            'module'  => $groupByModule($practiceRows),
+        ];
+
+        $short = [
+            'average' => round($shortRows->avg('avg') ?? 0, 2),
+            'module'  => $groupByModule($shortRows),
+        ];
+
+        /* 4 ───── long-quiz averages ---------------------------------------- */
+        $longRows = LongQuizAssessmentResult::query()
+            ->join('longquiz as lq', 'lq.long_quiz_id', '=', 'long_assessmentresult.long_quiz_id')
+            ->where([
+                ['long_assessmentresult.student_id', $studentId],
+                ['long_assessmentresult.is_kept',    1],
+                ['lq.course_id',                     $courseId],
+            ])
+            ->groupBy('lq.long_quiz_name')
+            ->selectRaw('lq.long_quiz_name as quiz_name, AVG(long_assessmentresult.score_percentage) as avg')
+            ->get();
+
+        $long = [
+            'average' => round($longRows->avg('avg') ?? 0, 2),
+            'quiz'    => $longRows->map($fmt)->values(),
+        ];
+
+        /* 5 ───── screening (best score, if any) ----------------------------- */
+        $screenRow = ScreeningResult::query()
+            ->join('screening as s', 's.screening_id', '=', 'screeningresult.screening_id')
+            ->where([
+                ['screeningresult.student_id', $studentId],
+                ['s.course_id',                $courseId],
+            ])
+            ->orderByDesc('screeningresult.score_percentage')
+            ->orderBy('screeningresult.date_taken')
+            ->select('s.screening_name', 'screeningresult.score_percentage')
+            ->first();
+
+        $screening = $screenRow
+            ? [
+                'screening_name' => $screenRow->screening_name,
+                'percentage'     => round($screenRow->score_percentage, 2),
+            ]
+            : null;
+
+        /* 6 ───── overall grade (exclude screening) ------------------------- */
+        $components = array_filter([
+            $practice['average'],
+            $short['average'],
+            $long['average'],
+        ], fn($v) => $v > 0);
+
+        $overall = $components
+            ? round(array_sum($components) / count($components), 2)
+            : 0;
+
+        /* 7 ───── respond --------------------------------------------------- */
+        return response()->json([
+            'section'        => $sectionName,
+            'overall_grade'  => $overall,
+            'points'         => (int) $points,
+
+            'practice_quiz'  => $practice,
+            'short_quiz'     => $short,
+            'long_quiz'      => $long,
+            'screening'      => $screening,
+        ]);
+    }
+
+
 
     /* ---------- POST create_module.php ---------- */
     public function store(ModuleStoreRequest $req)
