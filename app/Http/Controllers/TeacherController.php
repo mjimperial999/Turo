@@ -842,7 +842,7 @@ class TeacherController extends Controller
             );
         }
 
-        return redirect()->back()->with('success', 'A new lecture has been created.');
+        return back()->with('success', 'A new lecture has been created.');
     }
 
     public function editLecture(
@@ -1164,9 +1164,7 @@ class TeacherController extends Controller
             }
         });
 
-        return redirect()
-            ->to("/teachers-panel/course/{$course->course_id}/module/{$module->module_id}")
-            ->with('success', 'Short-quiz created.');
+        return back()->with('success', 'Short-quiz created.');
     }
 
     /* 3 ─────────────── Edit form */
@@ -1435,9 +1433,7 @@ class TeacherController extends Controller
             }
         });
 
-        return redirect()
-            ->to("/teachers-panel/course/{$course->course_id}/module/{$module->module_id}")
-            ->with('success', 'Practice-quiz created.');
+        return  back()->with('success', 'Practice-quiz created.');
     }
 
     /* 3 ─────────────── Edit form */
@@ -1740,8 +1736,7 @@ class TeacherController extends Controller
             }
         });
 
-        return redirect("/teachers-panel/course/{$course->course_id}")
-            ->with('success', 'Screening exam created.');
+        return  back()->with('success', 'Screening exam created.');
     }
 
     /* 3 ── Edit form  */

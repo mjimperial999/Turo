@@ -67,9 +67,12 @@ class StudentAnalytics
     /* ===================================================================
      |  MODULE LEVEL  (short- & practice-quiz only)
      |===================================================================*/
+    /* ===================================================================
+ |  MODULE LEVEL  (short- & practice-quiz only)
+ |===================================================================*/
     private static function recalcModule(
-        string $studentId,
-        string $courseId,
+        string  $studentId,
+        string  $courseId,
         ?string $moduleId
     ): void {
         // If NULL was passed, iterate over *all* modules in the course
@@ -80,28 +83,30 @@ class StudentAnalytics
         foreach ($moduleIds as $mid) {
 
             /* ----------------------------------------------------------
-             | 1.  Pull *kept* attempts for each quiz-type
-             |---------------------------------------------------------*/
-            $short   = self::kept($studentId, $mid, quizType: 1); // SHORT
-            $practice = self::kept($studentId, $mid, quizType: 2); // PRACTICE
+         | 1.  Pull *kept* attempts for each quiz-type
+         |---------------------------------------------------------*/
+            $short     = self::kept($studentId, $mid, quizType: 1);   // SHORT
+            $practice  = self::kept($studentId, $mid, quizType: 2);   // PRACTICE
 
-            $shortCnt     = $short->count();
-            $practiceCnt  = $practice->count();
+            $shortCnt    = $short->count();
+            $practiceCnt = $practice->count();
 
-            $shortAvg     = $short->avg('score_percentage')   ?? 0; // only SHORT shown
-            $notPassed    = $short->where('score_percentage',    '<', 70)->count()
+            // average shown in UI – *only* SHORT quizzes
+            $shortAvgRaw = $shortCnt ? $short->avg('score_percentage') : null;
+            $shortAvg    = isset($shortAvgRaw) ? round($shortAvgRaw, 2) : null;
+
+            /* ----------------------------------------------------------
+         | 2.  Determine completion flag
+         |---------------------------------------------------------*/
+            $attemptedBoth = $shortCnt > 0 && $practiceCnt > 0;
+            $notPassed     = $short->where('score_percentage', '<', 70)->count()
                 + $practice->where('score_percentage', '<', 70)->count();
 
-            /* ----------------------------------------------------------
-             | 2.  Determine completion flag
-             |     (needs ≥70 % in *all* short + practice attempts)
-             |---------------------------------------------------------*/
-            $attemptedAny = $shortCnt > 0 && $practiceCnt > 0;
-            $isCompleted  = $attemptedAny && $notPassed === 0;
+            $isCompleted   = $attemptedBoth && $notPassed === 0;
 
             /* ----------------------------------------------------------
-             | 3.  Earned points (all quiz kinds in this module)
-             |---------------------------------------------------------*/
+         | 3.  Earned points (all quiz kinds in this module)
+         |---------------------------------------------------------*/
             $points = AssessmentResult::where([
                 ['student_id', $studentId],
                 ['module_id',  $mid],
@@ -109,19 +114,21 @@ class StudentAnalytics
             ])->sum('earned_points');
 
             /* ----------------------------------------------------------
-             | 4.  Upsert – make sure EVERY module row exists
-             |---------------------------------------------------------*/
+         | 4.  Upsert – make sure EVERY module row exists
+         |---------------------------------------------------------*/
             ModuleProgress::updateOrCreate(
                 ['student_id' => $studentId, 'module_id' => $mid],
                 [
-                    'course_id'     => $courseId,         // new FK column
-                    'average_score' => round($shortAvg, 2),
+                    'course_id'     => $courseId,
+                    // NULL means “no quiz taken yet” – keeps early 100 % optimism
+                    'average_score' => $shortAvg,
                     'is_completed'  => $isCompleted ? 1 : 0,
-                    'progress'      => round($shortAvg, 2), // legacy column
+                    'progress'      => $shortAvg ?? 0,   // legacy column
                 ]
             );
         }
     }
+
 
     /** Helper: kept attempts for a given quiz-type inside one module */
     private static function kept(
@@ -147,7 +154,9 @@ class StudentAnalytics
         $shortAvg = ModuleProgress::where([
             ['student_id', $studentId],
             ['course_id',  $courseId],
-        ])->avg('average_score') ?? 0;
+        ])
+            ->whereNotNull('average_score')               // skip only untouched modules
+            ->avg('average_score') ?? 0;
 
         /* 2)  LONG-quiz average */
         $longAvg  = LongQuizAssessmentResult::query()
