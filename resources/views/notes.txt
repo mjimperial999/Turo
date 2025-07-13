@@ -1196,4 +1196,58 @@ public function index()
 
         return view('inbox.show', compact('inbox', 'threads', 'allUsers', 'folder', 'users'));
     }
-        
+
+
+we are now on the teacher's side on the mobile app
+
+create a method to fetch course data based on the teacher's assignment (course_section table)
+
+for example, a teacher has 2 course assignments on 2 different sections like in the database, so it should display 2 courses (same name, same image), then display their section name.
+
+Return:
+Data:
+    course_id
+    course_name
+    image_blob
+    section_id
+    section_name
+
+
+for getting modules, quizzes, and screening use a collection
+
+kinda like this for example:
+    public function showLongQuizList(Request $r)
+    {
+        $longquiz = LongQuizzes::where('course_id', $r->course_id)
+            ->orderBy('long_quiz_name')          // optional: sort any way you like
+            ->get();
+
+        $longquiz = $longquiz
+            ->sortBy(fn($lq) => $this->seq($lq->long_quiz_name))
+            ->values();
+
+        return response()->json([
+            'data' => LongQuizCollectionResource::collection($longquiz)
+        ]);
+    }
+
+<?php
+namespace App\Http\Resources;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class LongQuizCollectionResource extends JsonResource
+{
+    public function toArray($req)
+    {
+        return [
+            'course_id'             => $this->course_id,
+            'long_quiz_id'          => $this->long_quiz_id,
+            'long_quiz_name'        => $this->long_quiz_name,
+            'unlock_date'           => $this->unlock_date,
+            'deadline_date'         => $this->deadline_date,
+        ];
+    }
+}
+
+

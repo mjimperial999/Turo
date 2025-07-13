@@ -1,0 +1,17 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class ModuleTeacherCollectionResource extends JsonResource
+{
+    public function toArray($req)
+    {
+        return [
+            'module_id'    => $this->module_id,
+            'module_name'  => $this->module_name,
+            'image_blob'   => '(image-blob)'
+        ];
+    }
+}

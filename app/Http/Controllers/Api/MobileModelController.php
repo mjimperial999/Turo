@@ -18,7 +18,7 @@ use App\Http\Resources\{
     AssessmentScoreResource,
     AssessmentResultResource,
     ModuleCollectionResource,
-    ModuleStudentResource,
+    ModuleTeacherCollectionResource,
     ActivityCollectionResource,
     LectureResource,
     ResultResource,
@@ -43,6 +43,8 @@ use App\Http\Requests\{
 
 use App\Models\{
     Courses,
+    CourseSection,
+    Sections,
     Modules,
     Activities,
     Questions,
@@ -1211,32 +1213,57 @@ class MobileModelController extends Controller
     }
 
     // TEACHER SIDE
-    public function indexTeacher(Request $r)
+    public function getCoursesTeacher(Request $r)
     {
-        $teacher = Teachers::findOrFail($r->teacher_id);
+        /* 1. validate --------------------------------------------------- */
+        $r->validate([
+            'teacher_id' => 'required|exists:teacher,user_id',   // adjust table if different
+        ]);
 
-        $modules = Modules::query()
-            ->where('module.course_id', $r->course_id)
-
-            ->orderByRaw("
-            CAST( REGEXP_REPLACE(module.module_name, '[^0-9]', '') AS UNSIGNED ),
-            module.module_name
-        ")
-
-            ->leftJoin('moduleprogress as mp', function ($q) use ($r) {
-                $q->on('mp.module_id', '=', 'module.module_id')
-                    ->where('mp.student_id', '=', $r->teacher_id);
-            })
-            ->leftJoin('module_image as mi', 'mi.module_id', '=', 'module.module_id')
-            ->selectRaw('
-            module.*,
-            mp.progress as progress_value,
-            mi.image    as picture_blob
-        ')
+        /* 2. pull every course–section pair for this teacher ------------ */
+        $rows = CourseSection::with([
+            'course.image',   // eager-load blob
+            'section',              // eager-load name
+        ])
+            ->where('teacher_id', $r->teacher_id)
             ->get();
 
+        /* 3. transform to the required payload ------------------------- */
+        $data = $rows->map(function ($row) {
+            return [
+                'course_id'     => $row->course_id,
+                'course_name'   => $row->course?->course_name,
+                'image_blob'    => optional($row->course?->image?->image)
+                    ? base64_encode($row->course->image?->image)
+                    : null,
+                'section_id'    => $row->section_id,
+                'section_name'  => $row->section?->section_name,
+            ];
+        });
+
+        return response()->json(['data' => $data], 200);
+    }
+
+    public function getModulesTeacher(Request $r)
+    {
+        $r->validate([
+            'course_id'  => 'required|exists:course,course_id'
+        ]);
+
+        /* 2️⃣  pull every module in that course (with its image blob) ------ */
+        $modules = Modules::with('moduleimage')              // eager-load blob
+            ->where('course_id', $r->course_id)
+            ->orderBy('module_name')                         // “Module 1 …” order
+            ->get()
+            ->sortBy(
+                fn($m) =>
+                (int) preg_replace('/^.*?(\d+).*$/', '$1', $m->module_name)
+            )
+            ->values();
+
+        /* 3️⃣  respond as a collection resource ---------------------------- */
         return response()->json([
-            'data' => ModuleCollectionResource::collection($modules)
+            'data' => ModuleTeacherCollectionResource::collection($modules),
         ]);
     }
 

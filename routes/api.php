@@ -53,7 +53,12 @@ Route::prefix('v1')->group(function () {
         Route::get('get-calendar-events',     [MobileModelController::class, 'showCalendarEvents']);
 
         // TEACHER
-        Route::get('get_course_modules_for_teacher',      [MobileModelController::class, 'indexTeacher']);
+        Route::get('get-courses-for-teacher',      [MobileModelController::class, 'getCoursesTeacher']);
+        Route::get('get-modules-for-teacher',      [MobileModelController::class, 'getModulesTeacher']);
+        Route::get('get-activities-for-teacher',      [MobileModelController::class, 'getActivitiesTeacher']);
+
+        Route::get('get-lecture-for-teacher',      [MobileModelController::class, 'getCoursesTeacher']);
+        Route::get('get-tutorial-for-teacher',      [MobileModelController::class, 'getCoursesTeacher']);
 
         Route::delete('delete_module_in_course.php',      [MobileModelController::class, 'destroy']);
         Route::post('create_module.php',                  [MobileModelController::class, 'store']);
