@@ -67,7 +67,13 @@ include __DIR__ . '/../partials/head.php'; ?>
                             : "data:" . getMimeTypeFromBlob($u->image->image) . ";base64," . base64_encode($u->image->image);
                     ?>
                         <div class="card">
-                            <img src="<?= $img ?>" style="width:50px;height:50px;border-radius:50%">
+                            <img src="<?= $img ?>" 
+                            style="width:50px;
+                            height:50px;
+                            border-radius:50%;
+                            background-size:cover;
+                            background-position: center;
+                            ">
                             <b><?= e("$u->last_name, $u->first_name") ?></b>
                             <small>ID: (<?= e($t->user_id) ?>)</small>
                             <hr class="divider-hr">

@@ -134,8 +134,12 @@ class AdminController extends Controller
     {
         // e.g. 2025-00042   ⇒   2025 + 5-digit zero-padded counter
         $year       = date('Y');
-        $nextNumber = Students::count() + 1;              // naïve but OK
-        return $year . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+        $max = Users::where('user_id', 'like', $year . '%')
+        ->max('user_id');
+        
+        $seq = $max ? (int)substr($max, 4) + 1 : 1;
+
+        return $year . str_pad($seq, 5, '0', STR_PAD_LEFT);
     }
 
     private function slugName(string $name): string
@@ -410,9 +414,13 @@ class AdminController extends Controller
     public function teacherList()
     {
         if ($redirect = $this->checkAdminAccess()) return $redirect;
-        $teachers = Teachers::with(['user.image', 'courseSections.course'])
-            ->orderByRaw("(SELECT last_name FROM user WHERE user.user_id = teacher.user_id)")
-            ->paginate(20);
+
+            $teachers = Teachers::whereHas('user')                 // ⬅️ NEW LINE
+        ->with(['user.image', 'courseSections.course'])
+        ->orderByRaw('(SELECT last_name 
+                       FROM   user 
+                       WHERE  user.user_id = teacher.user_id)')
+        ->paginate(20);
 
         return view('admin.teacher-list', compact('teachers'));
     }
@@ -475,9 +483,13 @@ class AdminController extends Controller
 
     private function nextTeacherId(): string
     {
-        $year  = date('Y');          // 2025
-        $count = Teachers::count() + 1;                 // simple auto-index
-        return $year . str_pad($count, 5, '0', STR_PAD_LEFT);
+        $year       = date('Y');
+        $max = Users::where('user_id', 'like', $year . '%')
+        ->max('user_id');
+        
+        $seq = $max ? (int)substr($max, 4) + 1 : 1;
+
+        return $year . str_pad($seq, 5, '0', STR_PAD_LEFT);
     }
 
     /* ───────────────────────────────────────────────
