@@ -37,8 +37,18 @@ use App\Http\Requests\{
     ModuleStoreRequest,
     ModuleUpdateRequest,
     AssessmentResultStoreRequest,
+    QuizStoreRequest,
+    QuizUpdateRequest,
+    LongQuizStoreRequest,
+    LongQuizUpdateRequest,
     LongQuizAssessmentResultStoreRequest,
-    ScreeningResultStoreRequest
+    LectureStoreRequest,
+    LectureUpdateRequest,
+    TutorialStoreRequest,
+    TutorialUpdateRequest,
+    ScreeningStoreRequest,
+    ScreeningUpdateRequest,
+    ScreeningResultStoreRequest,
 };
 
 use App\Models\{
@@ -1692,8 +1702,7 @@ class MobileModelController extends Controller
         ]);
 
         DB::transaction(function () use ($r) {
-            QuizQuestions::where('activity_id', $r->activity_id)->delete();
-            Quizzes::where('activity_id', $r->activity_id)->delete();
+            Questions::where('activity_id', $r->activity_id)->delete();
             Activities::where('activity_id', $r->activity_id)->delete();
         });
 
@@ -1711,25 +1720,25 @@ class MobileModelController extends Controller
         ]);
     }
 
-    public function storeLecture(TutorialLectureStoreRequest $r)
+    public function storeLecture(LectureStoreRequest $r)
     {
         $this->storeGenericActivity($r->validated(), 3);
         return response()->json(['message' => 'Lecture created'], 201);
     }
 
-    public function storeTutorial(TutorialLectureStoreRequest $r)
+    public function storeTutorial(TutorialStoreRequest $r)
     {
         $this->storeGenericActivity($r->validated(), 4);
         return response()->json(['message' => 'Tutorial created'], 201);
     }
 
-    public function updateLecture(TutorialLectureUpdateRequest $r)
+    public function updateLecture(LectureUpdateRequest $r)
     {
         Activities::findOrFail($r->activity_id)->update($r->validated());
         return response()->json(['message' => 'Lecture updated']);
     }
 
-    public function updateTutorial(TutorialLectureUpdateRequest $r)
+    public function updateTutorial(TutorialUpdateRequest $r)
     {
         Activities::findOrFail($r->activity_id)->update($r->validated());
         return response()->json(['message' => 'Tutorial updated']);
