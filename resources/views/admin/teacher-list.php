@@ -7,6 +7,15 @@ include __DIR__ . '/../partials/head.php'; ?>
         border-radius: .5rem;
         margin: .5rem 0
     }
+
+    .hmm {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-size: cover;
+        background-position: center;
+    }
+    
 </style>
 </style>
 
@@ -67,13 +76,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             : "data:" . getMimeTypeFromBlob($u->image->image) . ";base64," . base64_encode($u->image->image);
                     ?>
                         <div class="card">
-                            <img src="<?= $img ?>" 
-                            style="width:50px;
-                            height:50px;
-                            border-radius:50%;
-                            background-size:cover;
-                            background-position: center;
-                            ">
+                            <img class="hmm" src="<?= $img ?>">
                             <b><?= e("$u->last_name, $u->first_name") ?></b>
                             <small>ID: (<?= e($t->user_id) ?>)</small>
                             <hr class="divider-hr">

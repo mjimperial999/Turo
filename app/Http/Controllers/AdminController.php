@@ -481,6 +481,32 @@ class AdminController extends Controller
         return view('admin.teacher-add');              // simple HTML form
     }
 
+    private function createTeacherRow(array $data): void
+    {
+        DB::transaction(function () use ($data) {
+
+            $id  = $this->nextStudentId();
+            $last  = $this->slugName($data['last_name']);
+            $first = $this->slugName($data['first_name']);
+            $pwd   = Hash::make($last . $first);
+
+            Users::create([
+                'user_id'                => $id,
+                'first_name'             => $data['first_name'],
+                'last_name'              => $data['last_name'],
+                'email'                  => $data['email'],
+                'password_hash'          => $pwd,
+                'role_id'                => 2,    // student
+                'agreed_to_terms'        => 0,
+                'requires_password_change' => 1,
+            ]);
+
+            Teachers::create([
+                'user_id'    => $id
+            ]);
+        });
+    }
+
     private function nextTeacherId(): string
     {
         $year       = date('Y');
@@ -504,20 +530,7 @@ class AdminController extends Controller
         ]);
         if ($v->fails()) return back()->withErrors($v)->withInput();
 
-        $uid = $this->nextTeacherId();
-        DB::transaction(function () use ($req, $uid) {
-            Users::create([
-                'user_id'               => $uid,
-                'last_name'             => $req->last_name,
-                'first_name'            => $req->first_name,
-                'email'                 => $req->email,
-                'password_hash'         => Hash::make($req->last_name . $req->first_name),
-                'role_id'               => 2,            // 2 = TEACHER
-                'agreed_to_terms'       => 0,
-                'requires_password_change' => 1,
-            ]);
-            Teachers::create(['user_id' => $uid]);
-        });
+        $this->createTeacherRow($req->only('first_name', 'last_name', 'email'));
 
         return back()->with('success', "Teacher {$req->first_name} {$req->last_name} added.");
     }
@@ -535,41 +548,44 @@ class AdminController extends Controller
     {
         if ($redirect = $this->checkAdminAccess()) return $redirect;
         $req->validate(['csv' => 'required|file|mimes:csv,txt']);
-        $rows   = array_map('str_getcsv', file($req->file('csv')->getRealPath()));
-        $header = array_map('strtolower', array_shift($rows));   // pop header
 
-        $added = 0;
-        $skipped = [];
-        foreach ($rows as $i => $r) {
-            $row = array_combine($header, $r);
-            if (!$row) continue;
+        $path   = $req->file('csv')->getPathname();
+        $handle = fopen($path, 'r');
+        $rows   = 0;
+        $errors = [];
 
-            /* duplicate check on e-mail */
-            if (Users::where('email', $row['email'])->exists()) {
-                $skipped[] = $row['email'];
+        while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+
+            [$last, $first, $email] = array_map('trim', $row);
+
+            $v = Validator::make(
+                compact('first', 'last', 'email'),
+                [
+                    'first' => 'required|max:100',
+                    'last'  => 'required|max:100',
+                    'email' => 'required|email|unique:user,email',
+                ]
+            );
+
+            if ($v->fails()) {
+                $errors[] = "Invalid row #" . ($rows + 1) . ": " . implode('; ', $v->errors()->all());
                 continue;
             }
 
-            $uid = $this->nextTeacherId();
-            DB::transaction(function () use ($uid, $row) {
-                Users::create([
-                    'user_id'       => $uid,
-                    'last_name'     => $row['last_name'],
-                    'first_name'    => $row['first_name'],
-                    'email'         => $row['email'],
-                    'password_hash' => Hash::make($row['last_name'] . $row['first_name']),
-                    'role_id'       => 2,
-                    'agreed_to_terms' => 0,
-                    'requires_password_change' => 1,
-                ]);
-                Teachers::create(['user_id' => $uid]);
-            });
-            $added++;
+            $this->createTeacherRow([
+                'first_name' => $first,
+                'last_name' => $last,
+                'email'     => $email
+            ]);
+            $rows++;
         }
+        fclose($handle);
 
-        $msg = "$added teacher(s) imported.";
-        if ($skipped) $msg .= " Skipped duplicates: " . implode(', ', $skipped);
-        return back()->with('success', $msg);
+        return back()->with(
+            $errors ? 'error' : 'success',
+            $errors ? implode('<br>', $errors)
+                : "$rows teachers imported successfully."
+        );
     }
 
     public function createSectionForm()
