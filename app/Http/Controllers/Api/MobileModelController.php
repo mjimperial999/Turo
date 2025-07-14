@@ -953,8 +953,6 @@ class MobileModelController extends Controller
         /* Top-15 slice for the payload */
         $top15 = $ranked->take(15)->map(fn($s) => [
             'student_name'   => trim($s->user->first_name . ' ' . $s->user->last_name),
-            'student_image'  => $s->user->image?->image ? base64_encode($s->user->image?->image)
-                : null,
             'student_ranking' => $s->calc_rank,
             'student_points' => (int) $s->total_points,
         ]);
