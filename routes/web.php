@@ -33,9 +33,13 @@ Route::post('/pin/verify',          [PinController::class, 'verify'])->name('pin
 Route::get('/replace-password',    [PinController::class, 'passwordForm'])->name('pw.form');
 Route::post('/replace-password',    [PinController::class, 'passwordSave'])->name('pw.save');
 
-/* ---------- terms (after login) ---- */
 Route::get('/terms',               [TermsController::class, 'show'])->name('terms.form');
 Route::post('/terms/accept',        [TermsController::class, 'accept'])->name('terms.accept');
+
+Route::get('/forgot-password', fn() => view('forgot-password'));
+Route::get('/forgot-password/pin', fn() => view('pin-forgot'));
+Route::post('/forgot-password/send', [PinController::class, 'sendRecovery'])->name('recovery.send');
+Route::post('/forgot-password/verify', [PinController::class, 'verifyRecovery'])->name('recovery.verify');
 
 
 // ADMIN 

@@ -54,7 +54,7 @@ $loginUrl = app()->environment('production')
             <p class="input-placeholder">PASSWORD</p>
             <input type="password" id="password" name="password" required />
 
-            <a id="forgot-password" href="#">Forgot Password?</a>
+            <a id="forgot-password" href="/forgot-password">Forgot Password?</a>
             <button id="login-submit" type="submit">Sign In</button>
           </form>
         </div>
@@ -66,44 +66,6 @@ $loginUrl = app()->environment('production')
     </div>
   </div>
 
-  <?php /*
-  <div class="login-page-screen">
-    <div class="login-side-container">
-      <div class="login-side-con-box">
-        <div class="login-side-logo-con">
-          <img src="icons/title-logo.svg" width="200em" height="auto">
-        </div>
-        <div class="login-side-form">
-          <h4 id="login-title-font">Welcome Back!<br>LOGIN to Turo</h4>
-            <?php if (session()->has('error')): ?>
-              <div class="alert alert-danger alert-message" role="alert">
-                <?= session('error') ?>
-              </div>
-            <?php elseif (session()->has('success')): ?>
-                  <div class="alert alert-success alert-message" role="alert">
-                <?= session('success') ?>
-              </div>
-            <?php endif; ?>
-          <form class="login-form-box" action="<?= $loginUrl ?>" method="POST">
-            <?= csrf_field() ?>
-            <p class="input-placeholder">EMAIL</p>
-            <input type="text" id="email" name="email" required />
-
-            <p class="input-placeholder">PASSWORD</p>
-            <input type="password" id="password" name="password" required />
-
-            <a id="forgot-password" href="#">Forgot Password?</a>
-            <button id="login-submit" type="submit">Sign In</button>
-          </form>
-        </div>
-      </div>
-    </div>
-    <div class="login-side-decoration">
-
-    </div>
-  </div>
 </body>
 
 </html>
-
-*/ ?>

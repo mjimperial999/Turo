@@ -35,6 +35,11 @@ include __DIR__ . '/partials/head.php'; ?>
                 <?= session('success') ?>
               </div>
             <?php endif; ?>
+            <?php if ($errors->any()): ?>
+              <div class="alert alert-danger alert-message padding">
+                <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
+              </div>
+            <?php endif; ?>
           </div>
 
           <form action="/replace-password" method="POST" class="login-form-box">
