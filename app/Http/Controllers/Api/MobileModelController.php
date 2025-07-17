@@ -957,8 +957,8 @@ class MobileModelController extends Controller
             'student_ranking'       => $s->calc_rank,
             'student_points'        => (int) $s->total_points,
             'student_image'         => $s->user->image?->image
-                                    ? base64_encode($s->user->image?->image)
-                                    : null,
+                ? base64_encode($s->user->image?->image)
+                : null,
         ]);
 
         $myRank = optional(
@@ -1538,12 +1538,14 @@ class MobileModelController extends Controller
             'module_description'    => $moduleDesc
         ]);
 
-        ModuleImage::create([
-            'module_id'             => $module->module_id,
-            'image'                 => $imageBlob,
-        ]);
+        if ($imageBlob) {
+            ModuleImage::create([
+                'module_id'             => $module->module_id,
+                'image'                 => $imageBlob,
+            ]);
+        }
 
-        return response()->json(['message' => 'Module '. $moduleName . 'created.']);
+        return response()->json(['message' => 'Module ' . $moduleName . 'created.']);
     }
 
     public function updateModule(ModuleUpdateRequest $r)
@@ -1556,13 +1558,13 @@ class MobileModelController extends Controller
             'image'
         ]));
 
-        return response()->json(['message' => 'Module '. $r->module_name .' updated']);
+        return response()->json(['message' => 'Module ' . $r->module_name . ' updated']);
     }
 
     public function destroyModule(Request $r)
     {
         $moduleName = Modules::where('module_id', $r->module_id)
-        ->value('module_name');
+            ->value('module_name');
 
         $r->validate([
             'module_id' => 'required|exists:module,module_id',
@@ -1574,7 +1576,7 @@ class MobileModelController extends Controller
             ModuleImage::where('module_id', $r->module_id)->delete();
         });
 
-        return response()->json(['message' => 'Module '. $moduleName . ' deleted']);
+        return response()->json(['message' => 'Module ' . $moduleName . ' deleted']);
     }
 
     /* =========================================================================
