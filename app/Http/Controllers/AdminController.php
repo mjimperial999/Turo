@@ -887,6 +887,8 @@ class AdminController extends Controller
     public function deleteModule($courseID, Modules $module)
     {
         $module->delete();
+        $module->moduleimage()->delete();
+
         return back()->with('success', 'Module deleted.');
     }
 
@@ -2216,7 +2218,9 @@ class AdminController extends Controller
     /* 5 ── Delete */
     public function deleteScreening(Courses $course, Screening $screening)
     {
-        $screening->delete();   // FK cascade removes all children
+        $screening->delete();
+        $screening->image()->delete();   
+
         return back()->with('success', 'Screening exam deleted.');
     }
 

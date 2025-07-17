@@ -225,6 +225,7 @@ class TeacherController extends Controller
     {
         $course->delete();
         $course->image()->delete();
+
         return redirect('/teachers-panel')->with('success', 'Course has been deleted.');
     }
 
@@ -485,6 +486,8 @@ class TeacherController extends Controller
     public function deleteModule($courseID, $sectionId, Modules $module)
     {
         $module->delete();
+        $module->moduleimage()->delete();
+
         return back()->with('success', 'Module deleted.');
     }
 
@@ -1910,7 +1913,9 @@ class TeacherController extends Controller
     /* 5 ── Delete */
     public function deleteScreening(Courses $course, Sections $section, Screening $screening)
     {
-        $screening->delete();   // FK cascade removes all children
+        $screening->delete();
+        $screening->image()->delete();
+
         return back()->with('success', 'Screening exam deleted.');
     }
 

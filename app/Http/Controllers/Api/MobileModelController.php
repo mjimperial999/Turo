@@ -1529,7 +1529,7 @@ class MobileModelController extends Controller
             'course_id'          => 'required|string|max:255',
             'module_name'        => 'required|string|max:255',
             'module_description' => 'nullable|string',
-            'image_blob'         => 'nullable|string'
+            'image_blob'         => 'nullable|image'
         ]);
 
 
@@ -1545,10 +1545,11 @@ class MobileModelController extends Controller
             'module_description'    => $moduleDesc
         ]);
 
-        if ($r->image_blob) {
+        if ($r->hasFile('image_blob')) {
+            $blob = file_get_contents($r->file('image_blob')->getRealPath());
             ModuleImage::create([
                 'module_id'             => $module->module_id,
-                'image'                 => base64_encode($r->image_blob),
+                'image'                 => $blob,
             ]);
         }
 
@@ -1558,16 +1559,17 @@ class MobileModelController extends Controller
     public function updateModule(ModuleUpdateRequest $r)
     {
         $module = Modules::findOrFail($r->module_id);
-
+        
         $module->update($r->only([
             'module_name',
             'module_description'
         ]));
 
-        if ($r->image) {
+        if ($r->hasFile('image_blob')) {
+            $blob = file_get_contents($r->file('image_blob')->getRealPath());
             $module->moduleimage()->updateOrCreate([
                 'module_id' => $module->module_id,
-                'image'     => $r->module_id,
+                'image'     => $blob,
             ]);
         }
 
