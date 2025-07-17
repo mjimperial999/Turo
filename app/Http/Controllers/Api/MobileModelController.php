@@ -1578,10 +1578,10 @@ class MobileModelController extends Controller
 
         if ($r->hasFile('image_blob')) {
             $blob = file_get_contents($r->file('image_blob')->getRealPath());
-            $module->moduleimage()->updateOrCreate([
-                'module_id' => $module->module_id,
-                'image'     => $blob,
-            ]);
+            $module->moduleimage()->updateOrCreate(
+                ['module_id' => $module->module_id],
+                ['image'     => $blob]
+            );
         }
 
         return response()->json(['message' => 'Module ' . $r->module_name . ' updated']);
