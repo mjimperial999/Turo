@@ -1548,7 +1548,7 @@ class MobileModelController extends Controller
         if ($r->image) {
             ModuleImage::create([
                 'module_id'             => $module->module_id,
-                'image'                 => $r->image,
+                'image'                 => base64_encode($r->image),
             ]);
         }
 
