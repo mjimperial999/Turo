@@ -1525,6 +1525,12 @@ class MobileModelController extends Controller
 
     public function storeModule(ModuleStoreRequest $r)
     {
+        $r->validate([
+            'module_name'        => 'required|string|max:255',
+            'image'              => 'nullable|image|max:2048'
+        ]);
+
+
         $moduleID = (string) Str::uuid();
         $courseID = $r->course_id;
         $moduleName = $r->module_name;
