@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 use App\Http\Resources\{
-    ModuleResource,
     CoursesResource,
     AssessmentScoreResource,
     AssessmentResultResource,
@@ -1522,7 +1521,7 @@ class MobileModelController extends Controller
             'module_id'          => $module->module_id,
             'module_name'        => $module->module_name,
             'module_description' => $module->module_description,
-            'image_blob'         => $module->image?->image
+            'image_blob'         => $module->moduleimage?->image
                                     ? base64_encode($module->moduleimage->image)
                                     : null
         ]);
