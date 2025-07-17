@@ -88,6 +88,7 @@ use App\Models\{
     InboxParticipant,
     Message,
     MessageUserState,
+    ModuleImage,
     Teachers
 };
 
@@ -1524,19 +1525,25 @@ class MobileModelController extends Controller
 
     public function storeModule(ModuleStoreRequest $r)
     {
+        $moduleID = (string) Str::uuid();
+        $courseID = $r->course_id;
+        $moduleName = $r->module_name;
+        $moduleDesc = $r->module_description;
+        $imageBlob = $r->image;
+
         $module = Modules::create([
-            'module_id'      => (string) Str::uuid(),
-            'course_id'      => $r->course_id,
-            'module_name'    => $r->module_name,
-            'module_details' => $r->module_details,
-            'unlock_date'    => $r->unlock_date,
-            'deadline_date'  => $r->deadline_date,
+            'module_id'             => $moduleID,
+            'course_id'             => $courseID,
+            'module_name'           => $moduleName,
+            'module_description'    => $moduleDesc
         ]);
 
-        return response()->json([
-            'message' => 'Module created',
-            'data'    => new ModuleResource($module)
-        ], 201);
+        ModuleImage::create([
+            'module_id'             => $module->module_id,
+            'image'                 => $imageBlob,
+        ]);
+
+        return response()->json(['message' => 'Module '. $moduleName . 'created.']);
     }
 
     public function updateModule(ModuleUpdateRequest $r)
@@ -1546,18 +1553,17 @@ class MobileModelController extends Controller
         $module->update($r->only([
             'module_name',
             'module_details',
-            'unlock_date',
-            'deadline_date',
+            'image'
         ]));
 
-        return response()->json([
-            'message' => 'Module updated',
-            'data'    => new ModuleResource($module->fresh())
-        ]);
+        return response()->json(['message' => 'Module '. $r->module_name .' updated']);
     }
 
     public function destroyModule(Request $r)
     {
+        $moduleName = Modules::where('module_id', $r->module_id)
+        ->value('module_name');
+
         $r->validate([
             'module_id' => 'required|exists:module,module_id',
         ]);
@@ -1565,9 +1571,10 @@ class MobileModelController extends Controller
         DB::transaction(function () use ($r) {
             Activities::where('module_id', $r->module_id)->delete();
             Modules::where('module_id', $r->module_id)->delete();
+            ModuleImage::where('module_id', $r->module_id)->delete();
         });
 
-        return response()->json(['message' => 'Module deleted']);
+        return response()->json(['message' => 'Module '. $moduleName . ' deleted']);
     }
 
     /* =========================================================================
