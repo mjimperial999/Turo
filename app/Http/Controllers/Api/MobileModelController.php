@@ -955,7 +955,7 @@ class MobileModelController extends Controller
             'student_name'   => trim($s->user->first_name . ' ' . $s->user->last_name),
             'student_ranking' => $s->calc_rank,
             'student_points' => (int) $s->total_points,
-            'image_name'        => optional(($s->user->image?->image))
+            'student_image'        => optional(($s->user->image?->image))
                 ? base64_encode($s->user->image->image)
                 : null,
         ]);
