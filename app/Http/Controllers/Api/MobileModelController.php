@@ -1519,7 +1519,12 @@ class MobileModelController extends Controller
             ->findOrFail($r->module_id);
 
         return response()->json([
-            'data' => new ModuleResource($module)
+            'module_id'          => $module->module_id,
+            'module_name'        => $module->module_name,
+            'module_description' => $module->module_description,
+            'image_blob'         => $module->image?->image
+                                    ? base64_encode($module->moduleimage->image)
+                                    : null
         ]);
     }
 
