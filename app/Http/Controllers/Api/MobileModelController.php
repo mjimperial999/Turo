@@ -1566,7 +1566,7 @@ class MobileModelController extends Controller
             'module_id'          => 'required|exists:module,module_id',
             'module_name'        => 'sometimes|string|max:255',
             'module_description' => 'sometimes|nullable|string',
-            'image'              => 'sometimes|nullable|image',
+            'image_blob'              => 'sometimes|nullable|image',
         ]);
 
         $module = Modules::findOrFail($r->module_id);
