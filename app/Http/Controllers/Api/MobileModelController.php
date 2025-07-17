@@ -1526,8 +1526,9 @@ class MobileModelController extends Controller
     public function storeModule(ModuleStoreRequest $r)
     {
         $r->validate([
+            'course_id'          => 'required|string|max:255',
             'module_name'        => 'required|string|max:255',
-            'image'              => 'nullable|image|max:2048'
+            'image'              => 'nullable|string'
         ]);
 
 
@@ -1535,7 +1536,6 @@ class MobileModelController extends Controller
         $courseID = $r->course_id;
         $moduleName = $r->module_name;
         $moduleDesc = $r->module_description;
-        $imageBlob = $r->image;
 
         $module = Modules::create([
             'module_id'             => $moduleID,
@@ -1544,10 +1544,10 @@ class MobileModelController extends Controller
             'module_description'    => $moduleDesc
         ]);
 
-        if ($imageBlob) {
+        if ($r->image) {
             ModuleImage::create([
                 'module_id'             => $module->module_id,
-                'image'                 => $imageBlob,
+                'image'                 => $r->image,
             ]);
         }
 
