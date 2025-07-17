@@ -13,8 +13,10 @@ class ModuleResource extends JsonResource
             'course_id'          => $this->course_id,
             'module_name'        => $this->module_name,
             'module_description' => $this->module_description,
-            'image_blob'         => $this->when(!empty($this->image?->image),
-                                    fn() => base64_encode($this->image->image)),
+            'image_blob'         => $this->image?->image
+                                    ? base64_encode($this->moduleimage->image)
+                                    : null
+                
         ];
     }
 }
