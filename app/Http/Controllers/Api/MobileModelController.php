@@ -1527,13 +1527,13 @@ class MobileModelController extends Controller
         ]);
     }
 
-    public function storeModule(ModuleStoreRequest $r)
+    public function storeModule(Request $r)
     {
         $r->validate([
-            'course_id'          => 'required|string|max:255',
+            'course_id'          => 'required|exists:course,course_id',
             'module_name'        => 'required|string|max:255',
             'module_description' => 'nullable|string',
-            'image_blob'         => 'nullable|image'
+            'image'              => 'nullable|image',
         ]);
 
 
@@ -1560,13 +1560,13 @@ class MobileModelController extends Controller
         return response()->json(['message' => 'Module ' . $moduleName . 'created.']);
     }
 
-    public function updateModule(ModuleUpdateRequest $r)
+    public function updateModule(Request $r)
     {
         $r->validate([
-            'module_id'          => 'required|string|max:255',
-            'module_name'        => 'nullable|string|max:255',
-            'module_description' => 'nullable|string',
-            'image_blob'         => 'nullable|image'
+            'module_id'          => 'required|exists:module,module_id',
+            'module_name'        => 'sometimes|string|max:255',
+            'module_description' => 'sometimes|nullable|string',
+            'image'              => 'sometimes|nullable|image',
         ]);
 
         $module = Modules::findOrFail($r->module_id);
