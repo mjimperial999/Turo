@@ -1558,6 +1558,13 @@ class MobileModelController extends Controller
 
     public function updateModule(ModuleUpdateRequest $r)
     {
+        $r->validate([
+            'module_id'          => 'required|string|max:255',
+            'module_name'        => 'nullable|string|max:255',
+            'module_description' => 'nullable|string',
+            'image_blob'         => 'nullable|image'
+        ]);
+
         $module = Modules::findOrFail($r->module_id);
         
         $module->update($r->only([
