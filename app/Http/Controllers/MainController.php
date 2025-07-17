@@ -38,6 +38,12 @@ class MainController extends Controller
             return redirect('/login')->with('error', 'You must be logged in');
         }
 
+        $user = Users::findOrFail(session('user_id'));
+
+        if ($user->agreed_to_terms == 0){
+            return redirect('/terms');
+        }
+
         if (session('role_id') == 3) {
             return redirect('/admin-panel');
         }
@@ -46,19 +52,7 @@ class MainController extends Controller
             return redirect('/teachers-panel');
         }
 
-        // Allow only role_id == 1 to proceed
         return null;
-    }
-
-    public function landingRedirect()
-    {
-        if (!session()->has('user_id')) {
-            return redirect('/login');
-        }
-
-        return session('role_id') == 1
-            ? redirect('/home-tutor')
-            : redirect('/teachers-panel');
     }
 
     protected function mustHaveCatchUp(string $courseId = null)
@@ -152,17 +146,13 @@ class MainController extends Controller
     }
 
 
-    public function moduleList(Courses $course)   // ← route-model still a single row
+    public function moduleList(Courses $course)
     {
-        /* ---------- basic guards & user -------- */
-        if ($redirect = $this->checkStudentAccess()) {
-            return $redirect;
-        }
+        if ($redirect = $this->checkStudentAccess()) return $redirect;
 
         $userID = session('user_id');
         $users  = Users::with('image')->findOrFail($userID);
 
-        /* ---------- eager-load everything we need on *this* course row ---------- */
         $course->load([
             'modules' => fn($q) => $q->with([
                 'moduleimage',
@@ -543,6 +533,8 @@ class MainController extends Controller
 
     public function leaderboardPage()
     {
+        if ($redirect = $this->checkStudentAccess()) return $redirect;
+
         $studentId = session('user_id');
 
         /* 1. caller’s section */

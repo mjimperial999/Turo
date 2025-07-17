@@ -36,15 +36,29 @@ include __DIR__ . '/partials/head.php'; ?>
                         <?php endif; ?>
                     </div>
 
-                    <form action="/terms/accept" method="POST" class="login-form-box">
+                    <form action="/terms/accept" method="POST" class="login-form-box" id="terms-form">
                         <?= csrf_field() ?>
-                        <label>
-                            <input type="radio" name="agree" value="1" required> I understand and agree.
-                        </label>
-                        <label>
-                            <input type="radio" name="agree" value="0" disabled> I do not agree.
-                        </label>
-                        <button class="btn btn-primary">Continue</button>
+
+                        <!-- Agreement radio -->
+                        <div class="agree-wrapper" style="text-align:left;margin-bottom:1rem;">
+                            <label for="agree-checkbox" style="cursor:pointer;">
+                                <input
+                                    type="checkbox"
+                                    id="agree-checkbox"
+                                    name="agree"
+                                    value="1"
+                                    required>
+                                I have read and agree to the Terms &amp; Conditions of this platform.
+                            </label>
+                        </div>
+
+                        <button
+                            class="btn btn-primary"
+                            id="terms-submit"
+                            type="submit"
+                            disabled>
+                            Continue
+                        </button>
                     </form>
 
                 </div>
@@ -54,5 +68,15 @@ include __DIR__ . '/partials/head.php'; ?>
     </div>
 
 </body>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const agreeRadio = document.getElementById('agree-checkbox');
+    const submitBtn  = document.getElementById('terms-submit');
 
+    // Enable button when radio is selected
+    agreeRadio.addEventListener('change', function () {
+        submitBtn.disabled = !agreeRadio.checked;
+    });
+});
+</script>
 </html>

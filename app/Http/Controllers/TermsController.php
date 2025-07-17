@@ -31,6 +31,7 @@ class TermsController extends Controller
             };
         }
 
+        Session::put('agreed_to_terms', false);
         return view('terms');
     }
 

@@ -113,17 +113,34 @@ class AdminController extends Controller
     {
         if ($redirect = $this->checkAdminAccess()) return $redirect;
 
-        $term    = $req->query('q');                 // search box
-        $section = $req->query('section');           // dropdown filter
+        $term        = trim($req->query('q', ''));                  // search box
+        $section   = $req->query('section');          // dropdown filter
 
         $students = Students::with(['user.image', 'section'])
-            ->filter($term)                      // your existing scope
+            /* text search: ID, first, last, "Last, First", AND section name */
+            ->when($term !== '', function ($q) use ($term) {
+                $q->where(function ($sub) use ($term) {
+                    // match fields on the related user
+                    $sub->whereHas('user', function ($u) use ($term) {
+                        $u->where('user_id', 'like', "%{$term}%")
+                            ->orWhere('first_name', 'like', "%{$term}%")
+                            ->orWhere('last_name',  'like', "%{$term}%")
+                            ->orWhereRaw("CONCAT(last_name, ', ', first_name) LIKE ?", ["%{$term}%"])
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$term}%"]);
+                    })
+                        // OR match section name
+                        ->orWhereHas('section', function ($s) use ($term) {
+                            $s->where('section_name', 'like', "%{$term}%");
+                        });
+                });
+            })
+            /* dropdown filter: strict section_id match */
+            ->when($section, fn($q) => $q->where('section_id', $section))
+            /* ordering */
             ->orderBy('section_id')
-            ->orderByRaw("(
-            SELECT last_name  FROM user WHERE user.user_id = student.user_id
-        )")
+            ->orderByRaw("(SELECT last_name FROM user WHERE user.user_id = student.user_id)")
             ->paginate(20)
-            ->withQueryString();               // keep filters on links
+            ->withQueryString();  // keep filters on pagination links
 
         $sections = Sections::orderBy('section_name')->pluck('section_name', 'section_id');
 
@@ -135,8 +152,8 @@ class AdminController extends Controller
         // e.g. 2025-00042   ⇒   2025 + 5-digit zero-padded counter
         $year       = date('Y');
         $max = Users::where('user_id', 'like', $year . '%')
-        ->max('user_id');
-        
+            ->max('user_id');
+
         $seq = $max ? (int)substr($max, 4) + 1 : 1;
 
         return $year . str_pad($seq, 5, '0', STR_PAD_LEFT);
@@ -381,17 +398,54 @@ class AdminController extends Controller
     }
 
 
-    public function bulkSectionForm()
+    public function bulkSectionForm(Request $req)
     {
-        $students = Students::with(['user', 'section'])
-            ->orderBy('section_id')
+        if ($redirect = $this->checkAdminAccess()) return $redirect;
+
+        /* ---------------------------------------------------------
+     * Read filters from querystring (?q=...&section=...)
+     * -------------------------------------------------------*/
+        $term      = trim($req->query('q', ''));      // text box
+        $section = $req->query('section');          // dropdown: section_id | 'none' | ''
+
+        /* ---------------------------------------------------------
+     * Base query
+     * -------------------------------------------------------*/
+        $students = Students::with(['user.image', 'section'])
+            /* text search (ID, names, "Last, First", section name) */
+            ->when($term !== '', function ($q) use ($term) {
+                $q->where(function ($sub) use ($term) {
+                    $sub->whereHas('user', function ($u) use ($term) {
+                        $u->where('user_id', 'like', "%{$term}%")
+                            ->orWhere('first_name', 'like', "%{$term}%")
+                            ->orWhere('last_name',  'like', "%{$term}%")
+                            ->orWhereRaw("CONCAT(last_name, ', ', first_name) LIKE ?", ["%{$term}%"])
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$term}%"]);
+                    })
+                        ->orWhereHas('section', function ($s) use ($term) {
+                            $s->where('section_name', 'like', "%{$term}%");
+                        });
+                });
+            })
+            /* dropdown filter */
+            ->when($section !== null && $section !== '', function ($q) use ($section) {
+                if ($section === 'none') {
+                    $q->whereNull('section_id');          // students not yet assigned
+                } else {
+                    $q->where('section_id', $section);   // specific section
+                }
+            })
+            /* ordering: section then last name */
+            ->orderBy('section_id')  // NULLs first (unassigned) in MySQL; adjust if needed
             ->orderByRaw("(SELECT last_name FROM user WHERE user.user_id = student.user_id)")
             ->get();
 
-        $sections = Sections::orderBy('section_id')->get();
+        /* for dropdown */
+        $sections = Sections::orderBy('section_name')->get();
 
-        return view('admin.student-bulk-section', compact('students', 'sections'));
+        return view('admin.student-bulk-section', compact('students', 'sections', 'term', 'section'));
     }
+
 
     public function bulkSectionUpdate(Request $r)
     {
@@ -415,12 +469,12 @@ class AdminController extends Controller
     {
         if ($redirect = $this->checkAdminAccess()) return $redirect;
 
-            $teachers = Teachers::whereHas('user')                 // ⬅️ NEW LINE
-        ->with(['user.image', 'courseSections.course'])
-        ->orderByRaw('(SELECT last_name 
+        $teachers = Teachers::whereHas('user')                 // ⬅️ NEW LINE
+            ->with(['user.image', 'courseSections.course'])
+            ->orderByRaw('(SELECT last_name 
                        FROM   user 
                        WHERE  user.user_id = teacher.user_id)')
-        ->paginate(20);
+            ->paginate(20);
 
         return view('admin.teacher-list', compact('teachers'));
     }
@@ -511,8 +565,8 @@ class AdminController extends Controller
     {
         $year       = date('Y');
         $max = Users::where('user_id', 'like', $year . '%')
-        ->max('user_id');
-        
+            ->max('user_id');
+
         $seq = $max ? (int)substr($max, 4) + 1 : 1;
 
         return $year . str_pad($seq, 5, '0', STR_PAD_LEFT);

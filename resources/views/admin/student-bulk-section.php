@@ -1,6 +1,20 @@
 <?php $title = 'Bulk Section Update';
 include __DIR__ . '/../partials/head.php'; ?>
 <style>
+    .search-bar {
+        display: flex;
+        gap: .6rem;
+        align-items: center;
+        margin: 0;
+    }
+
+    .search-bar input,
+    select {
+        padding: .45rem .6rem;
+        border: 1px solid #bbb;
+        border-radius: .3rem
+    }
+
     .tbl {
         width: 100%;
         border-collapse: collapse
@@ -65,11 +79,42 @@ include __DIR__ . '/../partials/head.php'; ?>
             </div>
 
             <div class="content-container box-page">
+
+                <div class="content padding heading box-gray">
+                    <form method="GET" class="search-bar">
+                        <input
+                            type="text"
+                            name="q"
+                            placeholder="Search: Name / ID"
+                            value="<?= htmlspecialchars($term ?? '') ?>"
+                            style="margin:0;">
+
+                        <button class="self-button" type="submit">Search</button>
+
+                        <select name="section">
+                            <option value="">All sections</option>
+                            <option value="none" <?= $section === 'none' ? 'selected' : '' ?>>No Section</option>
+                            <?php foreach ($sections as $s): ?>
+                                <option
+                                    value="<?= $s->section_id ?>"
+                                    <?= (string)$s->section_id === (string)$section ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($s->section_name) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+
+                    </form>
+                </div>
+            </div>
+
+
+            <div class="content-container box-page">
                 <form method="POST">
                     <?= csrf_field() ?>
 
                     <!-- ↳ bulk selector bar -->
-                    <div class="content padding heading box-gold flex-row" style="gap: 1rem;">
+                    <div class="content padding heading box-gold flex-row" style="gap: 1rem; align-items: center;">
+                        <h6> Change Students Section: </h6>
                         <select name="section_id" required>
                             <option value="">— Move to section —</option>
                             <?php foreach ($sections as $s): ?>

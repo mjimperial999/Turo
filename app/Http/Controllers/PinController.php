@@ -20,7 +20,6 @@ class PinController extends Controller
     {
         $user = Users::where('email', $r->email)->firstOrFail();
 
-        // only students & only if pw change still required
         abort_unless(($user->role_id == 1 || $user->role_id == 2) && $user->requires_password_change == 1, 403);
 
         $pin = UserPin::issueFor($user->user_id);

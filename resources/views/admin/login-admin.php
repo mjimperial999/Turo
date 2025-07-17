@@ -1,4 +1,7 @@
 <?php
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
 $title = "Admin Login";
 include __DIR__ . '/../partials/head.php';  ?>
 <style>
@@ -39,10 +42,12 @@ $loginUrl = app()->environment('production')
               <div class="alert alert-danger alert-message" role="alert">
                 <?= session('error') ?>
               </div>
+              <br>
             <?php elseif (session()->has('success')): ?>
               <div class="alert alert-success alert-message" role="alert">
                 <?= session('success') ?>
               </div>
+              <br>
             <?php endif; ?>
           </div>
           <form class="login-form-box" action="<?= $loginUrl ?>" method="POST">

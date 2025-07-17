@@ -90,18 +90,21 @@ include __DIR__ . '/../partials/head.php'; ?>
                         <input
                             type="text"
                             name="q"
-                            placeholder="Search By: Name / ID / Section" value="<?= htmlspecialchars($term ?? '') ?>"
-                            style="margin: 0;">
+                            placeholder="Search: Name / ID"
+                            value="<?= htmlspecialchars($term ?? '') ?>"
+                            style="margin:0;">
 
                         <button class="self-button">Search</button>
 
                         <select name="section">
                             <option value="">All sections</option>
                             <?php foreach ($sections as $sid => $sname): ?>
-                                <option <?= $sid == ($section ?? '') ? 'selected' : '' ?> value="<?= $sid ?>"><?= $sname ?></option>
+                                <option <?= (string)$sid === (string)($sectionId ?? '') ? 'selected' : '' ?>
+                                    value="<?= $sid ?>">
+                                    <?= htmlspecialchars($sname) ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
-
                     </form>
 
                 </div>

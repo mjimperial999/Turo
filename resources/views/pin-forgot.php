@@ -1,4 +1,7 @@
 <?php
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
 $title = "Enter PIN";
 include __DIR__ . '/partials/head.php'; ?>
 </head>
@@ -16,7 +19,7 @@ include __DIR__ . '/partials/head.php'; ?>
                     <div class="content text-center">
                         <div class="header">
                             <div class="text title">
-                                <h4> Authenticate With Pin </h4>
+                                <h4> Account Recovery </h4>
 
                             </div>
                         </div>

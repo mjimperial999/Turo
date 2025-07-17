@@ -1,4 +1,7 @@
 <?php
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
 $title = "Enter PIN";
 include __DIR__ . '/partials/head.php'; ?>
 </head>
@@ -16,8 +19,10 @@ include __DIR__ . '/partials/head.php'; ?>
                     <div class="content text-center">
                         <div class="header">
                             <div class="text title">
-                                <h4> Authenticate With Pin </h4>
-
+                                <h4> Welcome to Turo </h4>
+                                <hr class="divider-hr">
+                                <p style="text-align: left;">To ensure access, please verify that you are the right person for this email.
+                                Click the button below to send a pin to your email to verify if this is your email.</em></p>
                             </div>
                         </div>
                     </div>

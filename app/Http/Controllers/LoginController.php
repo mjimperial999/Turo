@@ -14,13 +14,43 @@ class LoginController extends Controller
         return view('login');
     }
 
+    public function landingRedirect()
+    {
+
+        if (!session()->has('user_id')) {
+            return redirect('/login');
+        }
+
+        $user = Users::findOrFail(session('user_id'));
+
+        if ($user->agreed_to_terms == 0){
+            return redirect('/terms');
+        }
+
+        return session('role_id') == 1
+            ? redirect('/home-tutor')
+            : redirect('/teachers-panel');
+    }
+
+
     public function login(Request $request)
     {
         Session::flush();
 
         $user = Users::where('email', $request->email)->first();
 
+        if (!$user){
+            return redirect('/login')->with('error', 'Invalid email. Email is not registered.');
+        }
+
+        $user = Users::where('email', $request->email)->first();
+
         if ($user && Hash::check($request->password, $user->password_hash)) {
+            
+            if ($user->requires_password_change == 1){
+                return redirect('/pin');
+            }
+
             if ($user->role_id == 1) {
                 Session::put('user_id', $user->user_id);
                 Session::put('user_name', $user->first_name . ' ' . $user->last_name);
@@ -50,9 +80,9 @@ class LoginController extends Controller
             }
         }
         if ($user->role_id != 3) {
-            return redirect('/login')->with('error', 'Invalid credentials');
+            return redirect('/login')->with('error', 'Invalid Password');
         } else {
-            return redirect('/admin-login')->with('error', 'Invalid credentials');
+            return redirect('/admin-login')->with('error', 'Invalid Password'); // To hide that they are trying to access admin from this page
         }
     }
 

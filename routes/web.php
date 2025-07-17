@@ -16,7 +16,7 @@ use App\Http\Controllers\{
 };
 
 // GENERAL
-Route::get('/', [MainController::class, 'landingRedirect']);
+Route::get('/', [LoginController::class, 'landingRedirect']);
 
 Route::get('/health', function () {
     return response()->json(['status' => 'OK']);
