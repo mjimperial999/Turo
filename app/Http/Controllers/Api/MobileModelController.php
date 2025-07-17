@@ -1528,6 +1528,7 @@ class MobileModelController extends Controller
         $r->validate([
             'course_id'          => 'required|string|max:255',
             'module_name'        => 'required|string|max:255',
+            'module_description' => 'nullable|string',
             'image'              => 'nullable|string'
         ]);
 
@@ -1560,9 +1561,15 @@ class MobileModelController extends Controller
 
         $module->update($r->only([
             'module_name',
-            'module_details',
-            'image'
+            'module_description'
         ]));
+
+        if ($r->image) {
+            $module->moduleimage()->updateOrCreate([
+                'module_id' => $module->module_id,
+                'image'     => $r->module_id,
+            ]);
+        }
 
         return response()->json(['message' => 'Module ' . $r->module_name . ' updated']);
     }
