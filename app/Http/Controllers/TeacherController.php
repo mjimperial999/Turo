@@ -224,6 +224,7 @@ class TeacherController extends Controller
     public function deleteCourse(Courses $course)
     {
         $course->delete();
+        $course->image()->delete();
         return redirect('/teachers-panel')->with('success', 'Course has been deleted.');
     }
 

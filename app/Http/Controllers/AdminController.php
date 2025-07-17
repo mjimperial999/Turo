@@ -768,6 +768,7 @@ class AdminController extends Controller
     public function deleteCourse(Courses $course)
     {
         $course->delete();
+        $course->image()->delete();
         return redirect('/admin-panel/edit-content')->with('success', 'Course has been deleted.');
     }
 
