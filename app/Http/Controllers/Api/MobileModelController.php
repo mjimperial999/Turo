@@ -1529,7 +1529,7 @@ class MobileModelController extends Controller
             'course_id'          => 'required|string|max:255',
             'module_name'        => 'required|string|max:255',
             'module_description' => 'nullable|string',
-            'image'              => 'nullable'
+            'image_blob'         => 'nullable|string'
         ]);
 
 
@@ -1545,10 +1545,10 @@ class MobileModelController extends Controller
             'module_description'    => $moduleDesc
         ]);
 
-        if ($r->image) {
+        if ($r->image_blob) {
             ModuleImage::create([
                 'module_id'             => $module->module_id,
-                'image'                 => $r->image,
+                'image'                 => base64_encode($r->image_blob),
             ]);
         }
 
