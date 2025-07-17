@@ -1515,7 +1515,7 @@ class MobileModelController extends Controller
             'module_id' => 'required|exists:module,module_id',
         ]);
 
-        $module = Modules::with('moduleimage')
+        $module = Modules::with('modulecimage')
             ->findOrFail($r->module_id);
 
         return response()->json([
