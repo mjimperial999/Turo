@@ -41,6 +41,8 @@ Route::get('/forgot-password/pin', fn() => view('pin-forgot'));
 Route::post('/forgot-password/send', [PinController::class, 'sendRecovery'])->name('recovery.send');
 Route::post('/forgot-password/verify', [PinController::class, 'verifyRecovery'])->name('recovery.verify');
 
+Route::get('/replace-pass-view', fn() => view('replace-password-view'));
+
 
 // ADMIN 
 Route::get('/admin-login', [AdminController::class, 'showLoginPage']);

@@ -15,8 +15,16 @@ include __DIR__ . '/partials/head.php'; ?>
           <div class="content text-center">
             <div class="header">
               <div class="text title">
-                <h4> Replace Password </h4>
-
+                <h4> Change Password </h4>
+                <hr class="divider-hr">
+                <h6 style="text-align: left;">New password requirements: </h6>
+                <ul style="text-align: left;">
+                  <li>Minimum of 8 Characters</li>
+                  <li>At least one Uppercase letter and one Lowercase letter</li>
+                  <li>At least one Number</li>
+                  <li>At least one Symbol</li>
+                </ul>
+                <hr class="divider-hr">
               </div>
             </div>
           </div>

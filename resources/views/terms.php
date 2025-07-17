@@ -18,7 +18,7 @@ include __DIR__ . '/partials/head.php'; ?>
                                     By continuing, you acknowledge and consent to the collection of this data for the purpose of improving the educational experience and contributing to academic research.
                                     All personal data will be securely stored and handled only by authorized team members involved in the project. Your personal identity will not be revealed in any public report, paper, or publication related to this system.
                                     We are committed to protecting your privacy and will never share your information with outside parties.
-                                    If you agree with this policy, please confirm below.</em></p>
+                                </p>
                                 <hr class="divider-hr">
                             </div>
                         </div>
