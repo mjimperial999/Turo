@@ -6,7 +6,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ModuleResource extends JsonResource
 {
-    public function toArray($req): array
+    public function toArray($r): array
     {
         return [
             'module_id'          => $this->module_id,
