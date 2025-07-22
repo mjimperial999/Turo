@@ -51,6 +51,7 @@ Route::prefix('v1')->group(function () {
         Route::post('delete-message',   [MobileModelController::class, 'deleteMessage']);
 
         Route::get('get-calendar-events',     [MobileModelController::class, 'showCalendarEvents']);
+        Route::get('get-calendar-events-teacher',     [MobileModelController::class, 'showCalendarEventsTeacher']);
 
         // TEACHER
         Route::get('get-courses-for-teacher',      [MobileModelController::class, 'getCoursesTeacher']);

@@ -1025,6 +1025,76 @@ class MobileModelController extends Controller
 |===========================================================*/
     public function showCalendarEvents()
     {
+
+        /* ─── 2. PRACTICE-QUIZZES (quiz_type_id = 2) ─────────── */
+        $announcements = CalendarEvent::where('event_type_id', 1)
+            ->orderByDesc('is_urgent')
+            ->orderBy('date')
+            ->get(['title', 'description', 'date', 'is_urgent'])
+            ->map(fn($e) => [
+                'title'       => $e->title,
+                'description' => $e->description,
+                'date'        => $e->date,                // raw datetime string
+                'is_urgent'   => (bool) $e->is_urgent,    // int → bool
+            ]);
+
+        $practiceQuiz = Activities::with(['quiz','module'])
+            ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 2))
+            ->get(['module_id','activity_id','activity_name', 'unlock_date', 'deadline_date'])
+            ->map(fn($a) => [
+                'course_id'     => $a->module->course_id,
+                'module_id'     => $a->module_id,
+                'quiz_id'       => $a->activity_id,
+                'name'          => $a->activity_name,
+                'unlock_date'   => $a->unlock_date,
+                'deadline_date' => $a->deadline_date,
+            ]);
+
+        /* ─── 3. SHORT-QUIZZES (quiz_type_id = 1) ────────────── */
+        $shortQuiz = Activities::with(['quiz','module'])
+            ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 1))
+            ->get(['module_id', 'activity_id', 'activity_name', 'unlock_date', 'deadline_date'])
+            ->map(fn($a) => [
+                'course_id'     => $a->module->course_id,
+                'module_id'     => $a->module_id,
+                'quiz_id'       => $a->activity_id,
+                'name'          => $a->activity_name,
+                'unlock_date'   => $a->unlock_date,
+                'deadline_date' => $a->deadline_date,
+            ]);
+
+        /* ─── 4. LONG-QUIZZES  ───────────────────────────────── */
+        $longQuiz = LongQuizzes::get(['course_id', 'long_quiz_id', 'long_quiz_name', 'unlock_date', 'deadline_date'])
+            ->map(fn($l) => [
+                'course_id'     => $l->course_id,
+                'id'            => $l->long_quiz_id,
+                'name'          => $l->long_quiz_name,
+                'unlock_date'   => $l->unlock_date,
+                'deadline_date' => $l->deadline_date,
+            ]);
+
+        /* ─── 5. FINAL PAYLOAD ───────────────────────────────── */
+        return response()->json([
+            'announcements'  => $announcements,
+            'practice_quiz'  => $practiceQuiz,
+            'short_quiz'     => $shortQuiz,
+            'long_quiz'      => $longQuiz,
+        ]);
+    }
+
+    public function showCalendarEventsTeacher(Request $r)
+    {
+
+        $sections = CourseSection::with(['course', 'section'])
+            ->where('teacher_id', $r->teacher_id)
+            ->orderBy('course_id')
+            ->orderBy('section_id')
+            ->get()
+            ->map(fn($e) => [
+                'section_id' => $e->section_id,
+                'section_name'  => $e->section->section_name,
+            ]);
+
         /* ─── 1. ANNOUNCEMENTS ───────────────────────────────── */
         $announcements = CalendarEvent::where('event_type_id', 1)
             ->orderByDesc('is_urgent')
@@ -1037,29 +1107,36 @@ class MobileModelController extends Controller
                 'is_urgent'   => (bool) $e->is_urgent,    // int → bool
             ]);
 
-        /* ─── 2. PRACTICE-QUIZZES (quiz_type_id = 2) ─────────── */
-        $practiceQuiz = Activities::with('quiz')                // eager-load quiz tiny
+        $practiceQuiz = Activities::with(['quiz','module'])
             ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 2))
-            ->get(['activity_name', 'unlock_date', 'deadline_date'])
+            ->get(['module_id','activity_id','activity_name', 'unlock_date', 'deadline_date'])
             ->map(fn($a) => [
+                'course_id'     => $a->module->course_id,
+                'module_id'     => $a->module_id,
+                'quiz_id'       => $a->activity_id,
                 'name'          => $a->activity_name,
                 'unlock_date'   => $a->unlock_date,
                 'deadline_date' => $a->deadline_date,
             ]);
 
         /* ─── 3. SHORT-QUIZZES (quiz_type_id = 1) ────────────── */
-        $shortQuiz = Activities::with('quiz')
+        $shortQuiz = Activities::with(['quiz','module'])
             ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 1))
-            ->get(['activity_name', 'unlock_date', 'deadline_date'])
+            ->get(['module_id', 'activity_id', 'activity_name', 'unlock_date', 'deadline_date'])
             ->map(fn($a) => [
+                'course_id'     => $a->module->course_id,
+                'module_id'     => $a->module_id,
+                'quiz_id'       => $a->activity_id,
                 'name'          => $a->activity_name,
                 'unlock_date'   => $a->unlock_date,
                 'deadline_date' => $a->deadline_date,
             ]);
 
         /* ─── 4. LONG-QUIZZES  ───────────────────────────────── */
-        $longQuiz = LongQuizzes::get(['long_quiz_name', 'unlock_date', 'deadline_date'])
+        $longQuiz = LongQuizzes::get(['course_id', 'long_quiz_id', 'long_quiz_name', 'unlock_date', 'deadline_date'])
             ->map(fn($l) => [
+                'course_id'     => $l->course_id,
+                'id'            => $l->long_quiz_id,
                 'name'          => $l->long_quiz_name,
                 'unlock_date'   => $l->unlock_date,
                 'deadline_date' => $l->deadline_date,
@@ -1068,6 +1145,7 @@ class MobileModelController extends Controller
         /* ─── 5. FINAL PAYLOAD ───────────────────────────────── */
         return response()->json([
             'announcements'  => $announcements,
+            'sections'       => $sections,
             'practice_quiz'  => $practiceQuiz,
             'short_quiz'     => $shortQuiz,
             'long_quiz'      => $longQuiz,

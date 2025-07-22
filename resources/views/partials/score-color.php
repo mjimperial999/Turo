@@ -13,6 +13,6 @@ if ($percentage === null) {
     $color = '#ee8301';
     $percentage_display = round((int)$percentage);
 } else {
-    $color = '#d5d5d5';
+    $color = '#999999';
     $percentage_display = round((int)$percentage);
 }

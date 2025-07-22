@@ -2,6 +2,7 @@
     <small>&copy; <?= date('Y'); ?> Turo. All rights reserved.</small>
 </footer>
 </body>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     /* ─── navigation bar ───────*/
     const navMobile = document.getElementById('primary-navigation');

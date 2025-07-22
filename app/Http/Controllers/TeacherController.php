@@ -250,8 +250,36 @@ class TeacherController extends Controller
             ->join('user', 'user.user_id', '=', 'student.user_id')
             ->orderBy('user.last_name')
             ->orderBy('user.first_name')
-            ->select('student.*')
+            ->select('student.*', 'sp.total_points', 'sp.average_score')
             ->get();
+
+        $catchUp   = $students->where('isCatchUp', 1);
+        $normal    = $students->where('isCatchUp', 0);
+
+        $screenings = Screening::all()->keyBy('screening_id');
+        ScreeningResult::whereIn('student_id', $normal->pluck('user_id'))
+            ->where('is_kept', 1)
+            ->get()
+            ->groupBy('student_id')
+            ->each(function ($group, $studentId) use (&$normal) {
+                $normal->firstWhere('user_id', $studentId)->screening_scores =
+                    $group->pluck('score_percentage', 'screening_id')->all();
+            });
+
+        $totalCount   = $students->count();
+        $catchUpCount = $catchUp->count();
+        $normalCount  = $normal->count();
+
+        // average of all catch‑up students' average_score (null‑safe)
+        $avgCatchUpScore = $catchUpCount
+            ? $catchUp->pluck('average_score')->filter()->avg()
+            : null;
+
+        // passing rate among *all* students (based on their avg_score ≥ 70)
+        $passCount = $catchUp->filter(fn($s) => ($s->average_score ?? 0) >= 70)->count();
+        $passRate  = $catchUpCount
+            ? ($passCount / $catchUpCount) * 100
+            : null;
 
         $userID = session()->get('user_id');
         $users = Users::with('image')->findOrFail($userID);
@@ -275,7 +303,19 @@ class TeacherController extends Controller
             ->sortBy(fn($s)  => $this->seq($s->screening_name))
             ->values();
 
-        return view('teacher.view-course', compact('course', 'users', 'students', 'section'));
+        return view('teacher.view-course', compact(
+            'course',
+            'users',
+            'section',
+            'catchUp',
+            'normal',
+            'screenings',
+            'totalCount',
+            'catchUpCount',
+            'normalCount',
+            'avgCatchUpScore',
+            'passRate'
+        ));
     }
 
     public function viewStudentCoursePerformance(
@@ -529,14 +569,23 @@ class TeacherController extends Controller
 
         $this->assertOwnsCourseSection($course->course_id, $section->section_id);
 
+        $quizzes = Quizzes::with('activity.module')
+            ->whereHas('activity', fn($q) => $q->whereHas(
+                'module',
+                fn($m) =>
+                $m->where('course_id', $course->course_id)
+            ))
+            ->get()
+            ->groupBy(fn($quiz) => $quiz->activity->module->module_name)
+            ->map(fn($group) => $group->sortBy('activity.activity_name')->values());
+
         $users = Users::with('image')->findOrFail(session('user_id'));
-        return view('teacher.longquiz-create', compact('course', 'section', 'users'));
+        return view('teacher.longquiz-create', compact('course', 'section', 'quizzes', 'users'));
     }
 
     /* 3-c  Store new quiz  */
     public function storeLongQuiz(Request $req, Courses $course, $sectionId)
     {
-        /* ---------- validation ---------- */
         $rules = [
             'long_quiz_name'         => 'required|string|max:255',
             'long_quiz_instructions' => 'required|string',
@@ -546,82 +595,65 @@ class TeacherController extends Controller
             'unlock_date'            => 'required|date',
             'deadline_date'          => 'required|date|after:unlock_date',
             'has_answers_shown'      => 'nullable|boolean',
-
-            /* question / option structure */
-            'questions'                      => 'required|array|min:1',
-            'questions.*.text'               => 'required|string',
-            'questions.*.correct'            => 'required|integer|min:0',
-            'questions.*.options'            => 'required|array|min:1|max:4',
-            'questions.*.options.*'          => 'required|string',
-            'questions.*.image'              => 'nullable|image|max:2048',
+            'source_quizzes'         => 'required|array|min:1',
+            'source_quizzes.*'       => 'exists:quiz,activity_id',
         ];
 
         $validator = Validator::make($req->all(), $rules);
-
-        /* make sure the question bank ≥ draw size */
-        $validator->after(function ($v) use ($req) {
-            if (count($req->questions) < $req->number_of_questions) {
-                $v->errors()->add(
-                    'number_of_questions',
-                    '“Number of Questions” can’t exceed the number of questions you entered.'
-                );
-            }
-        });
-
         $validator->validate();
 
-        /* ---------- DB tx ---------- */
         DB::transaction(function () use ($req, $course) {
-
-            /* 1) quiz shell */
-            $longquiz = LongQuizzes::create([
-                'long_quiz_id'          => Str::uuid()->toString(),
-                'course_id'             => $course->course_id,
-                'long_quiz_name'        => $req->long_quiz_name,
+            // 1) create the long quiz shell
+            $lq = LongQuizzes::create([
+                'long_quiz_id'           => Str::uuid()->toString(),
+                'course_id'              => $course->course_id,
+                'long_quiz_name'         => $req->long_quiz_name,
                 'long_quiz_instructions' => $req->long_quiz_instructions,
-                'number_of_attempts'    => $req->number_of_attempts,
-                'number_of_questions'   => $req->number_of_questions,
-                'overall_points'        => $req->number_of_questions,
-                'time_limit'            => $req->time_limit_minutes * 60,
-                'has_answers_shown'     => $req->boolean('has_answers_shown'),
-                'unlock_date'           => Carbon::parse($req->unlock_date),
-                'deadline_date'         => Carbon::parse($req->deadline_date),
+                'number_of_attempts'     => $req->number_of_attempts,
+                'number_of_questions'    => $req->number_of_questions,
+                'overall_points'         => $req->number_of_questions,
+                'time_limit'             => $req->time_limit_minutes * 60,
+                'has_answers_shown'      => $req->boolean('has_answers_shown'),
+                'unlock_date'            => Carbon::parse($req->unlock_date),
+                'deadline_date'          => Carbon::parse($req->deadline_date),
             ]);
 
-            /* 2) questions + options */
-            foreach ($req->questions as $qData) {
+            // 1) fetch ALL question IDs from the selected quizzes
+            $allQids = Questions::whereIn('activity_id', $req->source_quizzes)
+                ->pluck('question_id')
+                ->all();
 
-                $question = $longquiz->longquizquestions()->create([
+            // 2) copy every one into your longquiz_question table
+            foreach ($allQids as $qid) {
+                $orig = Questions::with('options', 'questionimage')->findOrFail($qid);
+
+                $newQ = $lq->longquizquestions()->create([
                     'long_quiz_question_id' => Str::uuid()->toString(),
-                    'question_text'         => $qData['text'],
-                    'question_type_id'      => 1,
-                    'score'                 => 1,
+                    'question_text'         => $orig->question_text,
+                    'question_type_id'      => $orig->question_type_id,
+                    'score'                 => $orig->score,
                 ]);
 
-                /* optional image */
-                if (isset($qData['image'])) {
-                    $img = $qData['image'];
-                    $question->longquizimage()->updateOrCreate(
-                        [],
-                        [
-                            'image'     => file_get_contents($img->getRealPath()),
-                            'mime_type' => $img->getMimeType() ?? 'image/jpeg',
-                        ]
-                    );
+                // copy image if present
+                if ($orig->questionimage) {
+                    $newQ->longquizimage()->create([
+                        'image'     => $orig->questionimage->image,
+                        'mime_type' => $orig->questionimage->mime_type ?? 'image/jpeg',
+                    ]);
                 }
 
-                /* options */
-                foreach ($qData['options'] as $oIdx => $optText) {
-                    $question->longquizoptions()->create([
-                        'long_quiz_option_id' => Str::uuid()->toString(),
-                        'option_text'         => $optText,
-                        'is_correct'          => ($oIdx == $qData['correct']) ? 1 : 0,
+                // copy each option
+                foreach ($orig->options as $opt) {
+                    $newQ->longquizoptions()->create([
+                        'long_quiz_option_id'   => Str::uuid()->toString(),
+                        'option_text'           => $opt->option_text,
+                        'is_correct'            => $opt->is_correct,
                     ]);
                 }
             }
         });
 
-        return back()->with('success', 'Long-quiz created.');
+        return back()->with('success', 'Long quiz created from selected banks.');
     }
 
     /* 3-d  Edit form */

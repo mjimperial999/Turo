@@ -228,16 +228,132 @@ include __DIR__ . '/../partials/head.php'; ?>
                 </div>
 
                 <div class="content padding">
+
+                    <div class="content padding flex-row" style="gap:2rem;flex-wrap:wrap">
+
+                        <!-- 1) Students' Status -->
+                        <div class="analytics-container flex-row" style="align-items:center">
+                            <div class="pie-chart-container" style="width:120px;height:120px">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                            <div class="analytics-summary flex-column" style="margin-left:1rem">
+                                <div class="analytics-title">
+                                    <h5>Students' Status</h5>
+                                </div>
+                                <div class="analytics-details flex-column">
+                                    <div class="analytics-name">
+                                        <h6>Catch‑Up Students</h6>
+                                    </div>
+                                    <div class="analytics-data"><?= $catchUpCount ?> / <?= $totalCount ?></div>
+                                </div>
+                                <div class="analytics-details flex-column">
+                                    <div class="analytics-name">
+                                        <h6>Non‑Catch‑Up Students</h6>
+                                    </div>
+                                    <div class="analytics-data"><?= $normalCount ?> / <?= $totalCount ?></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2) Overall Performance -->
+                        <?php
+                        // pick color and display for avgCatchUpScore
+                        if (is_null($avgCatchUpScore)) {
+                            $perfColor = '#d5d5d5';
+                            $perfDisplay = '--';
+                            $perfDesc = '--';
+                        } elseif ($avgCatchUpScore >= 80) {
+                            $perfColor = '#00cc25';
+                            $perfDisplay = round($avgCatchUpScore);
+                            $perfDesc = 'Excellent';
+                        } elseif ($avgCatchUpScore >= 75) {
+                            $perfColor = '#adcb00';
+                            $perfDisplay = round($avgCatchUpScore);
+                            $perfDesc = 'Alright';
+                        } elseif ($avgCatchUpScore >= 50) {
+                            $perfColor = '#ee8301';
+                            $perfDisplay = round($avgCatchUpScore);
+                            $perfDesc = 'Needs More Practice';
+                        } else {
+                            $perfColor = '#ee0101';
+                            $perfDisplay = round($avgCatchUpScore);
+                            $perfDesc = 'Needs More Teaching';
+                        }
+                        ?>
+                        <div class="analytics-container flex-row" style="align-items:center">
+                            <div class="pie-chart-container" style="width:120px;height:120px">
+                                <canvas id="perfChart"></canvas>
+                            </div>
+                            <div class="analytics-summary flex-column" style="margin-left:1rem">
+                                <div class="analytics-title">
+                                    <h5>Overall Performance</h5>
+                                </div>
+                                <div class="analytics-details flex-column">
+                                    <div class="analytics-name">
+                                        <h6>Average (Catch‑Up)</h6>
+                                    </div>
+                                    <div class="analytics-data">
+                                        <?= $perfDisplay ?>%<br>
+                                        <p>Evaluation: <i><?= $perfDesc ?></i><p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3) Passing Rate -->
+                        <?php
+                        // passing rate chart: green vs gray
+                        $passSegment = is_null($passRate) ? 0 : round($passRate);
+                        $failSegment = is_null($passRate) ? 100 : 100 - $passSegment;
+
+                        if (is_null($passSegment)) {
+                            $evalDesc = '--';
+                        } elseif ($passSegment >= 100) {
+                            $evalDesc = 'All Students Passed';
+                        } elseif ($passSegment >= 75) {
+                            $evalDesc = 'Some Students Need Help';
+                        } elseif ($passSegment >= 50) {
+                            $evalDesc = 'Most Students are Struggling';
+                        } else {
+                            $evalDesc = 'Majority are Struggling';
+                        }
+
+                        ?>
+                        <div class="analytics-container flex-row" style="align-items:center">
+                            <div class="pie-chart-container" style="width:120px;height:120px">
+                                <canvas id="passChart"></canvas>
+                            </div>
+                            <div class="analytics-summary flex-column" style="margin-left:1rem">
+                                <div class="analytics-title">
+                                    <h5>Catch-Up Students' Evaluation</h5>
+                                </div>
+                                <div class="analytics-details flex-column">
+                                    <div class="analytics-name">
+                                        <h6>Passing Rate</h6>
+                                    </div>
+                                    <div class="analytics-data">
+                                        <?= is_null($passRate) ? '--' : round($passRate) . '%' ?>
+                                        <p>Evaluation: <i><?= $evalDesc ?></i><p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <h5>Students in Catch‑Up Mode</h5>
+                    <hr class="divider-hr">
                     <table class="std">
                         <thead>
                             <tr>
                                 <th>Name</th>
+                                <th>Avg %</th>
                                 <th>Points</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($students as $s):
+                            <?php foreach ($catchUp as $s):
                                 $u  = $s->user;
                                 if (empty($u->image?->image)) {
                                     $avatar = "/icons/no-img.jpg";
@@ -252,12 +368,63 @@ include __DIR__ . '/../partials/head.php'; ?>
                                             <?= e($s->user->last_name . ', ' . $s->user->first_name) ?>
                                         </div>
                                     </td>
+                                    <?php 
+                                        if (($s->average_score) >= 70){
+                                            $tileColor = 'style="background-color: #acf6baff;"';
+                                        } else {
+                                            $tileColor = 'style="background-color: #eaa1a1ff;"';
+                                        } ?>
+
+                                    <td <?= $tileColor ?> ><?= $s->average_score ?? '—' ?>%</td>
                                     <td><?= $s->total_points ?? 0 ?></td>
                                     <td>
                                         <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/student/<?= $s->user_id ?>/performance" method="GET">
                                             <button class="edit">
                                                 View Performance
                                             </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+
+                    <br>
+                    <h5>Non-Catch Up Students</h5>
+                    <hr class="divider-hr">
+                    <table class="std">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <?php foreach ($course->screenings as $scr): ?>
+                                    <th><?= e($scr->screening_name) ?></th>
+                                <?php endforeach; ?>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($normal as $s):
+                                $u = $s->user;
+                                $img = empty($u->image?->image)
+                                    ? '/icons/no-img.jpg'
+                                    : 'data:' . getMimeTypeFromBlob($u->image->image) . ';base64,' . base64_encode($u->image->image);
+                                $scores = $s->screening_scores ?? [];
+                            ?>
+                                <tr>
+                                    <td>
+                                        <div style="display:flex;align-items:center">
+                                            <div class="std-img" style="background-image:url('<?= $img ?>')"></div>
+                                            <?= e("$u->last_name, $u->first_name") ?>
+                                        </div>
+                                    </td>
+                                    <?php foreach ($course->screenings as $scr):
+                                        $pct = $scores[$scr->screening_id] ?? null;
+                                    ?>
+                                        <td><?= $pct === null ? '—' : $pct . '%' ?></td>
+                                    <?php endforeach; ?>
+                                    <td>
+                                        <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/student/<?= $s->user_id ?>/performance" method="GET">
+                                            <button class="edit">View Performance</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -280,5 +447,63 @@ include __DIR__ . '/../partials/head.php'; ?>
     </div>
     <?php include __DIR__ . '/../partials/footer.php'; ?>
 </body>
+<script>
+    // 1) Status chart: catch‑up (gray) vs normal (gold)
+    new Chart(document.getElementById('statusChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Catch‑Up', 'Normal'],
+            datasets: [{
+                data: [<?= $catchUpCount ?>, <?= $normalCount ?>],
+                backgroundColor: ['#888888', '#FFD700']
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // 2) Perf chart: avgCatchUpScore vs remainder
+    new Chart(document.getElementById('perfChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Avg', 'Rest'],
+            datasets: [{
+                data: [<?= is_null($avgCatchUpScore) ? 0 : round($avgCatchUpScore) ?>, <?= is_null($avgCatchUpScore) ? 100 : 100 - round($avgCatchUpScore) ?>],
+                backgroundColor: ['<?= $perfColor ?>', '#ffffff00']
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // 3) Passing rate chart: pass (green) vs fail (gray)
+    new Chart(document.getElementById('passChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Pass', 'Fail'],
+            datasets: [{
+                data: [<?= $passSegment ?>, <?= $failSegment ?>],
+                backgroundColor: ['#00cc25', '#d5d5d5']
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
 
 </html>

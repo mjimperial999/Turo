@@ -369,7 +369,7 @@ class MainController extends Controller
         if ($assessment) {
             foreach ($assessment->answers as $ans) {
                 $q = $ans->longquizquestion;                 // Question model
-                $q->selected_option_id = $ans->option_id;
+                $q->selected_option_id = $ans->long_quiz_option_id;
                 $answeredQuestions->push($q);        // keep full question object
             }
         }

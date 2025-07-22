@@ -1,72 +1,32 @@
 <?php $title = "Add New Long Quiz";
 include __DIR__ . '/../partials/head.php'; ?>
 <style>
-    /* simple demo styles – tweak/add your own */
-    .q-block {
-        border: 1px dashed #bbb;
+
+    .tbl {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    td {
         padding: 1rem;
-        margin-bottom: 1rem;
+        border:1px solid #ddd;
     }
 
-    .opt-row {
-        display: flex;
-        gap: .3rem;
-        align-items: center;
-        margin: .3rem 0;
+    .module {
+        padding-left: 2rem;
+        font-weight: bold;
     }
 
-    .opt-row input[type=text] {
-        flex: 1;
+    .checkbox {
+        padding: 0.1rem;
+        text-align: center;
     }
+
+    input[type="checkbox"] {
+        margin: 0;
+    }
+
 </style>
-<script>
-    let qIndex = 0;
-
-    function addOption(wrap, qI) {
-        const optCount = wrap.children.length; // 0-based
-        const tpl = document.getElementById('opt-template')
-            .content.cloneNode(true);
-
-        tpl.querySelectorAll('[data-repl]').forEach(el => {
-            el.name = el.name.replace('__i__', qI).replace('__o__', optCount);
-            if (el.type === 'radio') el.value = optCount; // int value
-        });
-        wrap.appendChild(tpl);
-    }
-
-    function addQuestion(prefill = null) {
-        const tpl = document.getElementById('q-template')
-            .content.cloneNode(true).firstElementChild;
-
-        tpl.dataset.qi = qIndex; // store idx
-        tpl.querySelectorAll('[data-repl]').forEach(el => {
-            el.name = el.name.replace('__i__', qIndex);
-            if (prefill) {
-                if (el.dataset.repl === 'text') el.value = prefill.text ?? '';
-            }
-        });
-
-        /* remove button */
-        tpl.querySelector('.q-remove').onclick = e => {
-            const total = document.querySelectorAll('.q-block').length;
-            if (total > 1) e.currentTarget.closest('.q-block').remove();
-        };
-
-        /* “+ Option” button */
-        tpl.querySelector('.opt-add').onclick = e => {
-            const block = e.currentTarget.closest('.q-block');
-            addOption(block.querySelector('.opt-wrap'), block.dataset.qi);
-        };
-
-        /* put an initial option row */
-        addOption(tpl.querySelector('.opt-wrap'), qIndex);
-
-        document.getElementById('question-list').appendChild(tpl);
-        qIndex++;
-    }
-
-    document.addEventListener('DOMContentLoaded', () => addQuestion()); // first block
-</script>
 </head>
 
 <body>
@@ -116,7 +76,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                 </div>
                 <br>
 
-                                <div class="content-container box-page">
+                <div class="content-container box-page">
                     <div class="content">
                         <?php if ($errors->any()): ?>
                             <div class="alert alert-danger alert-message padding">
@@ -174,13 +134,38 @@ include __DIR__ . '/../partials/head.php'; ?>
                     </div>
 
                 </div>
+
                 <div class="content-container box-page">
                     <div class="content padding box-page">
                         <div class="header">
-                            <h5>Questions</h5>
+                            <h5>Question Banks</h5>
                         </div>
-                        <div id="question-list"></div>
-                        <button type="button" class="edit" onclick="addQuestion()">+ Add Question</button>
+                        <p>Select one or more existing quizzes:</p>
+
+                        <table class="tbl">
+                            <tbody>
+                                <?php foreach ($quizzes as $moduleName => $group): ?>
+                                    <tr>
+                                        <td class="module" colspan="2">
+                                            <?= e($moduleName) ?>
+                                        </td>
+                                    </tr>
+                                    <?php foreach ($group as $quiz): ?>
+                                        <tr>
+                                            <td class="checkbox">
+                                                <input
+                                                    type="checkbox"
+                                                    name="source_quizzes[]"
+                                                    value="<?= $quiz->activity_id ?>">
+                                            </td>
+                                            <td class="name">
+                                                <?= e($quiz->activity->activity_name) ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 <br>

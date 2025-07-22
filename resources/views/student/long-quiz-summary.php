@@ -230,7 +230,7 @@ include __DIR__ . '/../partials/head.php';
                                 <?php endif; ?>
 
                                 <?php foreach ($q->longquizoptions as $opt):
-                                    $chosen = $q->selected_option_id === $opt->option_id;
+                                    $chosen = $q->selected_option_id === $opt->long_quiz_option_id;
                                     $isCorrect = $opt->is_correct == 1;
 
                                     /* colour rules */

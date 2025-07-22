@@ -10,6 +10,7 @@ use App\Services\AchievementService;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 
+use App\Models\Courses;
 use App\Models\LongQuizzes;
 use App\Models\LongQuizAssessmentResult;
 use App\Models\LongQuizAssessmentResultAnswer;
@@ -135,10 +136,47 @@ class LongQuizController extends Controller
         ]);
     }
 
-    public function submitAnswer(Request $request, $courseID, $longQuizID, $index)
+    public function submitAnswer(Request $request, Courses $course, LongQuizzes $longquiz, $index)
     {
-        $selectedOption = $request->input('answer');
-        $answers = session()->get("lq_{$longQuizID}_answers", []);
+        $courseID = $course->course_id;
+        $longQuizID = $longquiz->long_quiz_id;
+
+        $questionIDs = Session::get("lq_{$longQuizID}_questions", []);
+        $answers     = Session::get("lq_{$longQuizID}_answers", []);
+
+        $questionID = $questionIDs[$index] ?? null;
+        if (! $questionID) {
+            return redirect("/home-tutor/course/{$courseID}/longquiz/{$longQuizID}")
+                ->with('error', 'Invalid question index.');
+        }
+
+        $question = LongQuizQuestions::with('longquizoptions')->findOrFail($questionID);
+
+        if ($question->question_type_id === 1) {
+            // multiple choice
+            $selectedOption = $request->input('answer');
+        } else {
+            // identification: compare text against correct options
+            $text = trim(strtolower($request->input('answer_text') ?? ''));
+
+            $rawAnswers = Session::get("lq_{$longQuizID}_raw_text_answers", []);
+            $rawAnswers[$index] = $text;
+            Session::put("lq_{$longQuizID}_raw_text_answers", $rawAnswers);
+
+            // get all correct option_texts + ids
+            $correctOptions = LongQuizOptions::where('long_quiz_question_id', $questionID)
+                ->where('is_correct', 1)
+                ->get(['long_quiz_option_id', 'option_text']);
+            $matched = $correctOptions->first(
+                fn($opt) =>
+                trim(strtolower($opt->option_text)) === $text
+            );
+            
+            $selectedOption = $matched
+            ? $matched->long_quiz_option_id
+            : null;
+        }
+
         $answers[$index] = $selectedOption;
         session()->put("lq_{$longQuizID}_answers", $answers);
 
@@ -201,9 +239,10 @@ class LongQuizController extends Controller
                     $correctOptionID = LongQuizOptions::where('long_quiz_question_id', $questionID)
                         ->where('is_correct', 1)
                         ->value('long_quiz_option_id');
-
-                    $isCorrect = $selectedOptionID == $correctOptionID ? 1 : 0;
-                    $correct  += $isCorrect;
+                    
+                    $isCorrect = ($selectedOptionID !== null && $selectedOptionID == $correctOptionID)
+                        ? 1
+                        : 0;
 
                     LongQuizAssessmentResultAnswer::create([
                         'result_id'         => $result->result_id,          // keep this in scope
@@ -211,6 +250,10 @@ class LongQuizController extends Controller
                         'long_quiz_option_id'    => $selectedOptionID,
                         'is_correct'        => $isCorrect,
                     ]);
+
+                    if ($isCorrect) {
+                        $correct++;
+                    }
                 }
 
                 /** 3️⃣  update score & kept-flag exactly as you did */

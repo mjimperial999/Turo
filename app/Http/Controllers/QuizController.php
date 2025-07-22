@@ -153,8 +153,41 @@ class QuizController extends Controller
         $moduleID = $module->module_id;
         $activityID = $activity->activity_id;
 
-        $selectedOption = $request->input('answer');
-        $answers = session()->get("quiz_{$activityID}_answers", []);
+        $questionIDs = Session::get("quiz_{$activityID}_questions", []);
+        $answers     = Session::get("quiz_{$activityID}_answers", []);
+
+        $questionID = $questionIDs[$index] ?? null;
+        if (! $questionID) {
+            return redirect("/home-tutor/course/{$courseID}/module/{$moduleID}/quiz/{$activityID}")
+                ->with('error', 'Invalid question index.');
+        }
+
+        $question = Questions::with('options')->findOrFail($questionID);
+
+        if ($question->question_type_id === 1) {
+            // multiple choice
+            $selectedOption = $request->input('answer');
+        } else {
+            // identification: compare text against correct options
+            $text = trim(strtolower($request->input('answer_text') ?? ''));
+
+            $rawAnswers = Session::get("quiz_{$activityID}_raw_text_answers", []);
+            $rawAnswers[$index] = $text;
+            Session::put("quiz_{$activityID}_raw_text_answers", $rawAnswers);
+
+            // get all correct option_texts + ids
+            $correctOptions = Options::where('question_id', $questionID)
+                ->where('is_correct', 1)
+                ->get(['option_id', 'option_text']);
+            $matched = $correctOptions->first(
+                fn($opt) =>
+                trim(strtolower($opt->option_text)) === $text
+            );
+            $selectedOption = $matched
+            ? $matched->option_id
+            : null;
+        }
+
         $answers[$index] = $selectedOption;
         session()->put("quiz_{$activityID}_answers", $answers);
 
@@ -218,8 +251,9 @@ class QuizController extends Controller
                         ->where('is_correct', 1)
                         ->value('option_id');
 
-                    $isCorrect = $selectedOptionID == $correctOptionID ? 1 : 0;
-                    $correct  += $isCorrect;
+                    $isCorrect = ($selectedOptionID !== null && $selectedOptionID == $correctOptionID)
+                        ? 1
+                        : 0;
 
                     AssessmentResultAnswer::create([
                         'result_id'   => $result->result_id,
@@ -227,6 +261,10 @@ class QuizController extends Controller
                         'option_id'   => $selectedOptionID,
                         'is_correct'  => $isCorrect,
                     ]);
+
+                    if ($isCorrect) {
+                        $correct++;
+                    }
                 }
 
                 /** 3️⃣  update score & kept-flag exactly as you did */

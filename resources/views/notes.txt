@@ -1440,3 +1440,1696 @@ The rest are the same. The can be used for edit view of activities and resources
 
 I will be sending the entire mobile model controller and teacher controller so you can see the validation rules for all kinds of crud operation.
 Analyze and take your time.
+
+
+
+Rework the controller and view to display two tables
+
+public function viewCourse(Courses $course, Sections $section)
+    {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $sectionID);
+
+        $students = Students::query()
+            ->with([
+                'user.image',
+            ])
+            ->leftJoin('studentprogress as sp', function ($q) use ($course) {
+                $q->on('sp.student_id', '=', 'student.user_id')
+                    ->where('sp.course_id', '=', $course->course_id);
+            })
+            ->where('section_id', $sectionID)
+            ->join('user', 'user.user_id', '=', 'student.user_id')
+            ->orderBy('user.last_name')
+            ->orderBy('user.first_name')
+            ->select('student.*')
+            ->get();
+
+        $userID = session()->get('user_id');
+        $users = Users::with('image')->findOrFail($userID);
+
+        $course->load([
+            'modules.moduleimage',
+            'longquizzes',
+            'screenings',
+        ]);
+
+        /* ── PHP sorts ──────────────────────────────────────────── */
+        $course->modules     = $course->modules
+            ->sortBy(fn($m)  => $this->seq($m->module_name))
+            ->values();
+
+        $course->longquizzes = $course->longquizzes
+            ->sortBy(fn($lq) => $this->seq($lq->long_quiz_name))
+            ->values();
+
+        $course->screenings  = $course->screenings
+            ->sortBy(fn($s)  => $this->seq($s->screening_name))
+            ->values();
+
+        return view('teacher.view-course', compact('course', 'users', 'students', 'section'));
+    }
+
+<table class="std">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Points</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($students as $s):
+                                $u  = $s->user;
+                                if (empty($u->image?->image)) {
+                                    $avatar = "/icons/no-img.jpg";
+                                } else {
+                                    $blob = $u->image->image;
+                                    $avatar = "data:" . getMimeTypeFromBlob($blob) . ';base64,' . base64_encode($blob);
+                                } ?>
+                                <tr>
+                                    <td>
+                                        <div style="display:flex;align-items:center">
+                                            <div class="std-img" style="background-image:url('<?= $avatar ?>')"></div>
+                                            <?= e($s->user->last_name . ', ' . $s->user->first_name) ?>
+                                        </div>
+                                    </td>
+                                    <td><?= $s->total_points ?? 0 ?></td>
+                                    <td>
+                                        <form action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/student/<?= $s->user_id ?>/performance" method="GET">
+                                            <button class="edit">
+                                                View Performance
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+
+Students in Catch Up Mode
+(where the value of column "isCatchUp" == 1)
+Display the students' average_score and total_points from studentprogress table
+
+Students not in Catch Up Mode
+(where the value of column "isCatchUp" == 0)
+Display the student's results in screening exams (using screeningresult)
+text displayed as -- if student has no record in a screening exam. Use the record with isKept = 1 as the updated score
+
+
+Create 3 Pie Charts displaying overall analytics. I plan to put this above the first table.
+Display the pie chart on the right, and the text display on the left. You can do some styling.
+For the catch-up graph, put catch-up students as gray, while non-catch up as gold color.
+For average_scores, the avg_score color varies depending on the score.
+
+You can use this rule:
+
+if ($percentage === null) {
+    $color = '#d5d5d5';
+    $percentage_display = '--';
+} elseif ($percentage >= 80) {
+    $color = '#00cc25';
+    $percentage_display = round((int)$percentage);
+} elseif ($percentage >= 75) {
+    $color = '#adcb00';
+    $percentage_display = round((int)$percentage);
+} elseif ($percentage >= 50) {
+    $color = '#ee8301';
+    $percentage_display = round((int)$percentage);
+} else {
+    $color = '#ee0101';
+    $percentage_display = round((int)$percentage);
+}
+
+The difference of avg_score from 100 has no color (invisible or hollow).
+For the passing rate graph, green is the passing rate while is as the difference of passing rate from 100.
+
+What analytics do I need?
+Number of Students in Catch-Up and Non-Catch Up (Count all students in a section)
+Average of all catch up students' average_scores
+Passing Rate (rate of students' average_scores above 70%)
+
+<div class="content padding flex-row">
+
+                        <div class="analytics-container flex-row">
+                            <div class="pie-chart-container">
+                                <!-- Insert Pie Chart Here -->
+                            </div>
+                            <div class="analytics-summary flex-column">
+                                <div class="analytics-title">
+                                    <h5>Students' Status</h5>
+                                </div>
+                                <div class="analytics-details flex-column">
+                                    <div class="analytics-name">
+                                        <h6>Catch-Up Students</h6>
+                                    </div>
+                                    <div class="analytics-data"></div>
+                                </div>
+                                <div class="analytics-details flex-column">
+                                    <div class="analytics-name">
+                                        <h6>Non-Catch Up Students</h6>
+                                    </div>
+                                    <div class="analytics-data"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="analytics-container flex-row">
+                            <div class="pie-chart-container">
+                                <!-- Insert Pie Chart Here -->
+                            </div>
+                            <div class="analytics-summary flex-column">
+                                <div class="analytics-title">
+                                    <h5>Overall Performance</h5>
+                                </div>
+                                <div class="analytics-details flex-column">
+                                    <div class="analytics-name">
+                                        <h6>Average</h6>
+                                    </div>
+                                    <div class="analytics-data"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="analytics-container flex-row">
+                            <div class="pie-chart-container">
+                                <!-- Insert Pie Chart Here -->
+                            </div>
+                            <div class="analytics-summary flex-column">
+                                <div class="analytics-title">
+                                    <h5>Students' Evaluation</h5>
+                                </div>
+                                <div class="analytics-details flex-column">
+                                    <div class="analytics-name">
+                                        <h6>Passing Rate</h6>
+                                    </div>
+                                    <div class="analytics-data"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                       
+                    </div>
+
+Let's add question types.
+
+So far there is only multiple choice. Let's add identification type functionality.
+Right now, question_type_id = 1 is multiple choice.
+Detect that question_type_id = 2 means it is an identification type.
+
+How it works is that for each question it has options, and the options that appear share the same question_id.
+Options that have the value of is_correct at 1 indicates that's the correct answer. Some questions can have multiple correct answers but only need to choose 1.
+
+The current controllers' logic only handles multiple choice type of answers at the moment.
+
+What I want to happen is view, change the input type to text, and let the student type whenever.
+If the student types the same text as at least one of the options with is_correct as 1, that means that the answer is correct and submit the option to assessmentresult_answer as the one in the option entry.
+If the student types the wrong answer, create the entry in assessmentresult_answer with the student's input and put is_correct as 0.
+
+assessmentresult is the score of a student from a quiz (using activity_id)
+assessmentresult_answer is a table consisting of answers of questions from assessmentresult_id, and assessmentresult student_id
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Questions extends Model
+{
+    public function quiz()
+    {
+        return $this->belongsTo(Quizzes::class, 'activity_id', 'activity_id');
+    }
+
+    protected $table = 'question'; // Name of The Table
+    protected $primaryKey = 'question_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'question_id',
+        'question_text',
+        'question_type_id',
+        'score',
+        'activity_id',
+    ];
+
+    public function options()
+    {
+        return $this->hasMany(Options::class, 'question_id');
+    }
+
+    public function questionimage()
+    {
+        return $this->hasOne(QuestionImages::class, 'question_id');
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Options extends Model
+{
+    public function question()
+    {
+        return $this->belongsTo(Questions::class, 'question_id', 'question_id');
+    }
+
+    protected $table = 'options'; // Name of The Table
+    protected $primaryKey = 'option_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'option_id',
+        'question_id',
+        'option_text',
+        'is_correct',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AssessmentResult extends Model
+{
+    public function student()
+    {
+        return $this->belongsTo(Students::class, 'student_id', 'user_id');
+    }
+
+    public function activity()
+    {
+        return $this->belongsTo(Activities::class, 'activity_id', 'activity_id');
+    }
+
+    public function quiz()
+    {
+        return $this->belongsTo(Quizzes::class, 'activity_id', 'activity_id');
+    }
+
+    protected $table = 'assessmentresult';
+    protected $primaryKey = 'result_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
+    public $timestamps = false;
+
+    protected $fillable = [
+        'result_id',
+        'student_id',
+        'module_id',
+        'activity_id',
+        'score_percentage',
+        'date_taken',
+        'attempt_number',
+        'tier_level_id',
+        'earned_points',
+        'is_kept',
+    ];
+
+    public function answers()
+    {
+        return $this->hasMany(AssessmentResultAnswer::class,'result_id','result_id');
+    }
+
+
+    public function scopeKept($q)
+    {
+        return $q->where('is_kept', 1);
+    }
+}
+
+<?php
+// app/Models/AssessmentAnswer.php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AssessmentResultAnswer extends Model
+{
+    /* ---------- table & primary-key ---------- */
+    protected $table      = 'assessmentresult_answers';   // exact table name
+    protected $primaryKey = 'result_answer_id';
+    protected $keyType = 'int';                        
+    public    $timestamps   = false;                      // no created_at / updated_at columns
+
+    /* ---------- mass-assignable columns ---------- */
+    protected $fillable = [
+        'result_id',
+        'question_id',
+        'option_id',
+        'is_correct',
+    ];
+
+    /* ---------- relationships ---------- */
+
+    /** parent “attempt” row */
+    public function result()
+    {
+        return $this->belongsTo(
+            AssessmentResult::class,
+            'result_id',
+            'result_id'
+        );
+    }
+
+    /** quiz question (for text, type id, etc.) */
+    public function question()
+    {
+        return $this->belongsTo(
+            Questions::class,
+            'question_id',
+            'question_id'
+        );
+    }
+
+    /** option chosen by the student */
+    public function option()
+    {
+        return $this->belongsTo(
+            Options::class,
+            'option_id',
+            'option_id'
+        );
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Quizzes extends Model
+{
+    public function activity()
+    {
+        return $this->belongsTo(Activities::class, 'activity_id', 'activity_id');
+    }
+
+    protected $table = 'quiz'; // Name of The Table
+    protected $primaryKey = 'activity_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'activity_id',
+        'number_of_attempts',
+        'quiz_type_id',
+        'time_limit',
+        'number_of_questions',
+        'overall_points',
+        'has_answers_shown',
+    ];
+
+    public function questions()
+    {
+        return $this->hasMany(Questions::class, 'activity_id');
+    }
+
+    public function keptResult($userID = null)
+    {
+        return $this->hasOne(AssessmentResult::class,'activity_id','activity_id')         
+            ->where('is_kept', 1);
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Activities extends Model
+{
+    public function module()
+    {
+        return $this->belongsTo(Modules::class, 'module_id');
+        // 'module_id' is the foreign key in the 'module' table
+    }
+
+    protected $table = 'activity'; // Name of The Table
+    protected $primaryKey = 'activity_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    protected $fillable = [
+        'activity_id',
+        'module_id',
+        'activity_type',
+        'activity_name',
+        'activity_description',
+        'unlock_date',
+        'deadline_date',
+    ];
+
+    public function lecture()
+    {
+        return $this->hasOne(Lectures::class, 'activity_id', 'activity_id');
+    }
+
+    public function tutorial()
+    {
+        return $this->hasOne(Tutorials::class, 'activity_id', 'activity_id');
+    }
+
+    public function quiz()
+    {
+        return $this->hasOne(Quizzes::class, 'activity_id', 'activity_id');
+    }
+
+    public function results()
+    {
+    return $this->hasMany(AssessmentResult::class, 'activity_id', 'activity_id');
+    }
+}
+
+QuizController.php
+public function showQuestion(Courses $course, Modules $module, Activities $activity, $index)
+    {
+        $courseID = $course->course_id;
+        $moduleID = $module->module_id;
+        $activityID = $activity->activity_id;
+
+        $studentID = session('user_id');
+        $activity = Activities::with('quiz')->findOrFail($activityID);
+        $questionIDs = Session::get("quiz_{$activityID}_questions");
+        $deadline = Session::get("quiz_{$activityID}_deadline");
+
+        // Get number of attempts the student has taken
+        $currentAttempts = AssessmentResult::where('student_id', $studentID)
+            ->where('activity_id', $activityID)
+            ->count();
+
+        // Get the max number of allowed attempts for the quiz
+        $maxAttempts = $activity->quiz->number_of_attempts;
+
+        if ($currentAttempts >= $maxAttempts) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'You have reached the maximum number of quiz attempts.');
+        }
+
+        if (!Session::get("quiz_{$activityID}_in_progress")) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Quiz has already ended or you accessed an invalid link.');
+        }
+
+        if (!$questionIDs || !$deadline) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Quiz has not started yet. Wait for a bit.');
+        }
+
+        if (Carbon::now('Asia/Manila')->gt(Carbon::parse($deadline))) {
+            Session::forget("quiz_{$activityID}_questions");
+            Session::forget("quiz_{$activityID}_answers");
+            Session::forget("quiz_{$activityID}_deadline");
+
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Timer is already finised. Invalid access.');
+        }
+
+        if (!isset($questionIDs[$index])) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Question number unavailable.');
+        }
+
+        $questionID = $questionIDs[$index];
+        $question = Questions::with(['options', 'questionimage'])->findOrFail($questionID);
+        $remainingSeconds = (int) max(0, Carbon::now('Asia/Manila')->diffInSeconds(Carbon::parse($deadline), false));
+
+        return response()->view('student.activity-quiz-interface', [
+            'course' => $course,
+            'module' => $module,
+            'activity' => $activity,
+            'question' => $question,
+            'index' => $index,
+            'total' => count($questionIDs),
+            'remainingSeconds' => $remainingSeconds,
+        ]);
+    }
+
+    public function submitAnswer(Request $request, Courses $course, Modules $module, Activities $activity, $index)
+    {
+        $courseID = $course->course_id;
+        $moduleID = $module->module_id;
+        $activityID = $activity->activity_id;
+
+        $selectedOption = $request->input('answer');
+        $answers = session()->get("quiz_{$activityID}_answers", []);
+        $answers[$index] = $selectedOption;
+        session()->put("quiz_{$activityID}_answers", $answers);
+
+        $questionIDs = session("quiz_{$activityID}_questions");
+        $nextIndex = $index + 1;
+
+        $deadline = session("quiz_{$activityID}_deadline");
+        $isAutoSubmit = $request->input('auto_submit') == 1;
+
+        if ($isAutoSubmit || Carbon::now('Asia/Manila')->gt(Carbon::parse($deadline))) {
+            $nextIndex = count($questionIDs); // force finish quiz
+        }
+
+        if (!$questionIDs || !$deadline) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Invalid quiz session.');
+        }
+
+        if ($nextIndex < count($questionIDs)) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}/s/q/{$nextIndex}");
+        } else {
+            $correct = 0;
+            foreach ($answers as $i => $selectedOptionID) {
+                $questionID = $questionIDs[$i] ?? null;
+                if (!$questionID) continue;
+                $correctOptionID = Options::where('question_id', $questionID)->where('is_correct', 1)->value('option_id');
+                if ($selectedOptionID == $correctOptionID) $correct++;
+            }
+
+            $scorePercentage = round(($correct / count($questionIDs)) * 100);
+            $earnedPoints = $correct;
+            $studentID = session('user_id');
+
+            $prevAttempts = AssessmentResult::where('student_id', $studentID)->where('activity_id', $activityID)->count();
+
+            if ($nextIndex >= count($questionIDs)) {
+
+                $correct = 0;
+
+                /** 1️⃣  create parent “attempt” row (same as before) */
+                $result = AssessmentResult::create([
+                    'result_id'        => Str::uuid()->toString(),
+                    'student_id'       => $studentID,
+                    'module_id'        => $moduleID,
+                    'activity_id'      => $activityID,
+                    'score_percentage' => $scorePercentage,
+                    'earned_points'    => $earnedPoints,
+                    'date_taken'       => now('Asia/Manila')->toDateTimeString(),
+                    'attempt_number'   => $prevAttempts + 1,
+                    'tier_level_id'    => 1,
+                    'is_kept'          => 0,
+                ]);
+
+                /** 2️⃣  write each selected answer */
+                foreach ($answers as $i => $selectedOptionID) {
+
+                    $questionID = $questionIDs[$i] ?? null;
+                    if (!$questionID) continue;
+
+                    $correctOptionID = Options::where('question_id', $questionID)
+                        ->where('is_correct', 1)
+                        ->value('option_id');
+
+                    $isCorrect = $selectedOptionID == $correctOptionID ? 1 : 0;
+                    $correct  += $isCorrect;
+
+                    AssessmentResultAnswer::create([
+                        'result_id'   => $result->result_id,
+                        'question_id' => $questionID,
+                        'option_id'   => $selectedOptionID,
+                        'is_correct'  => $isCorrect,
+                    ]);
+                }
+
+                /** 3️⃣  update score & kept-flag exactly as you did */
+                $result->update([
+                    'score_percentage' => round(($correct / count($questionIDs)) * 100),
+                    'earned_points'    => $correct,
+                ]);
+
+                AssessmentResult::where('student_id', $studentID)
+                    ->where('activity_id', $activityID)
+                    ->update(['is_kept' => 0]);
+
+                AssessmentResult::where('student_id', $studentID)
+                    ->where('activity_id', $activityID)
+                    ->orderByDesc('score_percentage')
+                    ->orderBy('date_taken')
+                    ->first()
+                    ->update(['is_kept' => 1]);
+
+                /* … session-cleanup + redirect unchanged … */
+            }
+
+            AssessmentResult::where('student_id', $studentID)->where('activity_id', $activityID)->update(['is_kept' => 0]);
+            AssessmentResult::where('student_id', $studentID)->where('activity_id', $activityID)->orderByDesc('score_percentage')->first()->update(['is_kept' => 1]);
+
+
+
+            Session::forget("quiz_{$activityID}_questions");
+            Session::forget("quiz_{$activityID}_answers");
+            Session::forget("quiz_{$activityID}_deadline");
+            Session::forget("quiz_{$activityID}_in_progress");
+
+            StudentAnalytics::updateAfterQuiz(
+                $studentID,
+                $courseID,
+                $moduleID   // null for course-level exams
+            );
+
+            AchievementService::evaluate($studentID);
+
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}/summary")
+                ->with('success', 'Quiz has been submitted.');
+        }
+    }
+
+We will modify something with the functionality of creating long quizzes.
+Instead of creating questions manually, we can use questions from other quizzes (quiz) and can select multiple to combine them.
+The purpose of long quizzes is they are composed of short quizzes from multiple modules. Quizzes can serve as question banks for long quizzes.
+
+Replace adding questions manually with a selection of quizzes using activity_id within the module, within the course.
+
+Selection name should have the name of the module first, then the activity_name of the quiz_id.
+The selected items will have their questions copied and inserted to the long quiz related tables.
+
+Here are the models involved:
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Courses extends Model
+{
+
+    protected $table = 'course';
+    protected $primaryKey = 'course_id';
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+    public $timestamps   = false;
+
+
+    protected $fillable = [
+        'course_id',
+        'course_code',
+        'course_name',
+        'course_description',
+        'start_date',
+        'end_date',
+    ];
+
+    public function modules()
+    {
+        return $this->hasMany(Modules::class, 'course_id');
+    }
+
+    public function image()
+    {
+        return $this->hasOne(CourseImage::class, 'course_id', 'course_id');
+    }
+
+    public function longquizzes()
+    {
+        return $this->hasMany(LongQuizzes::class, 'course_id');
+    }
+
+    public function screenings()
+    {
+        return $this->hasMany(Screening::class, 'course_id', 'course_id');
+    }
+
+    public function teachers()
+    {
+        return $this->belongsToMany(
+            Teachers::class,
+            CourseSection::class,
+            'course_id',
+            'teacher_id',
+            'course_id',
+            'user_id'
+        );
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Modules extends Model
+{
+    public function course() {
+        return $this->belongsTo(Courses::class, 'course_id');
+    }
+
+    protected $table = 'module'; 
+    protected $primaryKey = 'module_id';
+    public $timestamps = false;
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    protected $fillable = [
+        'module_id',
+        'course_id',
+        'module_name',
+        'module_description',
+        'module_image',
+    ];
+
+    public function activities()
+    {
+        return $this->hasMany(Activities::class, 'module_id', 'module_id');
+    }
+
+    public function moduleimage()
+    {
+        return $this->hasOne(ModuleImage::class, 'module_id', 'module_id');
+    }
+
+    public function studentprogress()
+    {
+        return $this->hasMany(
+            ModuleProgress::class,      // table: moduleprogress
+            'module_id',                // FK in moduleprogress
+            'module_id'                 // PK in module
+        );
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Activities extends Model
+{
+    public function module()
+    {
+        return $this->belongsTo(Modules::class, 'module_id');
+        // 'module_id' is the foreign key in the 'module' table
+    }
+
+    protected $table = 'activity'; // Name of The Table
+    protected $primaryKey = 'activity_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    protected $fillable = [
+        'activity_id',
+        'module_id',
+        'activity_type',
+        'activity_name',
+        'activity_description',
+        'unlock_date',
+        'deadline_date',
+    ];
+
+    public function lecture()
+    {
+        return $this->hasOne(Lectures::class, 'activity_id', 'activity_id');
+    }
+
+    public function tutorial()
+    {
+        return $this->hasOne(Tutorials::class, 'activity_id', 'activity_id');
+    }
+
+    public function quiz()
+    {
+        return $this->hasOne(Quizzes::class, 'activity_id', 'activity_id');
+    }
+
+    public function results()
+    {
+    return $this->hasMany(AssessmentResult::class, 'activity_id', 'activity_id');
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Quizzes extends Model
+{
+    public function activity()
+    {
+        return $this->belongsTo(Activities::class, 'activity_id', 'activity_id');
+    }
+
+    protected $table = 'quiz'; // Name of The Table
+    protected $primaryKey = 'activity_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'activity_id',
+        'number_of_attempts',
+        'quiz_type_id',
+        'time_limit',
+        'number_of_questions',
+        'overall_points',
+        'has_answers_shown',
+    ];
+
+    public function questions()
+    {
+        return $this->hasMany(Questions::class, 'activity_id');
+    }
+
+    public function keptResult($userID = null)
+    {
+        return $this->hasOne(AssessmentResult::class,'activity_id','activity_id')         
+            ->where('is_kept', 1);
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Questions extends Model
+{
+    public function quiz()
+    {
+        return $this->belongsTo(Quizzes::class, 'activity_id', 'activity_id');
+    }
+
+    protected $table = 'question'; // Name of The Table
+    protected $primaryKey = 'question_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'question_id',
+        'question_text',
+        'question_type_id',
+        'score',
+        'activity_id',
+    ];
+
+    public function options()
+    {
+        return $this->hasMany(Options::class, 'question_id');
+    }
+
+    public function questionimage()
+    {
+        return $this->hasOne(QuestionImages::class, 'question_id');
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class QuestionImages extends Model
+{
+    public function question() {
+        return $this->belongsTo(Questions::class, 'question_id');
+    }
+
+    protected $table = 'quiz_question_image'; // Name of The Table
+    protected $primaryKey = 'q_image_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    protected $fillable = [
+        'q_image_id',
+        'question_id',
+        'image',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Options extends Model
+{
+    public function question()
+    {
+        return $this->belongsTo(Questions::class, 'question_id', 'question_id');
+    }
+
+    protected $table = 'options'; // Name of The Table
+    protected $primaryKey = 'option_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'option_id',
+        'question_id',
+        'option_text',
+        'is_correct',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class LongQuizzes extends Model
+{
+    public function course()
+    {
+        return $this->belongsTo(Courses::class, 'course_id', 'course_id');
+    }
+
+    protected $table = 'longquiz'; // Name of The Table
+    protected $primaryKey = 'long_quiz_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'long_quiz_id',
+        'course_id',
+        'long_quiz_name',
+        'long_quiz_instructions',
+        'number_of_attempts',
+        'time_limit',
+        'number_of_questions',
+        'overall_points',
+        'has_answers_shown',
+        'unlock_date',
+        'deadline_date',
+    ];
+
+    public function longquizquestions()
+    {
+        return $this->hasMany(LongQuizQuestions::class, 'long_quiz_id', 'long_quiz_id');
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(LongQuizAssessmentResult::class, 'long_quiz_id', 'long_quiz_id');
+    }
+
+    public function keptResult()
+    {
+        return $this->hasOne(LongQuizAssessmentResult::class,'long_quiz_id','long_quiz_id')         
+            ->where('is_kept', 1);
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class LongQuizQuestions extends Model
+{
+    public function longquiz()
+    {
+        return $this->belongsTo(LongQuizzes::class,'long_quiz_id','long_quiz_id'); 
+    }
+
+    protected $table = 'longquiz_question'; // Name of The Table
+    protected $primaryKey = 'long_quiz_question_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'long_quiz_question_id',
+        'long_quiz_id',
+        'question_text',
+        'question_image',
+        'question_type_id',
+        'score',
+    ];
+
+    public function longquizoptions()
+    {
+        return $this->hasMany(LongQuizOptions::class,'long_quiz_question_id','long_quiz_question_id');
+    }
+
+    public function longquizimage()
+    {
+        return $this->hasOne(LongQuizQuestionImages::class,'long_quiz_question_id','long_quiz_question_id');
+    }
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class LongQuizQuestionImages extends Model
+{
+    public function longquizquestion() {
+        return $this->belongsTo(LongQuizQuestions::class, 'long_quiz_question_id');
+    }
+
+    protected $table = 'longquiz_question_image'; // Name of The Table
+    protected $primaryKey = 'lq_image_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    protected $fillable = [
+        'lq_image_id',
+        'long_quiz_question_id',
+        'image',
+    ];
+}
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class LongQuizOptions extends Model
+{
+       public function longquizquestion()
+    {
+        return $this->belongsTo(LongQuizQuestions::class, 'long_quiz_question_id');
+    }
+
+    protected $table = 'longquiz_option'; // Name of The Table
+    protected $primaryKey = 'long_quiz_option_id'; // Name of The Primary Key
+    public $timestamps = false;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'long_quiz_option_id',
+        'long_quiz_question_id',
+        'option_text',
+        'is_correct',
+    ];
+}
+
+TeacherController.php 
+public function createLongQuiz(
+        Courses $course,
+        Sections $section
+    ) {
+        if ($redirect = $this->checkTeacherAccess()) return $redirect;
+
+        $sectionID = $section->section_id;
+
+        $this->assertOwnsCourseSection($course->course_id, $section->section_id);
+
+        $users = Users::with('image')->findOrFail(session('user_id'));
+        return view('teacher.longquiz-create', compact('course', 'section', 'users'));
+}
+
+public function storeLongQuiz(Request $req, Courses $course, $sectionId)
+    {
+        /* ---------- validation ---------- */
+        $rules = [
+            'long_quiz_name'         => 'required|string|max:255',
+            'long_quiz_instructions' => 'required|string',
+            'number_of_attempts'     => 'required|integer|min:1',
+            'number_of_questions'    => 'required|integer|min:1',
+            'time_limit_minutes'     => 'required|integer|min:1',
+            'unlock_date'            => 'required|date',
+            'deadline_date'          => 'required|date|after:unlock_date',
+            'has_answers_shown'      => 'nullable|boolean',
+
+            /* question / option structure */
+            'questions'                      => 'required|array|min:1',
+            'questions.*.text'               => 'required|string',
+            'questions.*.correct'            => 'required|integer|min:0',
+            'questions.*.options'            => 'required|array|min:1|max:4',
+            'questions.*.options.*'          => 'required|string',
+            'questions.*.image'              => 'nullable|image|max:2048',
+        ];
+
+        $validator = Validator::make($req->all(), $rules);
+
+        /* make sure the question bank ≥ draw size */
+        $validator->after(function ($v) use ($req) {
+            if (count($req->questions) < $req->number_of_questions) {
+                $v->errors()->add(
+                    'number_of_questions',
+                    '“Number of Questions” can’t exceed the number of questions you entered.'
+                );
+            }
+        });
+
+        $validator->validate();
+
+        /* ---------- DB tx ---------- */
+        DB::transaction(function () use ($req, $course) {
+
+            /* 1) quiz shell */
+            $longquiz = LongQuizzes::create([
+                'long_quiz_id'          => Str::uuid()->toString(),
+                'course_id'             => $course->course_id,
+                'long_quiz_name'        => $req->long_quiz_name,
+                'long_quiz_instructions' => $req->long_quiz_instructions,
+                'number_of_attempts'    => $req->number_of_attempts,
+                'number_of_questions'   => $req->number_of_questions,
+                'overall_points'        => $req->number_of_questions,
+                'time_limit'            => $req->time_limit_minutes * 60,
+                'has_answers_shown'     => $req->boolean('has_answers_shown'),
+                'unlock_date'           => Carbon::parse($req->unlock_date),
+                'deadline_date'         => Carbon::parse($req->deadline_date),
+            ]);
+
+            /* 2) questions + options */
+            foreach ($req->questions as $qData) {
+
+                $question = $longquiz->longquizquestions()->create([
+                    'long_quiz_question_id' => Str::uuid()->toString(),
+                    'question_text'         => $qData['text'],
+                    'question_type_id'      => 1,
+                    'score'                 => 1,
+                ]);
+
+                /* optional image */
+                if (isset($qData['image'])) {
+                    $img = $qData['image'];
+                    $question->longquizimage()->updateOrCreate(
+                        [],
+                        [
+                            'image'     => file_get_contents($img->getRealPath()),
+                            'mime_type' => $img->getMimeType() ?? 'image/jpeg',
+                        ]
+                    );
+                }
+
+                /* options */
+                foreach ($qData['options'] as $oIdx => $optText) {
+                    $question->longquizoptions()->create([
+                        'long_quiz_option_id' => Str::uuid()->toString(),
+                        'option_text'         => $optText,
+                        'is_correct'          => ($oIdx == $qData['correct']) ? 1 : 0,
+                    ]);
+                }
+            }
+        });
+
+        return back()->with('success', 'Long-quiz created.');
+    }
+
+longquiz-create.php (view)
+<?php $title = "Add New Long Quiz";
+include __DIR__ . '/../partials/head.php'; ?>
+<style>
+    /* simple demo styles – tweak/add your own */
+    .q-block {
+        border: 1px dashed #bbb;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .opt-row {
+        display: flex;
+        gap: .3rem;
+        align-items: center;
+        margin: .3rem 0;
+    }
+
+    .opt-row input[type=text] {
+        flex: 1;
+    }
+</style>
+<script>
+    let qIndex = 0;
+
+    function addOption(wrap, qI) {
+        const optCount = wrap.children.length; // 0-based
+        const tpl = document.getElementById('opt-template')
+            .content.cloneNode(true);
+
+        tpl.querySelectorAll('[data-repl]').forEach(el => {
+            el.name = el.name.replace('__i__', qI).replace('__o__', optCount);
+            if (el.type === 'radio') el.value = optCount; // int value
+        });
+        wrap.appendChild(tpl);
+    }
+
+    function addQuestion(prefill = null) {
+        const tpl = document.getElementById('q-template')
+            .content.cloneNode(true).firstElementChild;
+
+        tpl.dataset.qi = qIndex; // store idx
+        tpl.querySelectorAll('[data-repl]').forEach(el => {
+            el.name = el.name.replace('__i__', qIndex);
+            if (prefill) {
+                if (el.dataset.repl === 'text') el.value = prefill.text ?? '';
+            }
+        });
+
+        /* remove button */
+        tpl.querySelector('.q-remove').onclick = e => {
+            const total = document.querySelectorAll('.q-block').length;
+            if (total > 1) e.currentTarget.closest('.q-block').remove();
+        };
+
+        /* “+ Option” button */
+        tpl.querySelector('.opt-add').onclick = e => {
+            const block = e.currentTarget.closest('.q-block');
+            addOption(block.querySelector('.opt-wrap'), block.dataset.qi);
+        };
+
+        /* put an initial option row */
+        addOption(tpl.querySelector('.opt-wrap'), qIndex);
+
+        document.getElementById('question-list').appendChild(tpl);
+        qIndex++;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => addQuestion()); // first block
+</script>
+</head>
+
+<body>
+
+    <?php
+    include __DIR__ . '/../partials/nav-teach.php';
+    ?>
+    <div class="screen">
+        <div class="spacing main">
+            <form method="POST" action="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>/store-longquiz" enctype="multipart/form-data">
+                <?= csrf_field(); ?>
+                <div class="content-container box-page">
+                    <div class="mini-navigation">
+                        <div class="text title">
+                            <h6><a href="/teachers-panel">Courses</a></h6>
+                            <div class="line"></div>
+                        </div>
+                        <div class="divider">
+                            <h6> > </h6>
+                        </div>
+                        <div class="text title">
+                            <h6><a href="/teachers-panel/course/<?= $course->course_id ?>/section/<?= $section->section_id ?>"><?= $course->course_name ?></a></h6>
+                            <div class="line"></div>
+                        </div>
+                        <div class="divider">
+                            <h6> > </h6>
+                        </div>
+                        <div class="text title">
+                            <h6>Add New Long Quiz</h6>
+                            <div class="line active"></div>
+                        </div>
+                    </div>
+                </div>
+                <br>
+
+                <div class="content-container">
+
+                    <div class="content padding box-gray">
+
+                        <div class="header">
+                            <div class="text title">
+                                <h4> Add A New Long Quiz </h4>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <br>
+
+                                <div class="content-container box-page">
+                    <div class="content">
+                        <?php if ($errors->any()): ?>
+                            <div class="alert alert-danger alert-message padding">
+                                <ul><?php foreach ($errors->all() as $msg): ?><li><?= htmlspecialchars($msg) ?></li><?php endforeach; ?></ul>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="content-container box-page">
+                    <div class="content padding box-page">
+                        <div class="content flex-column">
+                            <div class="form-box">
+                                <div class="form-label"><label>Name:</label></div>
+                                <div class="form-input"><input type="text" name="long_quiz_name" required></div>
+                            </div>
+
+                            <div class="form-box">
+                                <div class="form-label"><label>Instructions:</label></div>
+                                <div class="form-input"><textarea name="long_quiz_instructions"></textarea></div>
+                            </div>
+
+                            <div class="form-box">
+                                <div class="form-label"><label>Number of Attempts:</label></div>
+                                <div class="form-input"><input type="number" name="number_of_attempts" min="1" value="10" required></div>
+                            </div>
+
+                            <div class="form-box">
+                                <div class="form-label"><label>Number of Questions:</label></div>
+                                <div class="form-input"><input type="number" name="number_of_questions" min="1" required></div>
+                            </div>
+
+                            <div class="form-box">
+                                <div class="form-label"><label>Time Limit (minutes):</label></div>
+                                <div class="form-input"><input type="number" name="time_limit_minutes" min="1" value="30" required></div>
+                            </div>
+
+                            <div class="form-box">
+                                <div class="form-label"><label>Unlock Date:</label></div>
+                                <div class="form-input"><input type="datetime-local" name="unlock_date" required></div>
+                            </div>
+
+                            <div class="form-box">
+                                <div class="form-label"><label>Deadline:</label></div>
+                                <div class="form-input"><input type="datetime-local" name="deadline_date" required></div>
+                            </div>
+
+                            <div class="form-box">
+                                <div class="form-label checkbox"><label>Show Answers After Submission:</label></div>
+                                <div class="form-input"><input type="checkbox" name="has_answers_shown" value="1"></div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+                <div class="content-container box-page">
+                    <div class="content padding box-page">
+                        <div class="header">
+                            <h5>Questions</h5>
+                        </div>
+                        <div id="question-list"></div>
+                        <button type="button" class="edit" onclick="addQuestion()">+ Add Question</button>
+                    </div>
+                </div>
+                <br>
+
+                <div class="content-container">
+                    <div class="content">
+                        <div class="form-button">
+                            <button class="edit" onclick="return confirm('Create a new long quiz?');">Create Long Quiz</button>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+
+        </div>
+
+        <!-- templates (hidden) ---------------------------------------------->
+        <template id="q-template">
+            <div class="q-block">
+                <div class="q-remove crud-button-delete">🗑 Remove Question</div>
+                <div class="form-box">
+                    <div class="form-label"><label>Question Text:</label></div>
+                    <div class="form-input"><textarea data-repl="text" name="questions[__i__][text]" required></textarea></div>
+                </div>
+
+                <div class="form-box">
+                    <div class="form-label"><label>Image (optional):</label></div>
+                    <div class="form-input"><input type="file" data-repl name="questions[__i__][image]" accept="image/*"></div>
+                </div>
+
+                <div class="opt-wrap">
+                    <!-- options will appear here -->
+                </div>
+                <button type="button" class="edit opt-add">+ Add Option</button>
+            </div>
+        </template>
+
+        <template id="opt-template">
+            <div class="opt-row">
+                <input type="radio" data-repl name="questions[__i__][correct]" value="__o__">
+                <input type="text" data-repl name="questions[__i__][options][__o__]"
+                    placeholder="Option text" required>
+            </div>
+        </template>
+
+
+        <div class="spacing side">
+            <?php include __DIR__ . '/../partials/right-side-notifications.php'; ?>
+        </div>
+    </div>
+    <?php include __DIR__ . '/../partials/footer.php'; ?>
+</body>
+
+</html>
+
+
+This is the quiz interface.
+
+In div class spacing side, replace this partial:
+<?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+with the list of question numbers with the url to the question itself.
+
+This is so that students can re-access the question so they wish if they want to review the question and their answer again.
+
+Also, when accessing the question, the question selections are not saved (or at least not auto selected when already stored in the session).
+Make them auto select if there is one stored in session.
+
+public function showQuestion(Courses $course, Modules $module, Activities $activity, $index)
+    {
+        $courseID = $course->course_id;
+        $moduleID = $module->module_id;
+        $activityID = $activity->activity_id;
+
+        $studentID = session('user_id');
+        $activity = Activities::with('quiz')->findOrFail($activityID);
+        $questionIDs = Session::get("quiz_{$activityID}_questions");
+        $deadline = Session::get("quiz_{$activityID}_deadline");
+
+        // Get number of attempts the student has taken
+        $currentAttempts = AssessmentResult::where('student_id', $studentID)
+            ->where('activity_id', $activityID)
+            ->count();
+
+        // Get the max number of allowed attempts for the quiz
+        $maxAttempts = $activity->quiz->number_of_attempts;
+
+        if ($currentAttempts >= $maxAttempts) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'You have reached the maximum number of quiz attempts.');
+        }
+
+        if (!Session::get("quiz_{$activityID}_in_progress")) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Quiz has already ended or you accessed an invalid link.');
+        }
+
+        if (!$questionIDs || !$deadline) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Quiz has not started yet. Wait for a bit.');
+        }
+
+        if (Carbon::now('Asia/Manila')->gt(Carbon::parse($deadline))) {
+            Session::forget("quiz_{$activityID}_questions");
+            Session::forget("quiz_{$activityID}_answers");
+            Session::forget("quiz_{$activityID}_deadline");
+
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Timer is already finised. Invalid access.');
+        }
+
+        if (!isset($questionIDs[$index])) {
+            return redirect("/home-tutor/course/$courseID/module/$moduleID/quiz/{$activityID}")
+                ->with('error', 'Question number unavailable.');
+        }
+
+        $questionID = $questionIDs[$index];
+        $question = Questions::with(['options', 'questionimage'])->findOrFail($questionID);
+        $remainingSeconds = (int) max(0, Carbon::now('Asia/Manila')->diffInSeconds(Carbon::parse($deadline), false));
+
+        return response()->view('student.activity-quiz-interface', [
+            'course' => $course,
+            'module' => $module,
+            'activity' => $activity,
+            'question' => $question,
+            'index' => $index,
+            'total' => count($questionIDs),
+            'remainingSeconds' => $remainingSeconds,
+        ]);
+    }
+
+
+<body>
+    <?php
+    include __DIR__ . '/../partials/nav.php';
+    include __DIR__ . '/../partials/quiz-type-check.php';
+    include __DIR__ . '/../partials/time-lock-check.php';
+    include __DIR__ . '/../partials/time-limit-conversion.php';
+    ?>
+
+    <div class="screen">
+        <div class="spacing main">
+            <div class="content-container box-gold">
+
+                <div class="content padding">
+                    <div class="header logo-sub">
+                        <div class="logo-and-title">
+                            <div class="logo">
+                                <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
+                            </div>
+                            <div class="text title">
+                                <h4><?= $activity->activity_name ?></h4>
+                                <h6><?= $quiz_type ?></h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br>
+
+            <div class="content-container box-page">
+                <div class="content">
+                    <div class="module-section quiz-interface quiz-background <?= $class ?>">
+                        <div class="quiz-interface-header">
+                            <div class="quiz-interface-header-question-number">
+                                <p>QUESTION <?= $index + 1 ?></p>
+                            </div>
+                            <div class="quiz-interface-header-right-side">
+                                <div class="quiz-interface-header-question-total">
+                                    <p>Q<?= $index + 1 ?> OF <?= $total ?></p>
+                                    <p>Time Left: <span id="quiz-timer">--:--</span></p>
+                                </div>
+                                <div class="quiz-interface-header-logo">
+                                    <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="quiz-interface-question">
+                            <p><?= nl2br(htmlspecialchars($question->question_text)) ?></p>
+                            <?php
+                            if (empty($question->questionimage?->image)) {;
+                            } else {
+                                $blobData = $question->questionimage?->image;
+                                $mimeType = getMimeTypeFromBlob($blobData);
+                                $base64Image = base64_encode($blobData);
+                                $imageURL = "data:$mimeType;base64,$base64Image";
+                                echo '<img src="' . $imageURL . '" width="250em" height="auto" />';
+                            }
+                            ?>
+                        </div>
+                        <form class="quiz-interface-forms" method="POST" action="/home-tutor/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/quiz/<?= $activity->activity_id ?>/s/q/<?= $index ?>">
+                            <?= csrf_field() ?>
+                            <div class="quiz-interface-answers">
+                                <?php if ($question->question_type_id === 1): ?>
+                                    <?php $question->setRelation(
+                                        'options',
+                                        $question->options->shuffle()
+                                    );
+                                    $opts = $question->options->shuffle();
+                                    foreach ($opts as $option): ?>
+                                        <div class="radio-button radio-<?= $class ?>">
+                                            <input type="radio" id="opt<?= $option->option_id ?>" name="answer" value="<?= $option->option_id ?>" required>
+                                            <label for="opt<?= $option->option_id ?>"><?= $option->option_text ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="identification-input">
+                                        <input
+                                            type="text"
+                                            id="answer_text"
+                                            name="answer_text"
+                                            required
+                                            autocomplete="off" />
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <button type="submit" class="quiz-interface-submit <?= $buttonClass ?>">
+                                <?= ($index + 1 < $total) ? 'NEXT' : 'SUBMIT' ?>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="spacing side">
+            <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+        </div>
+
+    </div>
+    <?php include __DIR__ . '/../partials/footer.php'; ?>
+</body>
+
+<script>
+    console.log('Hello');
+
+    let secondsLeft = <?= $remainingSeconds ?>;
+    const timerElement = document.getElementById('quiz-timer');
+    const form = document.querySelector('form');
+
+    function updateTimer() {
+        const minutes = Math.floor(secondsLeft / 60);
+        const seconds = secondsLeft % 60;
+        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        if (secondsLeft > 0) {
+            secondsLeft--;
+            setTimeout(updateTimer, 1000);
+        } else {
+            autoSubmitQuiz();
+        }
+    }
+
+    function autoSubmitQuiz() {
+        const selected = document.querySelector('input[name="answer"]:checked');
+        const form = document.querySelector('form');
+
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "auto_submit";
+        input.value = "1";
+        form.appendChild(input);
+
+        if (!selected) {
+            const blank = document.createElement("input");
+            blank.type = "hidden";
+            blank.name = "answer";
+            blank.value = "";
+            form.appendChild(blank);
+        }
+
+        form.submit();
+    }
+
+    updateTimer();
+
+    const radioButtons = document.querySelectorAll('input[type="radio"][name="answer"]');
+
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', () => {
+            document.querySelectorAll('.radio-button').forEach(div => {
+                div.classList.remove('selected');
+            });
+            if (radio.checked) {
+                radio.closest('.radio-button').classList.add('selected');
+            }
+        });
+    });
+</script>
+
+
+</html>

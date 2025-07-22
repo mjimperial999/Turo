@@ -8,6 +8,9 @@ header("Pragma: no-cache");
 <?php
 $title = 'Question ' . $index + 1;
 include __DIR__ . '/../partials/head.php';
+
+use Illuminate\Support\Facades\Session;
+
 ?>
 <style>
     table,
@@ -180,6 +183,12 @@ include __DIR__ . '/../partials/head.php';
         cursor: pointer;
         transition: all 0.3s ease 0s;
     }
+
+    .quiz-nav-number {
+        text-decoration: none;
+        color: white;
+        font-weight: bold;
+    }
 </style>
 
 </head>
@@ -245,17 +254,36 @@ include __DIR__ . '/../partials/head.php';
                         <form class="quiz-interface-forms" method="POST" action="/home-tutor/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/quiz/<?= $activity->activity_id ?>/s/q/<?= $index ?>">
                             <?= csrf_field() ?>
                             <div class="quiz-interface-answers">
-                                <?php $question->setRelation(
-                                    'options',
-                                    $question->options->shuffle()
-                                );
-                                $opts = $question->options->shuffle();
-                                foreach ($opts as $option): ?>
-                                    <div class="radio-button radio-<?= $class ?>">
-                                        <input type="radio" id="opt<?= $option->option_id ?>" name="answer" value="<?= $option->option_id ?>" required>
-                                        <label for="opt<?= $option->option_id ?>"><?= $option->option_text ?></label>
+                                <?php if ($question->question_type_id === 1): ?>
+                                    <?php $question->setRelation(
+                                        'options',
+                                        $question->options->shuffle()
+                                    );
+                                    $opts = $question->options->shuffle();
+                                    foreach ($opts as $option):
+                                        $savedAnswer = Session::get("quiz_{$activity->activity_id}_answers")[$index] ?? null; ?>
+                                        <div class="radio-button radio-<?= $class ?>">
+                                            <input type="radio"
+                                                id="opt<?= $option->option_id ?>"
+                                                name="answer"
+                                                value="<?= $option->option_id ?>"
+                                                <?= ($savedAnswer == $option->option_id) ? 'checked' : '' ?>
+                                                required>
+                                            <label for="opt<?= $option->option_id ?>"><?= $option->option_text ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else:
+                                    $savedAnswer = Session::get("quiz_{$activity->activity_id}_raw_text_answers")[$index] ?? ''; ?>
+                                    <div class="identification-input">
+                                        <input
+                                            type="text"
+                                            id="answer_text"
+                                            name="answer_text"
+                                            value="<?= e($savedAnswer) ?>"
+                                            required
+                                            autocomplete="off" />
                                     </div>
-                                <?php endforeach; ?>
+                                <?php endif; ?>
                             </div>
                             <button type="submit" class="quiz-interface-submit <?= $buttonClass ?>">
                                 <?= ($index + 1 < $total) ? 'NEXT' : 'SUBMIT' ?>
@@ -264,94 +292,56 @@ include __DIR__ . '/../partials/head.php';
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="spacing side">
-            <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+
+            <div class="content-container box-page">
+                <div class="content padding">
+                    <div class="header">
+                        <h6>Question List</h6>
+                        <br>
+                    </div>
+                    <div class="question-nav-list" style="display: flex; flex-wrap: wrap; gap: .5rem;">
+                        <?php
+                        $answers = Session::get("quiz_{$activity->activity_id}_answers", []);
+                        ?>
+                        <?php for ($i = 0; $i < $total; $i++): ?>
+                            <?php
+                            $isCurrent = ($i === $index);
+                            $isAnswered = array_key_exists($i, $answers);
+                            $classes = 'quiz-nav-number';
+                            $styles = 'display:inline-block; width:2.5rem; height:2.5rem; line-height:2.5rem; text-align:center; border-radius:4px; font-weight:bold;';
+
+                            if ($isCurrent) {
+                                $styles .= 'background:#2d91f2; color:white; border: 2px solid #2d91f2;';
+                            } elseif ($isAnswered) {
+                                $styles .= 'background:#ffffff; color:#333; border:1px solid #aaa;';
+                            } else {
+                                $styles .= 'background:#eee; color:#999; border:1px solid #ccc;';
+                            }
+                            ?>
+
+                            <?php if ($isAnswered): ?>
+                                <a href="/home-tutor/course/<?= $course->course_id ?>/module/<?= $module->module_id ?>/quiz/<?= $activity->activity_id ?>/s/q/<?= $i ?>"
+                                    class="<?= $classes ?>"
+                                    style="<?= $styles ?>">
+                                    <?= $i + 1 ?>
+                                </a>
+                            <?php else: ?>
+                                <span class="<?= $classes ?>" style="<?= $styles ?>">
+                                    <?= $i + 1 ?>
+                                </span>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+            </div>
+
+
         </div>
 
     </div>
     <?php include __DIR__ . '/../partials/footer.php'; ?>
 </body>
 
-<?php /*
-    <div class="home-tutor-screen">
-        <div class="home-tutor-main">
-            <table>
-                <tr class="module-title">
-                    <th class="table-left-padding"></th>
-                    <th class="table-right-padding">
-                        <div class="module-heading">
-                            <div class="module-logo">
-                                <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
-                            </div>
-                            <div class="heading-context">
-                                <h5><b><?= $activity->activity_name ?></b></h5>
-                                <p><?= $quiz_type ?></p>
-                            </div>
-                        </div>
-                    </th>
-                </tr>
-                <tr>
-                    <td class="table-left-padding"></td>
-                    <td class="table-right-padding" style="padding: 3rem 2rem;">
-                        <div class="module-section quiz-interface quiz-background <?= $class ?>">
-                            <div class="quiz-interface-header">
-                                <div class="quiz-interface-header-question-number">
-                                    <p>QUESTION <?= $index + 1 ?></p>
-                                </div>
-                                <div class="quiz-interface-header-right-side">
-                                    <div class="quiz-interface-header-question-total">
-                                        <p>Q<?=  $index + 1 ?> OF <?=  $total ?></p>
-                                        <p>Time Left: <span id="quiz-timer">--:--</span></p>
-                                    </div>
-                                    <div class="quiz-interface-header-logo">
-                                        <img class="svg" src="/icons/<?= $class ?>.svg" width="50em" height="auto" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="quiz-interface-question">
-                                <p><?= $question->question_text ?></p>
-                                <?php
-                                if (empty($question->questionimage?->image)) {
-                                    ;
-                                }
-                                else {
-                                    $blobData = $question->questionimage?->image;
-                                    $mimeType = getMimeTypeFromBlob($blobData);
-                                    $base64Image = base64_encode($blobData);
-                                    $imageURL = "data:$mimeType;base64,$base64Image";
-                                    echo '<img src="'. $imageURL .'" width="250em" height="auto" />';
-                                }
-                                ?>
-                            </div>
-                            <form class="quiz-interface-forms" method="POST" action="/home-tutor/quiz/<?= $activity->activity_id ?>/s/q/<?= $index ?>">
-                                <?=  csrf_field() ?>
-                                <div class="quiz-interface-answers">
-                                    <?php $question->setRelation(
-                                        'options',
-                                        $question->options->shuffle()
-                                    );
-                                    $opts = $question->options->shuffle();
-                                    foreach ($opts as $option): ?>
-                                        <div class="radio-button radio-<?= $class ?>">
-                                            <input type="radio" id="opt<?= $option->option_id ?>" name="answer" value="<?= $option->option_id ?>" required>
-                                            <label for="opt<?= $option->option_id ?>"><?= $option->option_text ?></label>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <button type="submit" class="quiz-interface-submit <?= $buttonClass ?>">
-                                    <?= ($index + 1 < $total) ? 'NEXT' : 'SUBMIT' ?>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-
-        </div>
-        <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
-    </div>
-</body> */ ?>
 <script>
     console.log('Hello');
 
@@ -394,6 +384,24 @@ include __DIR__ . '/../partials/head.php';
     }
 
     updateTimer();
+
+    const updateRadioVisuals = () => {
+        document.querySelectorAll('.radio-button').forEach(div => {
+            const radio = div.querySelector('input[type="radio"]');
+            if (radio.checked) {
+                div.classList.add('selected');
+            } else {
+                div.classList.remove('selected');
+            }
+        });
+    };
+
+    document.querySelectorAll('input[type="radio"][name="answer"]').forEach(radio => {
+        radio.addEventListener('click', updateRadioVisuals);
+    });
+
+    // Run on page load
+    updateRadioVisuals();
 
     const radioButtons = document.querySelectorAll('input[type="radio"][name="answer"]');
 
