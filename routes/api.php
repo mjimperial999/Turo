@@ -67,6 +67,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('get-section-student-list-for-teacher',      [MobileModelController::class, 'getStudentList']);
 
+        Route::get('get-section-analytics',     [MobileModelController::class, 'showSectionAnalytics']);
+
         // TEACHER CRUD OPERATIONS
         /* MODULE */
         Route::get('get-module',          [MobileModelController::class, 'showModule']);

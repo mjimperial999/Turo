@@ -1038,9 +1038,9 @@ class MobileModelController extends Controller
                 'is_urgent'   => (bool) $e->is_urgent,    // int → bool
             ]);
 
-        $practiceQuiz = Activities::with(['quiz','module'])
+        $practiceQuiz = Activities::with(['quiz', 'module'])
             ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 2))
-            ->get(['module_id','activity_id','activity_name', 'unlock_date', 'deadline_date'])
+            ->get(['module_id', 'activity_id', 'activity_name', 'unlock_date', 'deadline_date'])
             ->map(fn($a) => [
                 'course_id'     => $a->module->course_id,
                 'module_id'     => $a->module_id,
@@ -1051,7 +1051,7 @@ class MobileModelController extends Controller
             ]);
 
         /* ─── 3. SHORT-QUIZZES (quiz_type_id = 1) ────────────── */
-        $shortQuiz = Activities::with(['quiz','module'])
+        $shortQuiz = Activities::with(['quiz', 'module'])
             ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 1))
             ->get(['module_id', 'activity_id', 'activity_name', 'unlock_date', 'deadline_date'])
             ->map(fn($a) => [
@@ -1107,9 +1107,9 @@ class MobileModelController extends Controller
                 'is_urgent'   => (bool) $e->is_urgent,    // int → bool
             ]);
 
-        $practiceQuiz = Activities::with(['quiz','module'])
+        $practiceQuiz = Activities::with(['quiz', 'module'])
             ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 2))
-            ->get(['module_id','activity_id','activity_name', 'unlock_date', 'deadline_date'])
+            ->get(['module_id', 'activity_id', 'activity_name', 'unlock_date', 'deadline_date'])
             ->map(fn($a) => [
                 'course_id'     => $a->module->course_id,
                 'module_id'     => $a->module_id,
@@ -1120,7 +1120,7 @@ class MobileModelController extends Controller
             ]);
 
         /* ─── 3. SHORT-QUIZZES (quiz_type_id = 1) ────────────── */
-        $shortQuiz = Activities::with(['quiz','module'])
+        $shortQuiz = Activities::with(['quiz', 'module'])
             ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 1))
             ->get(['module_id', 'activity_id', 'activity_name', 'unlock_date', 'deadline_date'])
             ->map(fn($a) => [
@@ -1149,6 +1149,83 @@ class MobileModelController extends Controller
             'practice_quiz'  => $practiceQuiz,
             'short_quiz'     => $shortQuiz,
             'long_quiz'      => $longQuiz,
+        ]);
+    }
+
+    public function showSectionAnalytics(Request $r)
+    {
+
+        $courseID = $r->course_id;
+        $sectionID = $r->section_id;
+
+        $students = Students::query()
+            ->with([
+                'user.image',
+            ])
+            ->leftJoin('studentprogress as sp', function ($q) use ($courseID) {
+                $q->on('sp.student_id', '=', 'student.user_id')
+                    ->where('sp.course_id', '=', $courseID);
+            })
+            ->where('section_id', $sectionID)
+            ->join('user', 'user.user_id', '=', 'student.user_id')
+            ->orderBy('user.last_name')
+            ->orderBy('user.first_name')
+            ->select('student.*', 'sp.total_points', 'sp.average_score')
+            ->get();
+
+        $catchUp   = $students->where('isCatchUp', 1);
+        $normal    = $students->where('isCatchUp', 0);
+
+        $totalCount   = $students->count();
+        $catchUpCount = $catchUp->count();
+        $normalCount  = $normal->count();
+
+        // average of all catch‑up students' average_score (null‑safe)
+        $avgCatchUpScore = $catchUpCount
+            ? $catchUp->pluck('average_score')->filter()->avg()
+            : null;
+
+        if (is_null($avgCatchUpScore)) {
+            $perfDesc = '--';
+        } elseif ($avgCatchUpScore >= 80) {
+            $perfDesc = 'Excellent';
+        } elseif ($avgCatchUpScore >= 75) {
+            $perfDesc = 'Alright';
+        } elseif ($avgCatchUpScore >= 50) {
+            $perfDesc = 'Needs More Practice';
+        } else {
+            $perfDesc = 'Needs More Teaching';
+        }
+
+        // passing rate among *all* students (based on their avg_score ≥ 70)
+        $passCount = $catchUp->filter(fn($s) => ($s->average_score ?? 0) >= 70)->count();
+        $passRate  = $catchUpCount
+            ? ($passCount / $catchUpCount) * 100
+            : null;
+
+        $passSegment = is_null($passRate) ? 0 : round($passRate);
+
+        if (is_null($passSegment)) {
+            $evalDesc = '--';
+        } elseif ($passSegment >= 100) {
+            $evalDesc = 'All Students Passed';
+        } elseif ($passSegment >= 75) {
+            $evalDesc = 'Some Students Need Help';
+        } elseif ($passSegment >= 50) {
+            $evalDesc = 'Most Students are Struggling';
+        } else {
+            $evalDesc = 'Majority are Struggling';
+        }
+
+        return response()->json([
+            'no_of_students'                => $totalCount,
+            'no_of_catch_up_students'       => $catchUpCount,
+            'no_of_non_catch_up_students'   => $normalCount,
+            'catch_up_overall_average'      => $avgCatchUpScore,
+            'overall_average_text'          => $perfDesc,
+            'passing_rate'                  => $passRate,
+            'passing_students'              => $passCount,
+            'passing_text'                  => $evalDesc,
         ]);
     }
 
@@ -1600,8 +1677,8 @@ class MobileModelController extends Controller
             'module_name'        => $module->module_name,
             'module_description' => $module->module_description,
             'image_blob'         => $module->moduleimage?->image
-                                    ? base64_encode($module->moduleimage->image)
-                                    : null
+                ? base64_encode($module->moduleimage->image)
+                : null
         ]);
     }
 
@@ -1648,7 +1725,7 @@ class MobileModelController extends Controller
         ]);
 
         $module = Modules::findOrFail($r->module_id);
-        
+
         $module->update($r->only([
             'module_name',
             'module_description'
