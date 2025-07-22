@@ -1023,8 +1023,9 @@ class MobileModelController extends Controller
 |  Returns *all* items that should be plotted in the calendar
 |  — raw dates, no formatting; is_urgent converted to boolean
 |===========================================================*/
-    public function showCalendarEvents()
+    public function showCalendarEvents(Request $r)
     {
+        $studentID = $r->student_id;
 
         /* ─── 2. PRACTICE-QUIZZES (quiz_type_id = 2) ─────────── */
         $announcements = CalendarEvent::where('event_type_id', 1)
@@ -1040,6 +1041,14 @@ class MobileModelController extends Controller
 
         $practiceQuiz = Activities::with(['quiz', 'module'])
             ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 2))
+            ->when(
+                fn($q) =>                        // students: hide if kept
+                $q->whereDoesntHave(
+                    'results',
+                    fn($r) => $r->where('student_id', $studentID)
+                        ->where('is_kept', 1)
+                )
+            )
             ->get(['module_id', 'activity_id', 'activity_name', 'unlock_date', 'deadline_date'])
             ->map(fn($a) => [
                 'course_id'     => $a->module->course_id,
@@ -1053,6 +1062,14 @@ class MobileModelController extends Controller
         /* ─── 3. SHORT-QUIZZES (quiz_type_id = 1) ────────────── */
         $shortQuiz = Activities::with(['quiz', 'module'])
             ->whereHas('quiz', fn($q) => $q->where('quiz_type_id', 1))
+            ->when(
+                fn($q) =>                        // students: hide if kept
+                $q->whereDoesntHave(
+                    'results',
+                    fn($r) => $r->where('student_id', $studentID)
+                        ->where('is_kept', 1)
+                )
+            )
             ->get(['module_id', 'activity_id', 'activity_name', 'unlock_date', 'deadline_date'])
             ->map(fn($a) => [
                 'course_id'     => $a->module->course_id,
@@ -1064,7 +1081,15 @@ class MobileModelController extends Controller
             ]);
 
         /* ─── 4. LONG-QUIZZES  ───────────────────────────────── */
-        $longQuiz = LongQuizzes::get(['course_id', 'long_quiz_id', 'long_quiz_name', 'unlock_date', 'deadline_date'])
+        $longQuiz = LongQuizzes::when(
+            fn($q) =>                        // students: hide if kept
+            $q->whereDoesntHave(
+                'keptResult',
+                fn($r) => $r->where('student_id', $studentID)
+                    ->where('is_kept', 1)
+            )
+        )
+            ->get(['course_id', 'long_quiz_id', 'long_quiz_name', 'unlock_date', 'deadline_date'])
             ->map(fn($l) => [
                 'course_id'     => $l->course_id,
                 'id'            => $l->long_quiz_id,
