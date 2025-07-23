@@ -24,6 +24,7 @@ Route::get('/health', function () {
 
 Route::get('/login', [LoginController::class, 'showLoginPage']);
 Route::post('/auth', [LoginController::class, 'login']);
+Route::get('/auth', [LoginController::class, 'redirectAuth']);
 Route::get('/logout', [LoginController::class, 'logout']);
 
 Route::get('/pin',                 fn() => view('pin'));

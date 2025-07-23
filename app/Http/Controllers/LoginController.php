@@ -14,6 +14,11 @@ class LoginController extends Controller
         return view('login');
     }
 
+    public function redirectAuth(){
+        Session::flush();
+        return redirect('/login')->with('error', 'Invalid access.');
+    }
+
     public function landingRedirect()
     {
 
