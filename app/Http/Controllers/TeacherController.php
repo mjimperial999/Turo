@@ -50,6 +50,16 @@ class TeacherController extends Controller
             return redirect('/login');
         }
 
+        $user = Users::findOrFail(session('user_id'));
+
+        if ($user->requires_password_change == 1){
+            return redirect('/login');
+        }
+
+        if ($user->agreed_to_terms == 0){
+            return redirect('/terms');
+        }
+
         if (session('role_id') == 1) {
             return redirect('/home-tutor');
         }
