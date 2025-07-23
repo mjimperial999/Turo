@@ -21,12 +21,15 @@ class LoginController extends Controller
 
     public function landingRedirect()
     {
-
         if (!session()->has('user_id')) {
             return redirect('/login');
         }
 
         $user = Users::findOrFail(session('user_id'));
+
+        if ($user->requires_password_change == 1){
+            return redirect('/pin');
+        }
 
         if ($user->agreed_to_terms == 0){
             return redirect('/terms');
