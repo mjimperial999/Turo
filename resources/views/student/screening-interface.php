@@ -4,7 +4,9 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 $title = 'Question ' . $index + 1;
-include __DIR__ . '/../partials/head.php'; ?>
+include __DIR__ . '/../partials/head.php';
+
+?>
 
 <style>
     table,
@@ -175,6 +177,13 @@ include __DIR__ . '/../partials/head.php'; ?>
         background-size: contain;
         background-repeat: no-repeat;
     }
+
+
+    .quiz-nav-number {
+        text-decoration: none;
+        color: white;
+        font-weight: bold;
+    }
 </style>
 
 </head>
@@ -201,7 +210,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                             </div>
                             <div class="text title">
                                 <h4><?= $screening_name ?><h4>
-                                <h6>Screening Exam</h6>
+                                        <h6>Screening Exam</h6>
                             </div>
                         </div>
                     </div>
@@ -243,10 +252,19 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <?= csrf_field() ?>
                             <div class="quiz-interface-answers">
                                 <?php
+                                $state     = session("se_$screeningID", []);
+                                $answers   = $state['answers'] ?? [];
+                                $saved     = $answers[$index] ?? null;
                                 $opts = $question->options->shuffle();
-                                foreach ($opts as $option): ?>
+                                foreach ($opts as $option):
+                                    $isChecked = $saved !== null && ((string)$saved === (string)$option->screening_option_id); ?>
                                     <div class="radio-button radio-screener">
-                                        <input type="radio" id="opt<?= $option->screening_option_id ?>" name="answer" value="<?= $option->screening_option_id ?>" required>
+                                        <input type="radio"
+                                        id="opt<?= $option->screening_option_id ?>"
+                                        name="answer"
+                                        value="<?= $option->screening_option_id ?>"
+                                        <?= $isChecked ? 'checked' : '' ?>
+                                        required>
                                         <label for="opt<?= $option->screening_option_id ?>"><?= $option->option_text ?></label>
                                     </div>
                                 <?php endforeach; ?>
@@ -258,9 +276,49 @@ include __DIR__ . '/../partials/head.php'; ?>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="spacing side">
-            <?php include __DIR__ . '/../partials/right-side-notifications.php';  ?>
+
+            <div class="content-container box-page">
+                <div class="content padding">
+                    <div class="header">
+                        <h6>Question List</h6>
+                    </div>
+                    <div class="question-nav-list" style="display: flex; flex-wrap: wrap; gap: .5rem;">
+                        <?php
+                        $state = session("se_$screeningID");
+                        $answers = $state['answers'] ?? [];
+                        ?>
+                        <?php for ($i = 0; $i < $total; $i++): ?>
+                            <?php
+                            $isCurrent = ($i === $index);
+                            $isAnswered = array_key_exists($i, $answers);
+                            $classes = 'quiz-nav-number';
+                            $styles = 'display:inline-block; width:2.5rem; height:2.5rem; line-height:2.5rem; text-align:center; border-radius:4px; font-weight:bold;';
+
+                            if ($isCurrent) {
+                                $styles .= 'background:#2d91f2; color:white; border:2px solid #2d91f2;';
+                            } elseif ($isAnswered) {
+                                $styles .= 'background:#fff; color:#333; border:1px solid #aaa;';
+                            } else {
+                                $styles .= 'background:#eee; color:#999; border:1px solid #ccc;';
+                            }
+                            ?>
+
+                            <?php if ($isAnswered): ?>
+                                <a href="/home-tutor/course/<?= $courseId ?>/<?= $screeningID ?>/q/<?= $i ?>"
+                                    class="<?= $classes ?>"
+                                    style="<?= $styles ?>">
+                                    <?= $i + 1 ?>
+                                </a>
+                            <?php else: ?>
+                                <span class="<?= $classes ?>" style="<?= $styles ?>">
+                                    <?= $i + 1 ?>
+                                </span>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>
@@ -350,7 +408,6 @@ include __DIR__ . '/../partials/head.php'; ?>
     </footer>
 </body> */ ?>
 <script>
-
     /* ---------- Timer ---------- */
     const deadline = <?= $deadlineTs ?> * 1000; // ms
     const cdSpan = document.getElementById('quiz-timer');
@@ -371,6 +428,24 @@ include __DIR__ . '/../partials/head.php'; ?>
     }
     tick();
     setInterval(tick, 1000);
+
+    const updateRadioVisuals = () => {
+        document.querySelectorAll('.radio-button').forEach(div => {
+            const radio = div.querySelector('input[type="radio"]');
+            if (radio.checked) {
+                div.classList.add('selected');
+            } else {
+                div.classList.remove('selected');
+            }
+        });
+    };
+
+    document.querySelectorAll('input[type="radio"][name="answer"]').forEach(radio => {
+        radio.addEventListener('click', updateRadioVisuals);
+    });
+
+    // Run on page load
+    updateRadioVisuals();
 
     const radioButtons = document.querySelectorAll('input[type="radio"][name="answer"]');
 

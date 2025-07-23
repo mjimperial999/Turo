@@ -1671,6 +1671,7 @@ class MobileModelController extends Controller
                 'student_name' => trim($s->user->last_name . ', ' . $s->user->first_name),
                 'image_blob'   => $imgBlob,
                 'points'       => (int) ($pointsLookup[$s->user_id] ?? 0),
+                'final_grade'  => $s->total_points,
             ];
         })
             /* sort A-Z by last name for nicer UX */

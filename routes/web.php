@@ -42,6 +42,7 @@ Route::post('/forgot-password/send', [PinController::class, 'sendRecovery'])->na
 Route::post('/forgot-password/verify', [PinController::class, 'verifyRecovery'])->name('recovery.verify');
 
 Route::get('/replace-pass-view', fn() => view('replace-password-view'));
+Route::get('/terms-view', fn() => view('terms'));
 
 
 // ADMIN 
