@@ -1649,19 +1649,14 @@ class MobileModelController extends Controller
             ->value('section_name') ?? '';
 
         /* 3 ─── fetch students (+ user + image in one query) ----------------- */
-        $students = Students::with(['user.image'])
+        $students = Students::with(['user.image', 'progress' => fn($q) => $q->where('course_id', $courseId)])
             ->where('section_id', $sectionId)
             ->get();
 
-        /* 4 ─── look-up points per student for this course ------------------- */
-        $pointsLookup = StudentProgress::where('course_id', $courseId)
-            ->whereIn('student_id', $students->pluck('user_id'))
-            ->pluck('total_points', 'student_id');          // [ student_id => pts ]
+        /* 4 ─── shape the payload ------------------------------------------- */
+        $data = $students->map(function ($s) {
+            $progress = $s->progress->first(); // One-to-many relation; use first() for current course
 
-        /* 5 ─── shape the payload ------------------------------------------- */
-        $data = $students->map(function ($s) use ($pointsLookup) {
-
-            /* image  → base64 or null */
             $imgBlob = !empty($s->user->image?->image)
                 ? base64_encode($s->user->image->image)
                 : null;
@@ -1670,8 +1665,8 @@ class MobileModelController extends Controller
                 'student_id'   => $s->user_id,
                 'student_name' => trim($s->user->last_name . ', ' . $s->user->first_name),
                 'image_blob'   => $imgBlob,
-                'points'       => (int) ($pointsLookup[$s->user_id] ?? 0),
-                'final_grade'  => $s->average_score,
+                'points'       => (int) ($progress->total_points ?? 0),
+                'final_grade'  => round((float) ($progress->average_score ?? 0), 2),
             ];
         })
             /* sort A-Z by last name for nicer UX */
