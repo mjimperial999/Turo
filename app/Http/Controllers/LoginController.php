@@ -48,6 +48,11 @@ class LoginController extends Controller
         if ($user && Hash::check($request->password, $user->password_hash)) {
             
             if ($user->requires_password_change == 1){
+                session([
+                    'user_id' => $user->user_id,
+                    'email'   => $user->email,
+                ]);
+                Session::save();
                 return redirect('/pin');
             }
 

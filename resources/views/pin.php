@@ -43,7 +43,7 @@ include __DIR__ . '/partials/head.php'; ?>
                         <?php endif; ?>
                     </div>
 
-                    <form action="/pin/send" method="POST" class="login-form-box" style="margin-bottom:1rem">
+                    <form action="/pin" method="POST" class="login-form-box" style="margin-bottom:1rem">
                         <?= csrf_field() ?>
                         <input type="hidden" name="email" value="<?= htmlspecialchars(session('email')) ?>">
                         <button class="btn btn-primary">Send PIN to my Email</button>

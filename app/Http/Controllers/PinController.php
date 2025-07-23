@@ -9,11 +9,6 @@ use App\Models\{Users, UserPin};
 
 class PinController extends Controller
 {
-    /* -------- show “enter pin” page -------- */
-    public function show(Request $r)
-    {
-        return view('pin');
-    }
 
     /* -------- send a fresh pin via Gmail ---- */
     public function send(Request $r)
@@ -81,7 +76,7 @@ class PinController extends Controller
                 ->subject('Your Turo one-time PIN')
         );
 
-        return back()->with('success', 'A PIN has been sent to your e-mail: ' . $user->email);
+        return redirect('/pin')->with('success', 'A PIN has been sent to your e-mail: ' . $user->email);
     }
 
     /* -------- verify the pin --------------- */
@@ -171,7 +166,7 @@ class PinController extends Controller
                 ->subject('Your Turo one-time PIN')
         );
 
-        return redirect('/pin')->with('success', 'A PIN has been sent to your e-mail: ' . $user->email);
+        return redirect('/pin-forgot')->with('success', 'A PIN has been sent to your e-mail: ' . $user->email);
     }
 
     public function verifyRecovery(Request $r)

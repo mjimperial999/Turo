@@ -26,9 +26,11 @@ Route::get('/login', [LoginController::class, 'showLoginPage']);
 Route::post('/auth', [LoginController::class, 'login']);
 Route::get('/logout', [LoginController::class, 'logout']);
 
-Route::get('/pin',                 [PinController::class, 'show'])->name('pin.form');
-Route::post('/pin/send',            [PinController::class, 'send'])->name('pin.send');
-Route::post('/pin/verify',          [PinController::class, 'verify'])->name('pin.verify');
+Route::get('/pin',                 fn() => view('pin'));
+Route::post('/pin',                [PinController::class, 'send'])->name('pin.send');
+Route::post('/pin/verify',         [PinController::class, 'verify'])->name('pin.verify');
+
+Route::get('/pin-forgot',           fn() => view('pin-forgot'));
 
 Route::get('/replace-password',    [PinController::class, 'passwordForm'])->name('pw.form');
 Route::post('/replace-password',    [PinController::class, 'passwordSave'])->name('pw.save');
