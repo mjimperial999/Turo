@@ -28,7 +28,7 @@ class LoginController extends Controller
         $user = Users::findOrFail(session('user_id'));
 
         if ($user->requires_password_change == 1){
-            return redirect('/pin');
+            return redirect('/login');
         }
 
         if ($user->agreed_to_terms == 0){
