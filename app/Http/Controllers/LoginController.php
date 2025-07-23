@@ -16,7 +16,7 @@ class LoginController extends Controller
 
     public function redirectAuth(){
         Session::flush();
-        return redirect('/login')->with('error', 'Invalid access.');
+        return redirect('/login')->with('error', 'Invalid access');
     }
 
     public function landingRedirect()
