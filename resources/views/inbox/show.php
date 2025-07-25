@@ -165,7 +165,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                         $blobData = $m->sender->image?->image;
                                         $mimeType = getMimeTypeFromBlob($blobData);
                                         $base64Image = base64_encode($blobData);
-                                        $avatarSrc = "data:$mimeType;base64,$base64Image";
+                                        $imageURL = "data:$mimeType;base64,$base64Image";
                                     }
                                 } else {
                                     $names = ($unread ? '* ' : '') . 'From: '
@@ -176,7 +176,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                         $blobData = $m->sender->image?->image;
                                         $mimeType = getMimeTypeFromBlob($blobData);
                                         $base64Image = base64_encode($blobData);
-                                        $avatarSrc = "data:$mimeType;base64,$base64Image";
+                                        $imageURL = "data:$mimeType;base64,$base64Image";
                                     }
                                 }
 
@@ -187,7 +187,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     <!-- top row -->
                                     <div class="msg-head">
                                         <div class="msg-info">
-                                            <img src="<?= htmlspecialchars($avatarSrc) ?>" alt="avatar" class="msg-avatar">
+                                            <img src="<?= htmlspecialchars($imageURL) ?>" alt="avatar" class="msg-avatar">
                                             <span class="msg-names"><?= htmlspecialchars($names) ?></span>
                                         </div>
 

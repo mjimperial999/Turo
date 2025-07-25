@@ -1360,6 +1360,44 @@ class MobileModelController extends Controller
         ]);
     }
 
+    public function getUsers()
+    {
+        // Fetch only what we need
+        $users = Users::select('user_id', 'first_name', 'last_name', 'role_id')
+            ->orderBy('role_id')
+            ->orderBy('last_name')
+            ->get();
+
+        // Group users manually
+        $grouped = [
+            'student' => [],
+            'teacher' => [],
+            'admin'   => [],
+        ];
+
+        foreach ($users as $user) {
+            $fullName = trim($user->last_name . ' ' . $user->first_name);
+            $entry = [
+                'user_id' => $user->user_id,
+                'name'    => $fullName,
+            ];
+
+            switch ($user->role_id) {
+                case 1:
+                    $grouped['student'][] = $entry;
+                    break;
+                case 2:
+                    $grouped['teacher'][] = $entry;
+                    break;
+                case 3:
+                    $grouped['admin'][] = $entry;
+                    break;
+            }
+        }
+
+        return response()->json($grouped);
+    }
+
     public function sendMessage(Request $r)
     {
         $r->validate([
@@ -1421,7 +1459,7 @@ class MobileModelController extends Controller
             ]);
 
             // create a read‐state for each participant
-            $inbox->participants->each(function($p) use ($message, $senderID) {
+            $inbox->participants->each(function ($p) use ($message, $senderID) {
                 MessageUserState::create([
                     'message_id' => $message->message_id,
                     'user_id'    => $p->participant_id,

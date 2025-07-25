@@ -47,6 +47,7 @@ Route::prefix('v1')->group(function () {
         Route::get('get-gamified-elements',     [MobileModelController::class, 'showGamifiedElements']);
 
         Route::get('get-inbox',         [MobileModelController::class, 'showInbox']);
+        Route::get('get-users',         [MobileModelController::class, 'getUsers']);
         Route::post('send-message',         [MobileModelController::class, 'sendMessage']);
         Route::post('mark-read',        [MobileModelController::class, 'markMessageRead']);
         Route::post('delete-message',   [MobileModelController::class, 'deleteMessage']);
