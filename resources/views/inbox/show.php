@@ -155,7 +155,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                                 /* build From / To label + avatar */
                                 if ($isSent) {
-                                    $names = 'To: ' . $inbox->participants
+                                    $names = '(YOU:) ' . $inbox->participants
                                         ->filter(fn($p) => $p->user_id !== session('user_id'))
                                         ->map(fn($p) => $p->first_name . ' ' . $p->last_name)
                                         ->implode(', ');

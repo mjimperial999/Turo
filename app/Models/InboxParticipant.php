@@ -15,4 +15,10 @@ class InboxParticipant extends Model
         'inbox_id',
         'participant_id'
     ];
+
+
+    public function user()
+    {
+        return $this->has(Users::class, 'participant_id', 'user_id');
+    }
 }

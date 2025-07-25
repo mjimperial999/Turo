@@ -1260,52 +1260,35 @@ class MobileModelController extends Controller
             'user_id' => 'required|exists:user,user_id',
         ]);
 
-        $me = $r->user_id;                        // shorthand
+        $me = $r->user_id;
 
         /* -------------------------------------------------------------
-     * Helpers
+     * INCOMING: threads with at least one message NOT from me
      * ----------------------------------------------------------- */
-        $img = function (?Users $u) {
-            if (!$u || empty($u->image?->image)) {
-                return null;                         // let mobile show a stock icon
-            }
-            return base64_encode($u->image->image);  // blob → base64
-        };
-
-        /* -------------------------------------------------------------
-     * INCOMING  (threads that have at least ONE msg not from me)
-     * ----------------------------------------------------------- */
-        $incoming = Inbox::whereHas(
-            'participants',
-            fn($q) => $q->where('participant_id', $me)
-        )
-            ->whereHas(
-                'messages',
-                fn($q) => $q->where('sender_id', '!=', $me)
-            )
-            ->with(['messages.userStates', 'messages.sender'])
+        $incoming = Inbox::whereHas('participants', fn($q) => $q->where('participant_id', $me))
+            ->whereHas('messages', fn($q) => $q->where('sender_id', '!=', $me))
+            ->with(['participants', 'messages.userStates', 'messages.sender'])
             ->orderBy('timestamp', 'desc')
             ->get()
-            ->flatMap(function ($thread) use ($me, $img) {
-                // latest message in this thread that was **not** sent by me
+            ->flatMap(function ($thread) use ($me) {
+                // find the latest incoming message
                 $msg = $thread->messages
                     ->where('sender_id', '!=', $me)
                     ->sortByDesc('timestamp')
                     ->first();
+                if (! $msg || ! $msg->sender) {
+                    return [];
+                }
 
-                // if sender was deleted somehow, skip the row
-                if (!$msg?->sender) return [];
-
-                // unread? -> any state row for *this* msg + me that is_read==0
-                $state = $msg->userStates
-                    ->firstWhere('user_id', $me);
-                $unread = $state ? !$state->is_read : true;
+                // unread flag for me
+                $state  = $msg->userStates->firstWhere('user_id', $me);
+                $unread = $state ? ! $state->is_read : true;
 
                 return [[
+                    'thread_id'   => $thread->inbox_id,
                     'message_id'  => $msg->message_id,
                     'sender_id'   => $msg->sender_id,
                     'sender_name' => trim($msg->sender->first_name . ' ' . $msg->sender->last_name),
-                    'image_blob'  => $img($msg->sender),
                     'subject'     => $msg->subject,
                     'message'     => $msg->body,
                     'date'        => Carbon::parse($msg->timestamp)->format('Y-m-d H:i:s'),
@@ -1315,43 +1298,37 @@ class MobileModelController extends Controller
             ->values();
 
         /* -------------------------------------------------------------
-     * SENT  (latest message *from* me in each thread I participate)
+     * SENT: threads where my latest message in each
      * ----------------------------------------------------------- */
-        $sent = Inbox::whereHas(
-            'messages',
-            fn($q) => $q->where('sender_id', $me)
-        )
-            ->with(['participants.user', 'messages'])
+        $sent = Inbox::whereHas('messages', fn($q) => $q->where('sender_id', $me))
+            ->with(['participants', 'messages.userStates', 'messages'])
             ->orderBy('timestamp', 'desc')
             ->get()
-            ->flatMap(function ($thread) use ($me, $img) {
-                // latest message **sent by me**
+            ->flatMap(function ($thread) use ($me) {
+                // find my latest message
                 $msg = $thread->messages
                     ->where('sender_id', $me)
                     ->sortByDesc('timestamp')
                     ->first();
+                if (! $msg) {
+                    return [];
+                }
 
-                if (!$msg) return [];
-
-                // pick *all* recipients except me
+                // for each other participant, output one record
                 return $thread->participants
-                    ->where('participant_id', '!=', $me)
-                    ->map(function ($p) use ($msg, $img) {
-                        $u = $p->user;
-                        return [
-                            'message_id'  => $msg->message_id,
-                            'recipient_id'   => $u->user_id,
-                            'recipient_name' => trim($u->first_name . ' ' . $u->last_name),
-                            'image_blob'     => $img($u),
-                            'subject'        => $msg->subject,
-                            'message'        => $msg->body,
-                            'date'           => Carbon::parse($msg->timestamp)->format('Y-m-d H:i:s'),
-                        ];
-                    });
+                    ->where('user_id', '!=', $me)
+                    ->map(fn($user) => [
+                        'thread_id'     => $thread->inbox_id,
+                        'message_id'    => $msg->message_id,
+                        'recipient_id'  => $user->user_id,
+                        'recipient_name' => trim($user->first_name . ' ' . $user->last_name),
+                        'subject'       => $msg->subject,
+                        'message'       => $msg->body,
+                        'date'          => Carbon::parse($msg->timestamp)->format('Y-m-d H:i:s'),
+                    ]);
             })
             ->values();
 
-        /* -------- final payload ------------------------------------ */
         return response()->json([
             'messages' => [
                 'incoming' => $incoming,
@@ -1359,6 +1336,8 @@ class MobileModelController extends Controller
             ],
         ]);
     }
+
+
 
     public function getUsers()
     {
