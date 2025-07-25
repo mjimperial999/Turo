@@ -1494,7 +1494,7 @@ class MobileModelController extends Controller
             $msg->delete();
         });
 
-        return response()->json(['message' => 'Message Marked Read'], 201);
+        return response()->json(['message' => 'Message Deleted'], 201);
     }
 
     // TEACHER SIDE
