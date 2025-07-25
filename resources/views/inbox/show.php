@@ -225,7 +225,7 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                                     <hr class="msg-hr">
 
-                                    <!-- subject + body -->
+                                    <!-- Message Content -->
                                     <?php if ($m->subject): ?>
                                         <p class="msg-subject"><?= htmlspecialchars($m->subject) ?></p>
                                     <?php endif; ?>
@@ -237,22 +237,22 @@ include __DIR__ . '/../partials/head.php'; ?>
                         </div>
 
                         <?php
-                        // get the latest message subject to build reply prefix
                         $lastMsg = $inbox->messages->last();
                         $replySubject = $lastMsg && $lastMsg->subject
                             ? 'Re: ' . $lastMsg->subject
                             : '';
                         ?>
 
-                        <!-- ========== QUICK REPLY ========== -->
-                        <form action="<?= route('inbox.reply', $inbox); ?>" method="POST" style="border-top:1px solid #ccc;padding-top:.5rem">
+                        <!-- Reply Area -->
+                        <form action="<?= route('inbox.reply', $inbox); ?>" method="POST" style="padding-top: 0.5rem">
                             <?= csrf_field(); ?>
+                            <br>
                             <div style="display:flex;gap:.5rem">
                                 <input type="hidden" name="subject"
                                     value="<?= htmlspecialchars($replySubject) ?>">
                                 <textarea name="body" rows="3" style="flex:1"></textarea>
                             </div>
-                            <button class="btn btn-primary">Send</button>
+                            <button class="btn btn-primary">Reply</button>
                         </form>
                     </div>
 
