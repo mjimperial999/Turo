@@ -2058,4 +2058,22 @@ class MobileModelController extends Controller
         Activities::where('activity_id', $r->activity_id)->delete();
         return response()->json(['message' => 'Tutorial deleted']);
     }
+
+
+    public function getUserImage(Request $r)
+    {
+        $r->validate([
+            'user_id' => 'required|exists:user,user_id',
+        ]);
+
+        $users = Users::with('image')->findOrFail($r->user_id);
+
+        return response()->json([
+            'user_id'         => $users->user_id,
+            'image_blob'      => ($users->image?->image)
+                ? base64_encode($users->image?->image)
+                : null
+        ]);
+
+    }
 }

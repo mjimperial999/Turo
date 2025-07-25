@@ -13,6 +13,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('get-courses',                       [MobileModelController::class, 'getCourses']);
 
+        Route::get('get-user-image',         [MobileModelController::class, 'getUserImage']);
         // STUDENTS
         Route::get('check-if-student-is-catch-up',    [MobileModelController::class, 'getCatchUpStatus']);
 
