@@ -161,7 +161,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                         ->map(fn($p) => $p->first_name . ' ' . $p->last_name)
                                         ->implode(', ');
 
-                                    $sender = "YOU: {$senderName}";
+                                    $sender = "(YOU) {$senderName}";
                                     $recipients = '';
                                     if (! empty($recipientNames)) {
                                         $recipients .= " To: {$recipientNames}";
@@ -176,8 +176,9 @@ include __DIR__ . '/../partials/head.php'; ?>
                                         $imageURL = "data:$mimeType;base64,$base64Image";
                                     }
                                 } else {
-                                    $names = ($unread ? '* ' : '') . 'From: '
+                                    $sender = ($unread ? '* ' : '') . 'From: '
                                         . $m->sender->first_name . ' ' . $m->sender->last_name;
+                                    $recipients = null;
                                     if (empty($m->sender->image?->image)) {;
                                         $imageURL = "/icons/no-img.jpg";
                                     } else {
@@ -196,7 +197,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     <div class="msg-head">
                                         <div class="msg-info">
                                             <img src="<?= htmlspecialchars($imageURL) ?>" alt="avatar" class="msg-avatar">
-                                            <span class="msg-names"><?= htmlspecialchars($sender) ?><br><?= htmlspecialchars($recipients) ?></span>
+                                            <span class="msg-names"><?= htmlspecialchars($sender) ?><br><?= htmlspecialchars($recipients) ? htmlspecialchars($recipients) : null  ?></span>
                                         </div>
 
                                         <div class="flex-row" style="gap: 1rem;">
@@ -235,10 +236,20 @@ include __DIR__ . '/../partials/head.php'; ?>
                             <?php endforeach; ?>
                         </div>
 
+                        <?php
+                        // get the latest message subject to build reply prefix
+                        $lastMsg = $inbox->messages->last();
+                        $replySubject = $lastMsg && $lastMsg->subject
+                            ? 'Re: ' . $lastMsg->subject
+                            : '';
+                        ?>
+
                         <!-- ========== QUICK REPLY ========== -->
                         <form action="<?= route('inbox.reply', $inbox); ?>" method="POST" style="border-top:1px solid #ccc;padding-top:.5rem">
                             <?= csrf_field(); ?>
                             <div style="display:flex;gap:.5rem">
+                                <input type="hidden" name="subject"
+                                    value="<?= htmlspecialchars($replySubject) ?>">
                                 <textarea name="body" rows="3" style="flex:1"></textarea>
                             </div>
                             <button class="btn btn-primary">Send</button>
