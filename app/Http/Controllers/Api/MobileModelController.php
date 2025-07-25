@@ -1380,7 +1380,7 @@ class MobileModelController extends Controller
     public function sendMessage(Request $r)
     {
         $r->validate([
-            'user_id'      => 'required|exists:users,user_id',
+            'user_id'      => 'required|exists:user,user_id',
             'body'         => 'required|string',
             'subject'      => 'nullable|string|max:255',
             'participants' => 'required_without:thread_id|array',
