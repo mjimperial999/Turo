@@ -155,10 +155,18 @@ include __DIR__ . '/../partials/head.php'; ?>
 
                                 /* build From / To label + avatar */
                                 if ($isSent) {
-                                    $names = '(YOU:) ' . $inbox->participants
+                                    $senderName = $m->sender->first_name . ' ' . $m->sender->last_name;
+                                    $recipientNames = $inbox->participants
                                         ->filter(fn($p) => $p->user_id !== session('user_id'))
                                         ->map(fn($p) => $p->first_name . ' ' . $p->last_name)
                                         ->implode(', ');
+
+                                    $sender = "YOU: {$senderName}";
+                                    $recipients = '';
+                                    if (! empty($recipientNames)) {
+                                        $recipients .= " To: {$recipientNames}";
+                                    }
+
                                     if (empty($m->sender->image?->image)) {;
                                         $imageURL = "/icons/no-img.jpg";
                                     } else {
@@ -188,7 +196,7 @@ include __DIR__ . '/../partials/head.php'; ?>
                                     <div class="msg-head">
                                         <div class="msg-info">
                                             <img src="<?= htmlspecialchars($imageURL) ?>" alt="avatar" class="msg-avatar">
-                                            <span class="msg-names"><?= htmlspecialchars($names) ?></span>
+                                            <span class="msg-names"><?= htmlspecialchars($sender) ?><br><?= htmlspecialchars($recipients) ?></span>
                                         </div>
 
                                         <div class="flex-row" style="gap: 1rem;">
