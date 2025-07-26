@@ -1380,32 +1380,30 @@ class MobileModelController extends Controller
     public function sendMessage(Request $r)
     {
         $r->validate([
-            'user_id'      => 'required|exists:user,user_id',
-            'body'         => 'required|string',
-            'subject'      => 'nullable|string|max:255',
-            'participants' => 'required_without:thread_id|array',
-            'participants.*' => 'exists:users,user_id',
-            'thread_id'    => 'nullable|exists:inbox,inbox_id',
+            'user_id'         => 'required|exists:user,user_id',
+            'body'            => 'required|string',
+            'subject'         => 'nullable|string|max:255',
+            'participants'    => 'required_without:thread_id|array',
+            'participants.*'  => 'exists:user,user_id',
+            'thread_id'       => 'nullable|exists:inbox,inbox_id',
         ]);
 
-        $senderID   = $r->input('user_id');
-        $subject    = $r->input('subject', null);
-        $body       = $r->input('body');
-        $threadId   = $r->input('thread_id');
-        $now        = Carbon::now()->timestamp;
+        $senderId = $r->input('user_id');
+        $subject  = $r->input('subject');
+        $body     = $r->input('body');
+        $threadId = $r->input('thread_id');
+        $now      = Carbon::now()->timestamp;    // <-- integer epoch
 
-        DB::transaction(function () use ($senderID, $subject, $body, $threadId, $r, $now) {
-
-            // If no thread_id, we need to create a brand‐new inbox (group DM or 1:1)
-            if (!$threadId) {
+        DB::transaction(function () use ($senderId, $subject, $body, $threadId, $r, $now) {
+            // 1) New thread?
+            if (! $threadId) {
                 $inbox = Inbox::create([
                     'inbox_id'  => (string) Str::uuid(),
                     'timestamp' => $now,
                 ]);
 
-                // build unique participants list, always include sender
-                $participants = collect($r->input('participants'))
-                    ->push($senderID)
+                $participants = collect($r->input('participants', []))
+                    ->push($senderId)
                     ->unique();
 
                 foreach ($participants as $pid) {
@@ -1414,39 +1412,40 @@ class MobileModelController extends Controller
                         'participant_id' => $pid,
                     ]);
                 }
-            } else {
-                // reply into existing thread
+            }
+            // 2) Reply to existing
+            else {
                 $inbox = Inbox::findOrFail($threadId);
 
-                // ensure sender is a participant
                 abort_unless(
-                    $inbox->participants()->where('participant_id', $senderID)->exists(),
-                    403
+                    $inbox->participants()
+                          ->where('participant_id', $senderId)
+                          ->exists(),
+                    403,
+                    'You are not in this thread.'
                 );
-
-                // bump the thread timestamp below after message create
             }
 
-            // create the message record
+            // 3) Insert message
             $message = Message::create([
                 'message_id' => (string) Str::uuid(),
                 'inbox_id'   => $inbox->inbox_id,
-                'sender_id'  => $senderID,
+                'sender_id'  => $senderId,
                 'subject'    => $subject,
                 'body'       => $body,
-                'timestamp'  => $now,
+                'timestamp'  => $now,              // <-- integer epoch
             ]);
 
-            // create a read‐state for each participant
-            $inbox->participants->each(function ($p) use ($message, $senderID) {
+            // 4) Seed read‑state
+            foreach ($inbox->participants as $p) {
                 MessageUserState::create([
                     'message_id' => $message->message_id,
-                    'user_id'    => $p->participant_id,
-                    'is_read'    => $p->participant_id === $senderID,
+                    'user_id'    => $p->user_id,
+                    'is_read'    => ($p->user_id === $senderId),
                 ]);
-            });
+            }
 
-            // bump thread timestamp so it sorts correctly in your mobile inbox list
+            // 5) Bump thread ts
             $inbox->update(['timestamp' => $now]);
         });
 
