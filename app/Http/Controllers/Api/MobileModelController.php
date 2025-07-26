@@ -1338,7 +1338,6 @@ class MobileModelController extends Controller
     }
 
 
-
     public function getUsers()
     {
         // Fetch only what we need
@@ -1376,6 +1375,46 @@ class MobileModelController extends Controller
 
         return response()->json($grouped);
     }
+
+    public function getThreadMessages(Request $r)
+    {
+        $r->validate([
+            'user_id' => 'required|exists:user,user_id',
+            'thread_id' => 'required|exists:message,inbox_id',
+        ]);
+
+        $me = $r->user_id;
+
+        $inbox = Inbox::with(['participants', 'messages.sender', 'messages.userStates'])
+            ->findOrFail($r->thread_id);
+
+        // ensure the user is a participant
+        abort_unless($inbox->participants->contains('user_id', $me), 403, 'Not a participant in this thread.');
+
+        $messages = $inbox->messages
+            ->sortBy('timestamp')
+            ->map(function ($msg) use ($me) {
+                $state = $msg->userStates->firstWhere('user_id', $me);
+                $unread = $state ? ! $state->is_read : true;
+
+                return [
+                    'message_id'   => $msg->message_id,
+                    'sender_id'    => $msg->sender_id,
+                    'sender_name'  => $msg->sender ? trim($msg->sender->first_name . ' ' . $msg->sender->last_name) : null,
+                    'subject'      => $msg->subject,
+                    'message'      => $msg->body,
+                    'date'         => Carbon::parse($msg->timestamp)->format('Y-m-d H:i:s'),
+                    'unread'       => $unread,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'thread_id' => $inbox->inbox_id,
+            'messages' => $messages,
+        ]);
+    }
+
 
     public function sendMessage(Request $r)
     {
@@ -1419,8 +1458,8 @@ class MobileModelController extends Controller
 
                 abort_unless(
                     $inbox->participants()
-                          ->where('participant_id', $senderId)
-                          ->exists(),
+                        ->where('participant_id', $senderId)
+                        ->exists(),
                     403,
                     'You are not in this thread.'
                 );
@@ -2073,6 +2112,5 @@ class MobileModelController extends Controller
                 ? base64_encode($users->image?->image)
                 : null
         ]);
-
     }
 }
