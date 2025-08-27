@@ -2051,36 +2051,132 @@ class MobileModelController extends Controller
     /* =========================================================================
  |  LECTURE  &  TUTORIAL  CRUD  (activity_type_id = 3 | 4)
  |======================================================================== */
-    private function storeGenericActivity(array $data, int $typeId): Activities
+    public function storeLecture(Request $r)
     {
-        return Activities::create($data + [
-            'activity_id'       => (string) Str::uuid(),
-            'activity_type_id'  => $typeId,                // 3 = LECTURE, 4 = TUTORIAL
+        $r->validate([
+            'activity_name'           => 'required|string|max:255',
+            'activity_description'    => 'required|string|max:255',
+            'pdf'                     => 'required|file|mimes:pdf|max:2048'
         ]);
+
+        $activity = Activities::create([
+            'activity_id'         => Str::uuid()->toString(),
+            'module_id'         => $r->module_id,
+            'activity_type'       => 'LECTURE',
+            'activity_name'       => $r->activity_name,
+            'activity_description' => $r->activity_description,
+            'unlock_date'          => $r->unlock_date,
+            'deadline_date'        => null
+
+        ]);
+
+        if ($r->hasFile('pdf')) {
+            $blob = file_get_contents($r->file('pdf')->getRealPath());
+            $mime = $r->file('pdf')->getMimeType();
+
+            $activity->lecture()->updateOrCreate(
+                ['activity_id' => $activity->activity_id],           // match column
+                [
+                    'content_type_id' => 2,                           // “PDF/DOCS”
+                    'file_url'        => $blob,                     // store blob
+                    'file_mime_type'  => $mime,
+                    'file_name'       => $r->file('pdf')->getClientOriginalName(),
+                ]
+            );
+        }
+
+        return response()->json(['message' => 'Lecture ' . $r->activity_name . ' created'], 201);
     }
 
-    public function storeLecture(LectureStoreRequest $r)
+        public function updateLecture(Request $r)
     {
-        $this->storeGenericActivity($r->validated(), 3);
-        return response()->json(['message' => 'Lecture created'], 201);
+        $activity = Activities::findOrFail($r->activity_id);
+
+        $r->validate([
+            'activity_name'           => 'required|string|max:255',
+            'activity_description'    => 'required|string|max:255',
+            'pdf'                     => 'nullable|file|mimes:pdf|max:2048'
+        ]);
+
+        $activity->update([
+            'activity_name'        => $r->activity_name,
+            'activity_description' => $r->activity_description,
+            'unlock_date'          => $r->unlock_date,
+        ]);
+
+        if ($r->hasFile('pdf')) {
+            $blob = file_get_contents($r->file('pdf')->getRealPath());
+            $mime = $r->file('pdf')->getMimeType();
+
+            $activity->lecture()->updateOrCreate(
+                ['activity_id' => $activity->activity_id],           // match column
+                [
+                    'content_type_id' => 2,                           // “PDF/DOCS”
+                    'file_url'        => $blob,                     // store blob
+                    'file_mime_type'  => $mime,
+                    'file_name'       => $r->file('pdf')->getClientOriginalName(),
+                ]
+            );
+        }
+
+        return response()->json(['message' => 'Lecture  ' . $r->activity_name . ' updated']);
     }
 
-    public function storeTutorial(TutorialStoreRequest $r)
+    public function storeTutorial(Request $r)
     {
-        $this->storeGenericActivity($r->validated(), 4);
-        return response()->json(['message' => 'Tutorial created'], 201);
+        $r->validate([
+            'activity_name'        => 'required|string|max:255',
+            'activity_description' => 'required|string|max:255',
+            'video_url'            => 'required|url',
+            'unlock_date'          => 'required|date',
+        ]);
+
+        /* 1) parent activity */
+        $activity = Activities::create([
+            'activity_id'         => Str::uuid()->toString(),
+            'module_id'           => $r->module_id,
+            'activity_type'       => 'TUTORIAL',
+            'activity_name'       => $r->activity_name,
+            'activity_description' => $r->activity_description,
+            'unlock_date'         => Carbon::parse($r->unlock_date),
+            'deadline_date'       => null,
+        ]);
+
+        /* 2) tutorial row */
+        $activity->tutorial()->create([
+            'content_type_id' => 3,                // VIDEO
+            'video_url'       => $r->video_url,
+        ]);
+
+        return response()->json(['message' => 'Tutorial  ' . $r->activity_name . ' created'], 201);
     }
 
-    public function updateLecture(LectureUpdateRequest $r)
+    public function updateTutorial(Request $r)
     {
-        Activities::findOrFail($r->activity_id)->update($r->validated());
-        return response()->json(['message' => 'Lecture updated']);
-    }
+        $activity = Activities::findOrFail($r->activity_id);
 
-    public function updateTutorial(TutorialUpdateRequest $r)
-    {
-        Activities::findOrFail($r->activity_id)->update($r->validated());
-        return response()->json(['message' => 'Tutorial updated']);
+        $r->validate([
+            'activity_name'        => 'required|string|max:255',
+            'activity_description' => 'required|string|max:255',
+            'video_url'            => 'required|url',
+            'unlock_date'          => 'required|date',
+        ]);
+
+        $activity->update([
+            'activity_name'        => $r->activity_name,
+            'activity_description' => $r->activity_description,
+            'unlock_date'          => Carbon::parse($r->unlock_date),
+        ]);
+
+        $activity->tutorial()->updateOrCreate(
+            ['activity_id' => $activity->activity_id],
+            [
+                'content_type_id' => 3,
+                'video_url'       => $r->video_url,
+            ]
+        );
+
+        return response()->json(['message' => 'Tutorial  ' . $r->activity_name . ' updated']);
     }
 
     public function destroyLecture(Request $r)
